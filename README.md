@@ -28,7 +28,7 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 ## Status
 - [x] Prototype ported to `src/game.html`
 - [x] Capacitor projects for `com.beno74.landscraper`
-- [ ] App icon and splash (currently placeholders carried over from Shapescraper)
+- [x] App icon, splash, Play feature graphic and screenshots (first pass): `python3 design/render.py`, then `npx @capacitor/assets generate`; screenshots with `python3 design/screens-store.py android` after `npm run build`
 - [x] Controls: two-turn swipe queue, corner forgiveness, reverse on land, native haptics
 - [x] Claimed land grows a world (trees, houses, lamps); slow orbit at level clear
 - [x] Trap monsters: enclose one in 40 cells or less to catch it

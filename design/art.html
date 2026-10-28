@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>art</title>
+<style>@font-face{font-family:"Unbounded";font-weight:800;src:url(../node_modules/@fontsource/unbounded/files/unbounded-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"DM Mono";font-weight:500;src:url(../node_modules/@fontsource/dm-mono/files/dm-mono-latin-500-normal.woff2) format("woff2")}</style>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: linear-gradient(160deg, #24306a 0%, #3a2f74 55%, #6a3f86 100%); font-family: 'Unbounded', sans-serif; color: #fbf7ff; }
+  body.clear { background: transparent; }
+  canvas { position: absolute; inset: 0; }
+  #text::before { content: ''; position: absolute; inset: 0 -120px 0 -64px; z-index: -1; background: linear-gradient(90deg, rgba(31, 36, 86, 0.9) 55%, rgba(31, 36, 86, 0)); }
+  #text { position: absolute; z-index: 1; left: 64px; top: 0; bottom: 0; display: none; flex-direction: column; justify-content: center; gap: 14px; }
+  #text h1 { margin: 0; font-weight: 800; font-size: 76px; line-height: 1; letter-spacing: -0.01em; text-shadow: 0 4px 24px rgba(20, 10, 40, 0.45); }
+  #text p { margin: 0; font: 500 22px 'DM Mono', monospace; letter-spacing: 0.18em; text-transform: uppercase; color: #ffd166; }
+  #text small { margin-top: 18px; font: 500 15px 'DM Mono', monospace; letter-spacing: 0.2em; color: rgba(251, 247, 255, 0.7); }
+</style>
+<div id="text"><h1>Landscraper</h1><p>Draw &amp; Conquer</p><small>BENO74 STUDIOS</small></div>
+<script src="../node_modules/three/build/three.min.js"></script>
+<script>
+// Renders the app icon, adaptive foreground, splash and Play feature graphic.
+// Modes (?mode=): icon | fg | splash | feature
+const mode = new URLSearchParams(location.search).get('mode') || 'icon';
+const W = innerWidth, H = innerHeight;
+if (mode === 'fg') document.body.className = 'clear';
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H); document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3270, 0.95));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(-4, 12, 6); scene.add(sun);
+
+// A small board: land (raised, pink), sea (low, navy), trail (cyan), with the player closing a loop.
+const N = mode === 'feature' ? 12 : 7;
+const SEA = 0, LAND = 1, TRAIL = 2;
+const grid = [];
+for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+  let c = SEA;
+  if (mode === 'feature') {
+    if (x === 0 || y === N - 1 || x + (N - 1 - y) < 7 || (x < 5 && y > 6)) c = LAND;
+    if ((x === 5 && y >= 3 && y <= 7) || (y === 3 && x >= 5 && x <= 9)) c = TRAIL;
+  } else {
+    if (x === 0 || y === N - 1 || (x <= 3 && y >= 3)) c = LAND;       // claimed corner
+    if ((y === 2 && x >= 1 && x <= 5) || (x === 5 && y >= 2 && y <= 4)) c = TRAIL; // trail being drawn
+  }
+  grid.push(c);
+}
+const H_SEA = 0.12, H_LAND = 0.85, H_TRAIL = 0.3;
+const tileGeo = new THREE.BoxGeometry(0.94, 1, 0.94); tileGeo.translate(0, 0.5, 0);
+const land = new THREE.Color(0xec8fb6), seaA = new THREE.Color(0x2b2f63), seaB = new THREE.Color(0x343a76), trail = new THREE.Color(0x7ff0ff);
+const o = -(N - 1) / 2;
+const board = new THREE.Group(); scene.add(board);
+grid.forEach((c, i) => {
+  const x = i % N, y = (i / N) | 0;
+  const col = c === LAND ? land.clone().offsetHSL(0, 0, ((x + y) % 2) * 0.03 - 0.015) : c === TRAIL ? trail : ((x + y) % 2 ? seaA : seaB);
+  const m = new THREE.Mesh(tileGeo, new THREE.MeshLambertMaterial({ color: col, emissive: c === TRAIL ? 0x2fb8d0 : 0x000000, emissiveIntensity: 0.35 }));
+  m.scale.y = c === LAND ? H_LAND : c === TRAIL ? H_TRAIL : H_SEA;
+  m.position.set(x + o, 0, y + o); board.add(m);
+});
+// decorations on land: trees and a house
+const treeTrunk = new THREE.CylinderGeometry(0.07, 0.09, 0.26, 6); treeTrunk.translate(0, 0.13, 0);
+const treeTop = new THREE.ConeGeometry(0.32, 0.6, 7); treeTop.translate(0, 0.54, 0);
+const roundTop = new THREE.IcosahedronGeometry(0.29, 0); roundTop.translate(0, 0.44, 0);
+const brown = new THREE.MeshLambertMaterial({ color: 0x8a5a44 });
+function tree(x, y, round, tint) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(treeTrunk, brown));
+  g.add(new THREE.Mesh(round ? roundTop : treeTop, new THREE.MeshLambertMaterial({ color: tint })));
+  g.position.set(x + o, H_LAND, y + o); g.scale.setScalar(1.35); board.add(g);
+}
+function house(x, y) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.36, 0.44), new THREE.MeshLambertMaterial({ color: 0xfff1e0 })); body.position.y = 0.18;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.3, 4), new THREE.MeshLambertMaterial({ color: 0xff8a7a })); roof.rotation.y = Math.PI / 4; roof.position.y = 0.51;
+  g.add(body, roof); g.position.set(x + o, H_LAND, y + o); g.scale.setScalar(1.35); board.add(g);
+}
+if (mode === 'feature') {
+  [[1, 9, 0, 0x5fcf8f], [2, 10, 1, 0x7ad9a0], [0, 6, 0, 0x4fbf9f], [3, 11, 0, 0x9be38a], [1, 7, 1, 0x5fcf8f], [4, 8, 0, 0x7ad9a0], [0, 3, 1, 0x4fbf9f], [6, 11, 0, 0x5fcf8f], [9, 11, 1, 0x7ad9a0], [2, 4, 0, 0x9be38a]].forEach(([x, y, r, c]) => tree(x, y, r, c));
+  house(3, 9); house(1, 11); house(7, 11);
+} else {
+  tree(1, 4, 0, 0x5fcf8f); tree(2, 6, 1, 0x7ad9a0); tree(0, 3, 1, 0x4fbf9f); tree(3, 5, 0, 0x9be38a); house(1, 5.6);
+}
+// player cube and a monster orb
+const player = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0xffd166, emissiveIntensity: 0.55 }));
+const orb = new THREE.Mesh(new THREE.SphereGeometry(0.44, 32, 20), new THREE.MeshLambertMaterial({ color: 0xff6b8f, emissive: 0xff3366, emissiveIntensity: 0.45 }));
+if (mode === 'feature') { player.position.set(9 + o, H_TRAIL + 0.42, 3 + o); orb.position.set(8 + o, H_SEA + 0.55, 6 + o); }
+else { player.position.set(5 + o, H_TRAIL + 0.42, 4 + o); orb.position.set(4 + o, H_SEA + 0.6, 0.3 + o + 0.4); }
+player.rotation.y = 0.5; board.add(player, orb);
+if (mode === 'feature') { // a second orb and a mine for life
+  const orb2 = orb.clone(); orb2.position.set(10 + o, H_SEA + 0.55, 1 + o); board.add(orb2);
+}
+
+// camera
+let camera;
+if (mode === 'feature') {
+  camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 200);
+  board.rotation.y = -0.62;
+  board.position.set(10.4, 0, 0.4);
+  camera.position.set(0, 18, 15.5); camera.lookAt(2.2, 0, 0.8);
+} else {
+  const s = mode === 'splash' ? 9.6 : mode === 'fg' ? 7.4 : 5.6; // icon: board fills the square
+  camera = new THREE.OrthographicCamera(-s, s, s, -s, 0.1, 100);
+  board.rotation.y = Math.PI / 4;
+  camera.position.set(0, 10, 10); camera.lookAt(0, 0.4, 0);
+  if (mode === 'icon') { camera.zoom = 1.2; camera.updateProjectionMatrix(); }
+}
+if (mode === 'feature') document.getElementById('text').style.display = 'flex';
+renderer.render(scene, camera);
+Promise.all([document.fonts.load('800 76px Unbounded'), document.fonts.load('500 22px "DM Mono"')]).then(() => document.fonts.ready).then(() => { document.title = 'ready'; });
+</script>

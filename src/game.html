@@ -538,7 +538,15 @@ body {
     freeze(v) { frozen = !!v; },
     clearMonsters() { monsters.forEach((m) => scene.remove(m.mesh)); monsters = []; },
     addSea(x, y) { addSea(x, y, 4, 4); },
-    setPlayer(x, y) { px = tx = x; py = ty = y; prog = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; }
+    setPlayer(x, y) { px = tx = x; py = ty = y; prog = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; },
+    // Store screenshots: lay a trail along [x, y] cells (sea cells only) and optionally close it with a claim.
+    trail(cellsXY, close) {
+      for (const [x, y] of cellsXY) { const i = idx(x, y); if (cells[i] === SEA) { cells[i] = TRAIL; hGoal[i] = H_TRAIL; trail.push(i); drawing = true; } }
+      const [lx, ly] = cellsXY[cellsXY.length - 1]; px = tx = lx; py = ty = ly; prog = 1; dir = null; queue = [];
+      if (close) claim();
+    },
+    setLevel(n) { level = n; build(); state = 'play'; invuln = 0; },
+    setLives(n) { lives = n; draw(); }
   };
 })();
 </script>
