@@ -1,0 +1,334 @@
+<title>Landscraper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=DM+Mono:wght@500&display=swap">
+<style>
+:root {
+  --ink: #fbf7ff;
+  --ink-soft: rgba(251, 247, 255, 0.72);
+  --shell: #17122a;
+  --card: rgba(23, 18, 42, 0.58);
+  --line: rgba(255, 255, 255, 0.16);
+  --gold: #ffd166;
+  --display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--shell); color: var(--ink); font-family: var(--mono);
+  overflow: hidden; touch-action: none; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+#stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, #1f2a5a 0%, #3a2f74 60%, #5a3b80 100%); }
+#stage canvas { position: absolute; inset: 0; display: block; }
+#hud {
+  position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+}
+.stat { display: flex; flex-direction: column; gap: 3px; text-shadow: 0 1px 10px rgba(20, 10, 40, 0.45); }
+.stat b { font: 800 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+.stat.right { align-items: flex-end; }
+.lives { display: flex; gap: 6px; margin-top: 4px; }
+.lives i { width: 11px; height: 11px; border-radius: 50%; background: var(--ink); box-shadow: 0 1px 6px rgba(20,10,40,0.4); }
+.lives i.off { background: transparent; border: 1.5px solid var(--ink-soft); box-sizing: border-box; }
+#flash {
+  position: absolute; left: 50%; top: 17%; transform: translate(-50%, 0); text-align: center; pointer-events: none;
+  font: 800 clamp(20px, 6vw, 30px)/1.15 var(--display); white-space: nowrap; opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  text-shadow: 0 2px 16px rgba(20, 10, 40, 0.35);
+}
+#flash.show { opacity: 1; transform: translate(-50%, -6px); }
+#flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; }
+#panel {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(15, 10, 30, 0.32);
+}
+.card {
+  width: min(340px, 100%); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 22px 20px 20px; border-radius: 26px; text-align: center;
+  background: var(--card); border: 1px solid var(--line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
+.card p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
+.card .big { font: 800 46px/1 var(--display); font-variant-numeric: tabular-nums; }
+.card .kicker { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.btn {
+  cursor: pointer; width: 100%; padding: 15px 18px; border-radius: 999px; border: 0;
+  background: var(--ink); color: var(--shell); font: 500 13px var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+}
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hint { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; pointer-events: none;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) { #flash { transition: none; } }
+</style>
+
+<main id="stage">
+  <div id="hud">
+    <div class="stat"><b id="hudA">0%</b><span id="hudALabel">Claimed</span></div>
+    <div class="stat right"><b id="hudB">1</b><span id="hudBLabel">Level</span><div class="lives" id="lives"></div></div>
+  </div>
+  <div id="flash"></div>
+  <div class="hint" id="hint">Swipe to move</div>
+  <div id="panel"><div class="card" id="card"></div></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Landscraper: Draw & Conquer. Xonix in 3D. Leave your land to draw a trail;
+// get back to land to claim every area with no monster in it. Claim 75% to clear the level.
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // ---------- renderer, sound, haptics, HUD ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.prepend(renderer.domElement);
+  let ac = null;
+  function tone(f, d, type, v) {
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+      o.type = type || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(v || 0.14, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
+    } catch (e) {}
+  }
+  const buzz = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+  let flashT = 0;
+  function flash(text, small, ms) {
+    const f = $('flash');
+    f.innerHTML = ''; f.append(text);
+    if (small) { const s = document.createElement('small'); s.textContent = small; f.append(s); }
+    f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), ms || 900);
+  }
+  function hud(a, aLabel, b, bLabel, lives, maxLives) {
+    $('hudA').textContent = a; $('hudALabel').textContent = aLabel;
+    $('hudB').textContent = b; $('hudBLabel').textContent = bLabel;
+    const l = $('lives'); l.innerHTML = '';
+    for (let i = 0; i < maxLives; i++) { const d = document.createElement('i'); if (i >= lives) d.className = 'off'; l.append(d); }
+  }
+  function panel(html, onGo) {
+    $('card').innerHTML = html; $('panel').hidden = false;
+    const go = $('card').querySelector('.btn');
+    if (go) go.addEventListener('click', (e) => { e.stopPropagation(); $('panel').hidden = true; onGo(); });
+  }
+  const best = (v) => { const b = store.get('ls_best', 0); if (v > b) { store.set('ls_best', v); return v; } return b; };
+
+  // ---------- scene ----------
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(48, 1, 0.1, 300);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3270, 0.95));
+  const sunL = new THREE.DirectionalLight(0xffffff, 0.55); sunL.position.set(5, 12, 7); scene.add(sunL);
+
+  const W = 24, Hh = 38, N = W * Hh, GOAL = 75;
+  const SEA = 0, LAND = 1, TRAIL = 2;
+  const cells = new Uint8Array(N);
+  const idx = (x, y) => y * W + x;
+  const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < Hh;
+  // tiles
+  const geo = new THREE.BoxGeometry(0.94, 1, 0.94); geo.translate(0, 0.5, 0);
+  const tiles = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), N);
+  scene.add(tiles);
+  const ox = -W / 2 + 0.5, oz = -Hh / 2 + 0.5;
+  const hNow = new Float32Array(N), hGoal = new Float32Array(N), delay = new Float32Array(N), flashC = new Float32Array(N);
+  const m4 = new THREE.Matrix4(), c3 = new THREE.Color(), WHITE = new THREE.Color(0xffffff);
+  const landCol = new THREE.Color(), seaA = new THREE.Color(0x2b2f63), seaB = new THREE.Color(0x30356c), trailCol = new THREE.Color(0x7ff0ff);
+  const H_SEA = 0.12, H_LAND = 0.85, H_TRAIL = 0.3;
+  function setTile(i) {
+    const x = i % W, y = (i / W) | 0;
+    m4.makeScale(1, Math.max(0.02, hNow[i]), 1); m4.setPosition(x + ox, 0, y + oz);
+    tiles.setMatrixAt(i, m4);
+    const c = cells[i];
+    if (c === LAND) { c3.copy(landCol).offsetHSL(0, 0, ((x + y) % 2) * 0.03 - 0.015); if (flashC[i] > 0) c3.lerp(WHITE, flashC[i]); }
+    else if (c === TRAIL) c3.copy(trailCol);
+    else c3.copy((x + y) % 2 ? seaA : seaB);
+    tiles.setColorAt(i, c3);
+  }
+  // player + monsters
+  const player = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0xffd166, emissiveIntensity: 0.6 }));
+  scene.add(player);
+  const seaGeo = new THREE.SphereGeometry(0.42, 20, 14), landGeo = new THREE.OctahedronGeometry(0.5);
+  const seaMat = new THREE.MeshLambertMaterial({ color: 0xff6b8f, emissive: 0xff3366, emissiveIntensity: 0.45 });
+  const landMat = new THREE.MeshLambertMaterial({ color: 0x3a2350, emissive: 0xffd166, emissiveIntensity: 0.25 });
+  let state = 'menu', level = 1, lives = 3, score = 0, pct = 0, px = 0, py = 0, tx = 0, ty = 0, prog = 1, dir = null, want = null, drawing = false, trail = [], monsters = [], invuln = 0, lastLand = [0, 0];
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  const SPEED = 9; // cells per second
+
+  function build() {
+    landCol.setHSL(((level * 0.13) + 0.85) % 1, 0.55, 0.72);
+    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
+      const i = idx(x, y), border = x < 2 || y < 2 || x >= W - 2 || y >= Hh - 2;
+      cells[i] = border ? LAND : SEA; hGoal[i] = hNow[i] = border ? H_LAND : H_SEA; delay[i] = 0; flashC[i] = 0; setTile(i);
+    }
+    tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
+    monsters.forEach((m) => scene.remove(m.mesh)); monsters = [];
+    const nSea = 1 + level, nLand = level >= 2 ? Math.min(3, level - 1) : 0, sp = 4.2 + level * 0.45;
+    for (let k = 0; k < nSea; k++) {
+      const mesh = new THREE.Mesh(seaGeo, seaMat); scene.add(mesh);
+      monsters.push({ kind: 'sea', x: 4 + Math.random() * (W - 8), y: 5 + Math.random() * (Hh - 10), vx: (Math.random() < 0.5 ? -1 : 1) * sp, vy: (Math.random() < 0.5 ? -1 : 1) * sp, mesh });
+    }
+    for (let k = 0; k < nLand; k++) {
+      const mesh = new THREE.Mesh(landGeo, landMat); scene.add(mesh);
+      monsters.push({ kind: 'land', x: W - 1.5, y: 1 + k * 0.5 + 0.5, vx: -sp * 0.6, vy: sp * 0.6, mesh });
+    }
+    px = tx = Math.floor(W / 2); py = ty = Hh - 1; prog = 1; dir = null; want = null; drawing = false; trail = []; invuln = 1.2; lastLand = [px, py];
+    pct = 0; draw();
+  }
+  function percent() { let land = 0, tot = 0; for (let y = 2; y < Hh - 2; y++) for (let x = 2; x < W - 2; x++) { tot++; if (cells[idx(x, y)] === LAND) land++; } return Math.floor(land / tot * 100); }
+  function draw() { hud(pct + '%', 'Claimed · goal ' + GOAL + '%', level, 'Level', lives, 3); }
+  function cellAt(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return inside(cx, cy) ? cells[idx(cx, cy)] : LAND; }
+
+  function claim() {
+    trail.forEach((i) => { cells[i] = LAND; });
+    // every sea cell a monster can reach stays sea; the rest becomes land
+    const seen = new Uint8Array(N), stack = [];
+    monsters.forEach((m) => { if (m.kind !== 'sea') return; const i = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[i] === SEA && !seen[i]) { seen[i] = 1; stack.push(i); } });
+    while (stack.length) {
+      const i = stack.pop(), x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy; if (!inside(nx, ny)) continue;
+        const j = idx(nx, ny); if (!seen[j] && cells[j] === SEA) { seen[j] = 1; stack.push(j); }
+      }
+    }
+    let gained = 0;
+    for (let i = 0; i < N; i++) {
+      if (cells[i] === SEA && !seen[i]) { cells[i] = LAND; gained++; }
+      if (cells[i] === LAND && hGoal[i] !== H_LAND) { // newly claimed: rise in a wave from the player
+        const x = i % W, y = (i / W) | 0; hGoal[i] = H_LAND; delay[i] = reduceMotion ? 0 : Math.hypot(x - px, y - py) * 0.018; flashC[i] = 1;
+      }
+    }
+    const add = trail.length + gained; trail = []; drawing = false;
+    const before = pct; pct = percent(); score += add * level;
+    const big = pct - before;
+    if (big >= 12) { flash('Huge claim!', '+' + big + '%'); [523, 659, 784, 1047].forEach((f, k) => setTimeout(() => tone(f, 0.18), k * 70)); buzz([15, 30, 15]); }
+    else { tone(600 + big * 25, 0.16); buzz(12); }
+    draw();
+    if (pct >= GOAL) {
+      state = 'clear'; flash('Level ' + level + ' clear!', pct + '% claimed', 1600);
+      [523, 659, 784, 1047, 1319].forEach((f, k) => setTimeout(() => tone(f, 0.22), k * 90));
+      setTimeout(() => { level++; build(); state = 'play'; }, 1900);
+    }
+  }
+  function die(why) {
+    if (invuln > 0) return;
+    lives--; tone(120, 0.45, 'sawtooth', 0.12); buzz([30, 40, 60]);
+    flash(lives > 0 ? 'Ouch!' : 'Game over', why);
+    trail.forEach((i) => { cells[i] = SEA; hGoal[i] = H_SEA; });
+    trail = []; drawing = false;
+    px = tx = lastLand[0]; py = ty = lastLand[1]; prog = 1; dir = null; want = null; invuln = 1.5;
+    draw();
+    if (lives <= 0) { state = 'over'; setTimeout(over, 1200); }
+  }
+  function over() { const b = best(score); panel('<div class="kicker">Game over</div><div class="big">' + score + '</div><p>Level ' + level + ' · best ' + b + '</p><button class="btn" type="button">Play again</button>', start); }
+  function start() { level = 1; lives = 3; score = 0; build(); state = 'play'; flash('Claim the board', 'swipe to move', 1500); }
+  function steer(d) {
+    if (state !== 'play') return;
+    const v = DIRS[d];
+    if (drawing && dir && v[0] === -DIRS[dir][0] && v[1] === -DIRS[dir][1]) return; // no U-turn into your own trail
+    want = d;
+    if (!dir) { dir = want; want = null; }
+  }
+  function arrive() {
+    px = tx; py = ty;
+    const i = idx(px, py), c = cells[i];
+    if (c === TRAIL) { die('you crossed your own trail'); return; }
+    if (c === SEA) { cells[i] = TRAIL; hGoal[i] = H_TRAIL; trail.push(i); drawing = true; }
+    else if (c === LAND) { lastLand = [px, py]; if (drawing) { claim(); dir = null; want = null; } }
+    if (want) { dir = want; want = null; }
+    if (!dir) return;
+    const [dx, dy] = DIRS[dir], nx = px + dx, ny = py + dy;
+    if (!inside(nx, ny)) { dir = null; return; }
+    tx = nx; ty = ny; prog = 0;
+  }
+
+  function update(dt, t) {
+    // tiles
+    let dirty = false;
+    for (let i = 0; i < N; i++) {
+      if (cells[i] === TRAIL || hGoal[i] !== hNow[i] || flashC[i] > 0) {
+        if (delay[i] > 0) { delay[i] -= dt; continue; }
+        const g = hGoal[i];
+        if (hNow[i] !== g) { const d = g - hNow[i]; hNow[i] = Math.abs(d) < 0.01 ? g : hNow[i] + d * Math.min(1, dt * 11); if (g === H_LAND && Math.abs(d) < 0.08) hNow[i] = g; }
+        if (flashC[i] > 0) flashC[i] = Math.max(0, flashC[i] - dt * 2.2);
+        setTile(i); dirty = true;
+      }
+    }
+    if (dirty) { tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; }
+    // player
+    if (state === 'play') {
+      if (invuln > 0) invuln -= dt;
+      if (prog < 1) { prog = Math.min(1, prog + dt * SPEED); if (prog >= 1) arrive(); }
+      else if (dir) arrive();
+    }
+    const fx = px + (tx - px) * prog, fy = py + (ty - py) * prog;
+    const onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
+    player.position.set(fx + ox, (onLand ? H_LAND : H_TRAIL) + 0.42, fy + oz);
+    player.rotation.y += dt * 2;
+    player.visible = !(invuln > 0 && Math.floor(t * 10) % 2);
+    // monsters
+    monsters.forEach((m) => {
+      if (state === 'play') {
+        const solid = (c) => m.kind === 'sea' ? c === LAND : c !== LAND;
+        let nx = m.x + m.vx * dt; if (solid(cellAt(nx, m.y))) { m.vx = -m.vx; nx = m.x; }
+        let ny = m.y + m.vy * dt; if (solid(cellAt(nx, ny))) { m.vy = -m.vy; ny = m.y; }
+        m.x = nx; m.y = ny;
+        if (m.kind === 'sea' && cellAt(m.x, m.y) === TRAIL) die('a monster hit your trail');
+        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.75) {
+          if (m.kind === 'sea' && !onLand) die('a monster caught you');
+          if (m.kind === 'land' && onLand) die('a mine caught you on land');
+        }
+      }
+      const base = m.kind === 'sea' ? H_SEA + 0.42 : H_LAND + 0.5;
+      m.mesh.position.set(m.x - 0.5 + ox, base + Math.abs(Math.sin(t * 6 + m.x)) * 0.25, m.y - 0.5 + oz);
+      m.mesh.rotation.y += dt * 3;
+    });
+  }
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+    camera.aspect = w / h;
+    const vt = Math.tan((camera.fov / 2) * Math.PI / 180);
+    const d = Math.max((Hh + 2) / (2 * vt) * 0.92, (W + 3) / (2 * vt * camera.aspect));
+    camera.position.set(0, d * 0.84, d * 0.5); camera.lookAt(0, 0, 0.8); camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- input: swipe (chained without lifting) or arrow keys ----------
+  let sw = null;
+  stage.addEventListener('pointerdown', (e) => { if (e.target.closest('#panel')) return; e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; });
+  stage.addEventListener('pointermove', (e) => {
+    if (!sw) return;
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
+    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    sw = { x: e.clientX, y: e.clientY };
+  });
+  window.addEventListener('pointerup', () => { sw = null; });
+  window.addEventListener('pointercancel', () => { sw = null; });
+  window.addEventListener('keydown', (e) => {
+    const k = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' }[e.key];
+    if (k) { e.preventDefault(); steer(k); }
+  });
+
+  // ---------- loop ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    update(dt, now / 1000); renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  resize(); build(); state = 'menu';
+  panel('<div class="kicker">BENO74 Studios</div><h2>Landscraper</h2><p>Swipe to leave your land and draw a trail. Get back to land to claim every area with no monster in it.</p><p>Red orbs break your trail. From level 2, gold mines hunt you on land. Claim 75% to clear the level.</p><button class="btn" type="button">Play</button>', start);
+  requestAnimationFrame(loop);
+  window.__game = { get state() { return state; }, get pct() { return pct; }, steer };
+})();
+</script>
