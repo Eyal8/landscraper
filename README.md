@@ -29,5 +29,8 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] Prototype ported to `src/game.html`
 - [x] Capacitor projects for `com.beno74.landscraper`
 - [ ] App icon and splash (currently placeholders carried over from Shapescraper)
-- [ ] Controls polish, growing world, trap monsters
+- [x] Controls: two-turn swipe queue, corner forgiveness, reverse on land, native haptics
+- [x] Claimed land grows a world (trees, houses, lamps); slow orbit at level clear
+- [x] Trap monsters: enclose one in 40 cells or less to catch it
+- [ ] More monsters, board shapes, themed worlds, power-ups
 - [ ] Ads, Remove Ads purchase, tutorial, Daily
