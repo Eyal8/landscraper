@@ -446,8 +446,6 @@ body {
   const FISH = {
     bouncer: { colors: [0xffa23a, 0xffd23f, 0xff7aa8, 0xff6b5b], spikes: 0xfff1c9, size: 1 },
     zipper: { colors: [0x38d6ff], spikes: 0xd9f8ff, size: 0.72, brows: true, stripes: 0x0e5aa8 },
-    mini: { colors: [0x7be36b], spikes: 0xe6ffd9, size: 0.62 },
-    splitter: { colors: [0x5fd35a], spikes: 0xe6ffd9, size: 1.15, seam: true },
     hunter: { colors: [0xff4d5e], spikes: 0xffd0d6, size: 1.05, brows: true, fin: true }
   };
   function addEyes(g, z, y, spread, r) {
@@ -484,6 +482,26 @@ body {
     if (f.seam) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.41, 0.025, 6, 40), phong(0xffffff)); r.rotation.y = Math.PI / 2; body.add(r); }
     g.userData.fish = { body, fins, tail, skin, base: col };
     g.scale.setScalar(f.size);
+    return g;
+  }
+  function makeJelly(mini) { // the Splitter: a jelly cell caught mid-split, two halves each with one eye; Splitlings are single blobs
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const skin = new THREE.MeshPhongMaterial({ color: 0xb6f24a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.92, depthWrite: true });
+    const core = phong(0x4f8a12, { shininess: 40 });
+    const halves = mini ? [0] : [-0.2, 0.2], parts = [];
+    for (const sx of halves) {
+      const blob = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.36 : 0.3, 26, 18), skin); blob.position.x = sx; blob.scale.set(1, 0.9, 1); body.add(blob);
+      const nucleus = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.11 : 0.09, 12, 8), core); nucleus.position.set(sx, -0.02, -0.05); body.add(nucleus);
+      const e = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.12 : 0.1, 14, 10), eyeWhite); e.position.set(sx, 0.1, mini ? 0.27 : 0.22); body.add(e);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.06 : 0.05, 10, 8), pupilMat); p.position.set(sx, 0.11, mini ? 0.37 : 0.31); body.add(p);
+      parts.push(blob);
+    }
+    if (!mini) { // a pinched waist and a dashed split line across the top
+      const waist = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 8, 24), phong(0xffffff)); waist.rotation.y = Math.PI / 2; waist.scale.set(1, 1.05, 1); body.add(waist);
+      for (let k = 0; k < 4; k++) { const d = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.08), phong(0xffffff)); d.position.set(0, 0.27 - Math.abs(k - 1.5) * 0.015, -0.21 + k * 0.14); body.add(d); }
+    }
+    g.userData.fish = { body, fins: [], tail: null, skin, base: 0x55e07a, wobble: parts, jelly: true };
+    g.scale.setScalar(mini ? 0.7 : 1.05);
     return g;
   }
   function makeShark() { // the Hunter: a small, sleek shark with a tall fin and a toothy grin
@@ -569,7 +587,7 @@ body {
       for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
       g.add(wheel); g.userData.wheel = wheel;
     } else {
-      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : makeFish(kind);
+      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : makeFish(kind);
       g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f;
     }
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
@@ -1239,6 +1257,7 @@ body {
         fishU.fins.forEach((f, k) => { f.rotation.y = Math.sin(sw * 12 + k * 1.3) * 0.5; });
         m.puff = Math.max(0, m.puff - dt * 4); const pf = 1 + Math.sin(m.puff * Math.PI) * 0.28;
         fishU.body.scale.setScalar(pf); fishU.body.position.y = Math.sin(m.t * 5) * 0.04;
+        if (fishU.jelly) { fishU.body.scale.set(pf * (1 + Math.sin(m.t * 7) * 0.06), pf * (1 - Math.sin(m.t * 7) * 0.08), pf); fishU.wobble.forEach((b, k) => { b.scale.y = 0.9 + Math.sin(m.t * 7 + k * Math.PI) * 0.06; }); }
         if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
       }
       if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y += dt; f.material.opacity = 0.25 + 0.2 * Math.sin(t * 4); }
