@@ -484,24 +484,33 @@ body {
     g.scale.setScalar(f.size);
     return g;
   }
-  function makeJelly(mini) { // the Splitter: a jelly cell caught mid-split, two halves each with one eye; Splitlings are single blobs
+  function makeJelly(mini) { // the Splitter: a jelly cube with a zigzag crack down the middle; Splitlings are small cubes
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-    const skin = new THREE.MeshPhongMaterial({ color: 0xb6f24a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.92, depthWrite: true });
-    const core = phong(0x4f8a12, { shininess: 40 });
-    const halves = mini ? [0] : [-0.2, 0.2], parts = [];
-    for (const sx of halves) {
-      const blob = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.36 : 0.3, 26, 18), skin); blob.position.x = sx; blob.scale.set(1, 0.9, 1); body.add(blob);
-      const nucleus = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.11 : 0.09, 12, 8), core); nucleus.position.set(sx, -0.02, -0.05); body.add(nucleus);
-      const e = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.12 : 0.1, 14, 10), eyeWhite); e.position.set(sx, 0.1, mini ? 0.27 : 0.22); body.add(e);
-      const p = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.06 : 0.05, 10, 8), pupilMat); p.position.set(sx, 0.11, mini ? 0.37 : 0.31); body.add(p);
-      parts.push(blob);
+    const skin = new THREE.MeshPhongMaterial({ color: 0xb6f24a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.94 });
+    const edge = phong(0x6aa81c, { shininess: 60 }), crackMat = new THREE.MeshBasicMaterial({ color: 0x24420a });
+    const sz = mini ? 0.5 : 0.66;
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.9, sz), skin); body.add(cube);
+    // soft rounded look: a slightly smaller darker core and little corner bumps
+    const coreBox = new THREE.Mesh(new THREE.BoxGeometry(sz * 0.6, sz * 0.5, sz * 0.6), edge); coreBox.material = phong(0x8fd13a, { shininess: 30, transparent: true, opacity: 0.6 }); body.add(coreBox);
+    // eyes on the front face
+    for (const sx of mini ? [-0.08, 0.08] : [-0.13, 0.13]) {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.06 : 0.08, 12, 8), eyeWhite); e.position.set(sx, sz * 0.12, sz / 2 + 0.01); e.scale.z = 0.5; body.add(e);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.032 : 0.042, 8, 6), pupilMat); p.position.set(sx, sz * 0.12, sz / 2 + 0.04); body.add(p);
     }
-    if (!mini) { // a pinched waist and a dashed split line across the top
-      const waist = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 8, 24), phong(0xffffff)); waist.rotation.y = Math.PI / 2; waist.scale.set(1, 1.05, 1); body.add(waist);
-      for (let k = 0; k < 4; k++) { const d = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.08), phong(0xffffff)); d.position.set(0, 0.27 - Math.abs(k - 1.5) * 0.015, -0.21 + k * 0.14); body.add(d); }
+    if (!mini) { // zigzag crack over the top and down the front, between the eyes
+      const pts = [[0, -0.33], [0.05, -0.2], [-0.05, -0.07], [0.05, 0.06], [-0.05, 0.19], [0, 0.33]];
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [x1, z1] = pts[k], [x2, z2] = pts[k + 1], len = Math.hypot(x2 - x1, z2 - z1);
+        const seg = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, len + 0.02), crackMat);
+        seg.position.set((x1 + x2) / 2, sz * 0.45 + 0.005, (z1 + z2) / 2); seg.rotation.y = Math.atan2(x2 - x1, z2 - z1); body.add(seg);
+      }
+      for (const [y1, y2, x] of [[0.27, 0.12, 0.03], [0.12, -0.02, -0.03], [-0.02, -0.17, 0.03], [-0.17, -0.29, -0.02]]) {
+        const seg = new THREE.Mesh(new THREE.BoxGeometry(0.03, Math.abs(y1 - y2) + 0.02, 0.02), crackMat);
+        seg.position.set(x, (y1 + y2) / 2 * sz / 0.6, sz / 2 + 0.006); seg.rotation.z = x > 0 ? -0.35 : 0.35; body.add(seg);
+      }
     }
-    g.userData.fish = { body, fins: [], tail: null, skin, base: 0x55e07a, wobble: parts, jelly: true };
-    g.scale.setScalar(mini ? 0.7 : 1.05);
+    g.userData.fish = { body, fins: [], tail: null, skin, base: 0xb6f24a, wobble: [cube], jelly: true };
+    g.scale.setScalar(mini ? 1.0 : 1.1);
     return g;
   }
   function makeShark() { // the Hunter: a small, sleek shark with a tall fin and a toothy grin
@@ -1193,7 +1202,7 @@ body {
         continue;
       }
       if (live && !testFrozen && mult > 0) {
-        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const c = cells[idx(cx, cy)]; return m.kind === 'saw' ? c !== LAND : c === LAND; };
+        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (trailIdx[i] >= 0) lightFuse(trailIdx[i]); return true; } return c === LAND; };
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
         if (m.kind === 'hunter') {
           // While you draw in its part of the sea it swims around land toward you (following the sea's shortest
