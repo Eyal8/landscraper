@@ -1238,6 +1238,27 @@ body {
         const ey = ny + Math.sign(m.vy) * R;
         if (solid(nx, ey)) { const hit = idx(clamp(Math.floor(nx), 0, W - 1), clamp(Math.floor(ey), 0, Hh - 1)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
         m.x = nx; m.y = ny; m.eatCd -= dt;
+        // Unstick: bouncing on the same axis two frames in a row means the body overlaps a wall on both sides
+        // (e.g. land appeared right next to it). Move it to the middle of its cell, which is always open.
+        const bx = m.vx !== vx0, by = m.vy !== vy0;
+        // A little randomness on every bounce, so a monster never settles into a repeating loop in a pocket.
+        // Each axis keeps at least 40% of the speed, so it never ends up sliding along a wall.
+        if ((bx || by) && m.mode !== 'chase' && m.mode !== 'dash' && m.mode !== 'aim') {
+          const sp = Math.hypot(m.vx, m.vy); if (sp > 0) {
+            let a = Math.atan2(m.vy, m.vx) + rand(-0.22, 0.22);
+            let ux = Math.cos(a), uy = Math.sin(a);
+            if (Math.abs(ux) < 0.4) ux = 0.4 * Math.sign(ux || m.vx || 1); if (Math.abs(uy) < 0.4) uy = 0.4 * Math.sign(uy || m.vy || 1);
+            const l = Math.hypot(ux, uy); m.vx = ux / l * sp; m.vy = uy / l * sp;
+            if (bx && Math.sign(m.vx) !== Math.sign(-vx0) && vx0) m.vx = -m.vx; // keep the bounce direction
+            if (by && Math.sign(m.vy) !== Math.sign(-vy0) && vy0) m.vy = -m.vy;
+          }
+        }
+        m.stuckX = bx ? (m.stuckX || 0) + 1 : 0; m.stuckY = by ? (m.stuckY || 0) + 1 : 0;
+        if (m.stuckX >= 2 || m.stuckY >= 2) {
+          let c = m.kind === 'saw' ? idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)) : seaCellOf(m);
+          if (c >= 0) { if (m.stuckX >= 2) m.x = (c % W) + 0.5; if (m.stuckY >= 2) m.y = ((c / W) | 0) + 0.5; }
+          m.stuckX = m.stuckY = 0;
+        }
         if ((m.vx !== vx0 || m.vy !== vy0) && m.mesh.userData.fish) m.puff = 1; // puffs up on every bounce
         if (m.kind === 'saw') { m.stuckT = (m.stuckT || 0) + dt; if (m.stuckT > 0.6) { m.stuckT = 0; if (landRegionSize(idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), SAW_MIN) < SAW_MIN) resetSaw(m); } }
         if (m.kind !== 'saw') { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
