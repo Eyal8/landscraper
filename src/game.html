@@ -549,7 +549,7 @@ body {
     saw: { name: 'Buzzsaw', text: 'Rolls along your land and never leaves it. Touch it while you are on land and you lose a life.' },
     zipper: { name: 'Dart', text: 'Small and very fast. Keep your trails short when it is around.' },
     splitter: { name: 'Splitter', text: 'Trap it and it splits into two little ones. Trap those too.' },
-    hunter: { name: 'Hunter', text: 'While you are out drawing, it stops, glows and dashes straight at you. Do not linger at sea.' },
+    hunter: { name: 'Hunter', text: 'While you draw in its part of the sea, it swims around land to chase you, and dashes when it has a clear line. Do not linger at sea.' },
     inker: { name: 'Inker', text: 'Leaves blots of ink in the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
     magnet: { name: 'Magnet', text: 'Pulls you one square toward it when you draw nearby. Watch the blue ring.' },
     mini: { name: 'Splitling', text: 'A small, quick piece of a Splitter.' }
@@ -691,6 +691,16 @@ body {
     const [wx, wz] = W2(x, 0); burst(wx, H_LAND + 0.3, wz, 0xffffff, 20, 3, 5); tone(520, 0.12, 'triangle', 0.08, 900);
   }
   function settleOnLand(m) { resetSaw(m); }
+  function diag(m) { const a = m.spd / Math.SQRT2; m.vx = (Math.sign(m.vx) || 1) * a; m.vy = (Math.sign(m.vy) || 1) * a; }
+  // Distance (in cells, through sea and trail) from the player, refreshed a few times a second while drawing
+  const flow = new Int16Array(N).fill(-1); let flowReady = false, flowT = 0;
+  function buildFlow() {
+    flow.fill(-1); const q = new Int32Array(N); let h = 0, tl = 0;
+    for (const s0 of [idx(px, py), idx(tx, ty)]) if (cells[s0] !== LAND && flow[s0] < 0) { flow[s0] = 0; q[tl++] = s0; }
+    while (h < tl) { const i = q[h++], x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (!inside(nx, ny)) continue; const j = idx(nx, ny); if (flow[j] < 0 && cells[j] !== LAND) { flow[j] = flow[i] + 1; q[tl++] = j; } } }
+    flowReady = true;
+  }
   function seesPlayer(m, tx2, ty2) { // a straight line of sea between the hunter and the player
     const dx = tx2 - m.x, dy = ty2 - m.y, n = Math.ceil(Math.hypot(dx, dy) * 2);
     for (let k = 1; k < n; k++) { const x = m.x + dx * k / n, y = m.y + dy * k / n, c = cellAt(x, y); if (c === LAND) return false; }
@@ -1106,6 +1116,7 @@ body {
       mask.needsUpdate = true; inkOn = any;
     }
     if (magCd > 0) magCd -= dt;
+    if (drawing && live && monsters.some((m) => m.kind === 'hunter' && !m.dead)) { flowT -= dt; if (flowT <= 0 || !flowReady) { buildFlow(); flowT = 0.2; } } else flowReady = false;
     // monsters
     const mult = frozenT > 0 ? 0 : slowT > 0 ? 0.45 : 1;
     for (const m of monsters) {
@@ -1118,19 +1129,35 @@ body {
       if (live && !testFrozen && mult > 0) {
         const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const c = cells[idx(cx, cy)]; return m.kind === 'saw' ? c !== LAND : c === LAND; };
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
-        if (m.kind === 'hunter') { // roam, then stop and aim, then dash at the player
+        if (m.kind === 'hunter') {
+          // While you draw in its part of the sea it swims around land toward you (following the sea's shortest
+          // path), and when it has a clear straight line it stops, glows and dashes. Otherwise it just roams.
+          if (!m.spd) m.spd = Math.hypot(m.vx, m.vy) || L.speed;
           m.hT -= step;
-          if (m.mode === 'roam' && m.hT <= 0) {
-            if (drawing && seesPlayer(m, fx + 0.5, fy + 0.5)) { // only hunts while you are out drawing m.mode = 'aim'; m.hT = 0.7; m.spd = Math.hypot(m.vx, m.vy) || L.speed; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420); }
-            else m.hT = 0.4; // you are on land, or land is in the way: keep roaming and look again soon
-          }
-          else if (m.mode === 'aim' && m.hT <= 0) {
+          const hc = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1));
+          const hunting = drawing && flowReady && flow[hc] >= 0;
+          if (m.mode === 'aim') { if (m.hT <= 0) {
             let ax = fx + 0.5 - m.x, ay = fy + 0.5 - m.y; const l = Math.hypot(ax, ay) || 1; ax /= l; ay /= l;
-            // never dash exactly along an axis, so it cannot get pinned bouncing on one line
-            if (Math.abs(ax) < 0.35) ax = 0.35 * (Math.sign(ax) || 1); if (Math.abs(ay) < 0.35) ay = 0.35 * (Math.sign(ay) || 1);
-            const l2 = Math.hypot(ax, ay); m.vx = ax / l2 * m.spd * 2.6; m.vy = ay / l2 * m.spd * 2.6; m.mode = 'dash'; m.hT = 1.1; tone(520, 0.2, 'square', 0.04, 260);
-          }
-          else if (m.mode === 'dash' && m.hT <= 0) { const a = m.spd / Math.SQRT2; m.vx = (Math.sign(m.vx) || 1) * a; m.vy = (Math.sign(m.vy) || 1) * a; m.mode = 'roam'; m.hT = rand(3, 5); } // back to a clean diagonal
+            if (Math.abs(ax) < 0.35) ax = 0.35 * (Math.sign(ax) || 1); if (Math.abs(ay) < 0.35) ay = 0.35 * (Math.sign(ay) || 1); // never pinned on one line
+            const l2 = Math.hypot(ax, ay); m.vx = ax / l2 * m.spd * 2.6; m.vy = ay / l2 * m.spd * 2.6; m.mode = 'dash'; m.hT = 1.0; tone(520, 0.2, 'square', 0.04, 260);
+          } }
+          else if (m.mode === 'dash') { if (m.hT <= 0) { m.mode = 'roam'; m.hT = rand(1.5, 2.5); diag(m); } }
+          else if (hunting) {
+            if (m.hT <= 0 && Math.hypot(fx + 0.5 - m.x, fy + 0.5 - m.y) < 10 && seesPlayer(m, fx + 0.5, fy + 0.5)) {
+              m.mode = 'aim'; m.hT = 0.6; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420);
+            } else { // follow the flow field one cell at a time
+              const cx = hc % W, cy = (hc / W) | 0; let best = hc, bd = flow[hc];
+              for (const [ddx, ddy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+                const nx3 = cx + ddx, ny3 = cy + ddy; if (!inside(nx3, ny3)) continue; const j = idx(nx3, ny3);
+                if (flow[j] < 0 || flow[j] >= bd) continue;
+                if (ddx && ddy && (cells[idx(cx + ddx, cy)] === LAND || cells[idx(cx, cy + ddy)] === LAND)) continue; // no corner cutting
+                best = j; bd = flow[j];
+              }
+              const gx = (best % W) + 0.5 - m.x, gy = ((best / W) | 0) + 0.5 - m.y, gl = Math.hypot(gx, gy) || 1;
+              const sp = m.spd * 1.35; m.vx += (gx / gl * sp - m.vx) * Math.min(1, dt * 8); m.vy += (gy / gl * sp - m.vy) * Math.min(1, dt * 8);
+              m.mode = 'chase';
+            }
+          } else if (m.mode === 'chase') { m.mode = 'roam'; diag(m); }
         }
         if (m.kind === 'inker') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } } }
         const vx0 = m.vx, vy0 = m.vy;
