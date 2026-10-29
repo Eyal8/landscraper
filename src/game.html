@@ -154,9 +154,11 @@ body {
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // ---------- sound and haptics ----------
+  const settings = Object.assign({ sound: true, haptics: true }, store.get('ls_settings', {}));
   let ac = null;
   function tone(f, d, type, v, slide) {
     try {
+      if (!settings.sound) return;
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
       const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
@@ -170,14 +172,19 @@ body {
   const capx = window.Capacitor && window.capacitorExports;
   const isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const Haptics = isApp && capx ? window.capacitorExports.registerPlugin('Haptics') : null;
-  const VIBE = { tick: 5, claim: 12, big: [15, 30, 15], trap: [20, 40, 30], clear: [20, 40, 20, 40, 40], hit: [30, 40, 60], eat: 8 };
+  // Haptics: light taps for steering and small events, heavier for claims and traps, a warning buzz for danger.
+  const VIBE = { tick: 5, select: 4, soft: 6, claim: 12, big: [15, 30, 15], trap: [20, 40, 30], clear: [20, 40, 20, 40, 40], hit: [30, 40, 60], eat: 8, warn: [12, 50, 12], pickup: [10, 30, 18], split: 14 };
+  let lastBuzz = 0;
   function buzz(kind) {
+    if (!settings.haptics) return;
+    const now = performance.now(); if ((kind === 'select' || kind === 'eat' || kind === 'tick') && now - lastBuzz < 70) return; lastBuzz = now;
     try {
       if (Haptics) {
-        if (kind === 'tick' || kind === 'eat') Haptics.impact({ style: 'LIGHT' });
-        else if (kind === 'claim') Haptics.impact({ style: 'MEDIUM' });
+        if (kind === 'tick' || kind === 'eat' || kind === 'select' || kind === 'soft') Haptics.impact({ style: 'LIGHT' });
+        else if (kind === 'claim' || kind === 'split') Haptics.impact({ style: 'MEDIUM' });
         else if (kind === 'big' || kind === 'trap') Haptics.impact({ style: 'HEAVY' });
-        else if (kind === 'clear') Haptics.notification({ type: 'SUCCESS' });
+        else if (kind === 'clear' || kind === 'pickup') Haptics.notification({ type: 'SUCCESS' });
+        else if (kind === 'warn') Haptics.notification({ type: 'WARNING' });
         else if (kind === 'hit') Haptics.notification({ type: 'ERROR' });
       } else if (navigator.vibrate) navigator.vibrate(VIBE[kind] || 10);
     } catch (e) {}
@@ -197,7 +204,7 @@ body {
   function panel(html, actions) {
     $('card').innerHTML = html; $('panel').hidden = false;
     $('card').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
-      e.stopPropagation(); const a = actions[b.dataset.act]; if (a) a(b);
+      e.stopPropagation(); buzz('select'); const a = actions[b.dataset.act]; if (a) a(b);
     }));
   }
   const hidePanel = () => { $('panel').hidden = true; };
@@ -661,7 +668,7 @@ body {
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
   // While you draw: if you kept going straight to land now, which monsters would be trapped?
   // Their area shimmers gold and they get a gold ring.
-  let trapHinted = false;
+  let trapHinted = false, trapShown = false;
   function clearTrapHint() { let ch = false; for (let i = 0; i < N; i++) if (maskData[i * 4 + 1]) { maskData[i * 4 + 1] = 0; ch = true; } if (ch) mask.needsUpdate = true; monsters.forEach((m) => { m.ring.visible = false; }); }
   function predictTrap() {
     clearTrapHint();
@@ -692,6 +699,8 @@ body {
       }
       id++;
     }
+    if (any && !trapShown) buzz('soft');
+    trapShown = any;
     if (any) { mask.needsUpdate = true; if (!trapHinted) { trapHinted = true; flash('Trap it!', 'reach land to catch it', 1000); } }
   }
   // A buzzsaw stuck on a tiny patch of land (or whose land was eaten) is moved to the top edge of the board,
@@ -822,7 +831,7 @@ body {
     const [wx, wz] = W2(px, py); if (fresh.length) popAt(wx, wz, '+' + pts);
     if (trapped.length) {
       const splits = trapped.filter((m) => m.kind === 'splitter').length;
-      if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); }, 450);
+      if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); buzz('split'); }, 450);
       trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
       const bonus = 250 * trapped.length * trapped.length; score += bonus;
       flash(trapped.length > 1 ? 'Double trap!' : 'Trapped!', '+' + bonus, 1300);
@@ -839,7 +848,7 @@ body {
     if (p.kind === 'slow') slowT = POWERS.slow.secs;
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
     setTimeout(() => flash(POWERS[p.kind].label, p.kind === 'life' ? null : POWERS[p.kind].secs + ' seconds', 1000), 250);
-    arp([880, 1175, 1568], 60, 0.14, 'sine');
+    arp([880, 1175, 1568], 60, 0.14, 'sine'); buzz('pickup');
   }
   function spawnPower() {
     const free = seaCellsFree(); if (!free.length) return;
@@ -882,7 +891,7 @@ body {
         '<div class="btns">' + (next ? '<button class="btn" type="button" data-act="next">Next level</button>' : '<button class="btn" type="button" data-act="levels">All levels</button>') +
         '<button class="btn alt" type="button" data-act="retry">Replay</button>' + (next ? '<button class="btn alt" type="button" data-act="levels">Levels</button>' : '') + '</div>',
         { next: () => startLevel(cur + 1), retry: () => startLevel(cur), levels: showLevels });
-      [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => tone(880 + k * 220, 0.2, 'triangle'), 350 + k * 180); });
+      [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); });
     }, 2600);
   }
   function die(why) {
@@ -965,8 +974,11 @@ body {
   function showPause() {
     if (state !== 'play') return;
     paused = true;
-    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart level</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
-      { resume: () => { hidePanel(); paused = false; }, retry: () => startLevel(cur), levels: showLevels });
+    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off');
+    const toggle = (key, name) => (b) => { settings[key] = !settings[key]; store.set('ls_settings', settings); b.textContent = lbl(name, settings[key]); if (key === 'haptics') buzz('claim'); else tone(660, 0.12, 'triangle'); };
+    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart level</button><button class="btn alt" type="button" data-act="levels">Levels</button>' +
+      '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button></div>',
+      { resume: () => { hidePanel(); paused = false; }, retry: () => startLevel(cur), levels: showLevels, sound: toggle('sound', 'Sound'), haptics: toggle('haptics', 'Vibration') });
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
@@ -983,6 +995,7 @@ body {
     const ref = queue.length ? queue[queue.length - 1] : dir;
     if (d === ref) return;
     if (drawing && opposite(d, ref)) return; // no U-turn into your own trail
+    buzz('select');
     if (!dir) { dir = d; queue = []; return; }
     if (!drawing && !queue.length && opposite(d, dir) && stepP < 1) { [px, tx] = [tx, px]; [py, ty] = [ty, py]; stepP = 1 - stepP; dir = d; return; }
     if (!queue.length && stepP < CORNER && !opposite(d, dir)) {
@@ -997,7 +1010,7 @@ body {
     const i = idx(px, py), c = cells[i];
     if (c === TRAIL) { die('you crossed your own trail'); return; }
     if (c === SEA) {
-      if (!drawing) { trailFrom = from; drawing = true; }
+      if (!drawing) { trailFrom = from; drawing = true; buzz('soft'); }
       cells[i] = TRAIL; trailIdx[i] = trail.length; trail.push(i); addDashes(trail.length - 1);
       if (inkT[i] > 0.2 && !fuse) lightFuse(0); // ink lights the fuse at the start of your trail: race it to land
     } else if (c === LAND) {
@@ -1038,7 +1051,7 @@ body {
     dashes.count = trail.length * 2; dashes.instanceMatrix.needsUpdate = true;
   }
   function lightFuse(k) {
-    if (!fuse) { fuse = { pos: k }; tone(300, 0.6, 'sawtooth', 0.05, 1200); flash('Fuse!', 'get back to land', 800, true); }
+    if (!fuse) { fuse = { pos: k }; tone(300, 0.6, 'sawtooth', 0.05, 1200); flash('Fuse!', 'get back to land', 800, true); buzz('warn'); }
     else if (k > fuse.pos) fuse.pos = k;
   }
 
@@ -1179,7 +1192,7 @@ body {
           else if (m.mode === 'dash') { if (m.hT <= 0) { m.mode = 'roam'; m.hT = rand(1.5, 2.5); diag(m); } }
           else if (hunting) {
             if (m.hT <= 0 && Math.hypot(fx + 0.5 - m.x, fy + 0.5 - m.y) < 10 && seesPlayer(m, fx + 0.5, fy + 0.5)) {
-              m.mode = 'aim'; m.hT = 0.6; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420);
+              m.mode = 'aim'; m.hT = 0.6; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420); buzz('warn');
             } else { // follow the flow field one cell at a time
               const cx = hc % W, cy = (hc / W) | 0; let best = hc, bd = flow[hc];
               for (const [ddx, ddy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
