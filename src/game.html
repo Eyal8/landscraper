@@ -278,7 +278,7 @@ body {
       uniform sampler2D uMask; uniform float uTime; uniform vec2 uSize; uniform vec3 uDeep, uShallow, uFoam; varying vec2 vW;
       void main(){
         vec2 c = vW + uSize * 0.5; vec2 uv = c / uSize;
-        float land = texture2D(uMask, uv).r;
+        vec2 mk = texture2D(uMask, uv).rg; float land = mk.r, trap = mk.g;
         float t = uTime; vec2 p = c * 0.5;
         float w = sin(p.x*1.7 + t*1.1) + sin(p.y*1.3 - t*0.9) + sin((p.x+p.y)*1.1 + t*0.7) + sin(length(p - vec2(5.0, 9.0))*1.6 - t*1.4);
         w *= 0.25;
@@ -291,6 +291,7 @@ body {
         float ripple = 0.55 + 0.45 * sin(t*2.4 - shore*9.0);
         col = mix(col, uFoam, shore * ripple * 0.7);
         col = mix(col, col * 0.75, smoothstep(0.35, 0.5, land));
+        col = mix(col, vec3(1.0, 0.86, 0.35), trap * (0.28 + 0.16 * sin(t * 9.0)));
         gl_FragColor = vec4(col, 1.0);
       }`
   });
@@ -516,6 +517,7 @@ body {
     stage.style.setProperty('--sky1', w.sky[0]); stage.style.setProperty('--sky2', w.sky[1]);
   }
   function build(i) {
+    clearTrapHint(); trapHinted = false;
     cur = i; L = LEVELS[i]; applyWorld(WORLDS[L.world]);
     fixed.fill(0); total = 0;
     for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
@@ -534,6 +536,42 @@ body {
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = 6;
     lives = 3; score = 0; drawHud();
   }
+  const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
+  // While you draw: if you kept going straight to land now, which monsters would be trapped?
+  // Their area shimmers gold and they get a gold ring.
+  let trapHinted = false;
+  function clearTrapHint() { let ch = false; for (let i = 0; i < N; i++) if (maskData[i * 4 + 1]) { maskData[i * 4 + 1] = 0; ch = true; } if (ch) mask.needsUpdate = true; monsters.forEach((m) => { m.ring.visible = false; }); }
+  function predictTrap() {
+    clearTrapHint();
+    if (!drawing || !dir) return;
+    const wall = new Uint8Array(N); trail.forEach((i) => { wall[i] = 1; });
+    let x = tx, y = ty; const [dx, dy] = DIRS[dir];
+    for (;;) { // the straight run ahead to land
+      if (!inside(x, y)) return; const i = idx(x, y);
+      if (cells[i] === LAND) break; if (cells[i] === TRAIL && i !== idx(tx, ty)) return;
+      wall[i] = 1; x += dx; y += dy;
+    }
+    const seen = new Int32Array(N).fill(-1); let id = 0, any = false;
+    for (const m of monsters) {
+      if (m.kind === 'spike' || m.dead) continue;
+      const s0 = seaCellOf(m); if (s0 < 0 || wall[s0]) continue;
+      if (seen[s0] >= 0) continue;
+      const reg = [s0], stack = [s0]; seen[s0] = id;
+      while (stack.length && reg.length <= TRAP_MAX) {
+        const i = stack.pop(), cx = i % W, cy = (i / W) | 0;
+        for (const [ex, ey] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = cx + ex, ny = cy + ey; if (!inside(nx, ny)) continue; const j = idx(nx, ny);
+          if (seen[j] < 0 && cells[j] === SEA && !wall[j]) { seen[j] = id; stack.push(j); reg.push(j); }
+        }
+      }
+      if (reg.length <= TRAP_MAX) {
+        reg.forEach((i) => { maskData[i * 4 + 1] = 255; }); any = true;
+        monsters.forEach((o) => { if (o.kind !== 'spike' && !o.dead && seen[seaCellOf(o)] === id) o.ring.visible = true; });
+      }
+      id++;
+    }
+    if (any) { mask.needsUpdate = true; if (!trapHinted) { trapHinted = true; flash('Trap it!', 'reach land to catch it', 1000); } }
+  }
   function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
   function spawnMonster(kind, at) {
     const sp = L.speed * (kind === 'zipper' ? 1.55 : kind === 'eater' ? 0.85 : kind === 'spike' ? 0.62 : 1);
@@ -542,6 +580,7 @@ body {
     else if (at) { [x, y] = at; }
     else { const free = seaCellsFree().filter(([cx, cy]) => Math.abs(cx - W / 2) + Math.abs(cy - (Hh - 3)) > 10); const c = free[(Math.random() * free.length) | 0]; x = c[0] + 0.5; y = c[1] + 0.5; }
     const m = { kind, x, y, vx: (Math.random() < 0.5 ? -1 : 1) * sp, vy: (Math.random() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(kind === 'zipper' ? 0.8 : 1.1), eatCd: 0, t: rand(0, 6) };
+    m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
     monsters.push(m); return m;
   }
   function drawHud() {
@@ -599,7 +638,7 @@ body {
     // sparkles across the new land
     const n = Math.min(60, fresh.length);
     for (let k = 0; k < n; k++) { const i = fresh[(Math.random() * fresh.length) | 0], [wx, wz] = W2(i % W, (i / W) | 0); setTimeout(() => burst(wx, H_LAND + 0.1, wz, 0xffffff, 2, 1.5, 3.5), delay[i] * 1000 + 120); }
-    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false;
+    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
     const before = pct; pct = percent();
     const gained = pct - before, pts = fresh.length * 10 * (1 + (gained >= 12 ? 1 : 0));
     score += pts;
@@ -675,7 +714,7 @@ body {
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
     flash(lives > 0 ? 'Ouch!' : 'Out of lives', why, 1100, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
-    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false;
+    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
     let [lx, ly] = lastLand;
     if (cells[idx(lx, ly)] !== LAND) { lx = Math.floor(W / 2); ly = Hh - 1; }
     px = tx = lx; py = ty = ly; stepP = 1; dir = null; queue = []; invuln = 1.6;
@@ -694,6 +733,12 @@ body {
     if (fresh.length) { // introduce a new monster before the level starts
       state = 'intro'; const k = fresh[0]; prog.seen.push(...fresh); saveProg();
       panel('<div class="kicker">New monster</div><div class="foe">' + foeIcon(k) + '</div><h2>' + MONSTER_INFO[k].name + '</h2><p>' + MONSTER_INFO[k].text + '</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
+        { go: () => { hidePanel(); state = 'play'; banner(); } });
+      return;
+    }
+    if (i === 1 && !prog.seen.includes('trap')) {
+      state = 'intro'; prog.seen.push('trap'); saveProg();
+      panel('<div class="kicker">Tip</div><h2>Trap monsters</h2><p>Close a monster into a small area, 40 squares or less, and it is caught for a big bonus.</p><p>While you draw, a monster you would trap by heading straight to land gets a gold ring and its water shimmers.</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
         { go: () => { hidePanel(); state = 'play'; banner(); } });
       return;
     }
@@ -753,7 +798,7 @@ body {
     if (!drawing && !queue.length && opposite(d, dir) && stepP < 1) { [px, tx] = [tx, px]; [py, ty] = [ty, py]; stepP = 1 - stepP; dir = d; return; }
     if (!queue.length && stepP < CORNER && !opposite(d, dir)) {
       const [dx, dy] = DIRS[d], nx = px + dx, ny = py + dy;
-      if (inside(nx, ny) && cells[idx(nx, ny)] !== TRAIL) { dir = d; tx = nx; ty = ny; buzz('tick'); return; }
+      if (inside(nx, ny) && cells[idx(nx, ny)] !== TRAIL) { dir = d; tx = nx; ty = ny; buzz('tick'); if (drawing) predictTrap(); return; }
     }
     queue.push(d); if (queue.length > 2) queue.shift();
   }
@@ -775,6 +820,7 @@ body {
     const [dx, dy] = DIRS[dir], nx = px + dx, ny = py + dy;
     if (!inside(nx, ny)) { dir = null; return; }
     tx = nx; ty = ny; stepP = 0;
+    if (drawing) predictTrap();
   }
   const dq = new THREE.Quaternion(), dpos = new THREE.Vector3(), dscl = new THREE.Vector3(1, 1, 1), UP = new THREE.Vector3(0, 1, 0);
   function addDashes(k) {
@@ -893,6 +939,7 @@ body {
         const sp = Math.hypot(m.vx, m.vy) * dt * mult; dpos.set(m.vy, 0, -m.vx).normalize(); dq.setFromAxisAngle(dpos, sp / r); m.mesh.userData.ball.quaternion.premultiply(dq);
       }
       if (m.kind === 'spike') m.mesh.rotation.y += dt * 2;
+      if (m.ring.visible) { const k = 1 + Math.sin(t * 10) * 0.12; m.ring.scale.setScalar(k / m.shadow.scale.x); }
       if (m.mesh.userData.jaws) { m.mesh.rotation.y = Math.atan2(m.vx, m.vy); const o = Math.abs(Math.sin(m.t * 7)) * 0.5; m.mesh.userData.jaws[0].rotation.x = -o; m.mesh.userData.jaws[1].rotation.x = o * 0.4; }
     }
     monsters = monsters.filter((m) => { if (m.dead && m.dead > 0.5) { scene.remove(m.mesh); scene.remove(m.shadow); return false; } return true; });
@@ -963,7 +1010,7 @@ body {
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, x: m.x, y: m.y, dead: !!m.dead })); },
-    get trailLen() { return trail.length; },
+    get trailLen() { return trail.length; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; },
     freeze(v) { testFrozen = !!v; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
