@@ -484,33 +484,27 @@ body {
     g.scale.setScalar(f.size);
     return g;
   }
-  function makeJelly(mini) { // the Splitter: a jelly cube with a zigzag crack down the middle; Splitlings are small cubes
+  function makeJelly(mini) { // the Splitter: a starfish (starfish really can split in two and regrow); Splitlings are baby starfish
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-    const skin = new THREE.MeshPhongMaterial({ color: 0xb6f24a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.94 });
-    const edge = phong(0x6aa81c, { shininess: 60 }), crackMat = new THREE.MeshBasicMaterial({ color: 0x24420a });
-    const sz = mini ? 0.5 : 0.66;
-    const cube = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.9, sz), skin); body.add(cube);
-    // soft rounded look: a slightly smaller darker core and little corner bumps
-    const coreBox = new THREE.Mesh(new THREE.BoxGeometry(sz * 0.6, sz * 0.5, sz * 0.6), edge); coreBox.material = phong(0x8fd13a, { shininess: 30, transparent: true, opacity: 0.6 }); body.add(coreBox);
-    // eyes on the front face
-    for (const sx of mini ? [-0.08, 0.08] : [-0.13, 0.13]) {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.06 : 0.08, 12, 8), eyeWhite); e.position.set(sx, sz * 0.12, sz / 2 + 0.01); e.scale.z = 0.5; body.add(e);
-      const p = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.032 : 0.042, 8, 6), pupilMat); p.position.set(sx, sz * 0.12, sz / 2 + 0.04); body.add(p);
+    const skin = phong(0xff6a3d, { shininess: 70 }), bump = phong(0xffe2b8, { shininess: 40 });
+    const R = mini ? 0.36 : 0.5, r = R * 0.42, shape = new THREE.Shape();
+    for (let k = 0; k <= 10; k++) { const a = Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r : R; const x = Math.cos(a) * rr, y = Math.sin(a) * rr; k ? shape.lineTo(x, y) : shape.moveTo(x, y); }
+    const star = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.06, bevelSegments: 4 }), skin);
+    star.rotation.x = -Math.PI / 2; star.position.y = -0.08; body.add(star);
+    // a raised middle and rows of little bumps along each arm
+    const mid = new THREE.Mesh(new THREE.SphereGeometry(r * 1.05, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), skin); mid.scale.y = 0.55; mid.position.y = 0.02; body.add(mid);
+    for (let k = 0; k < 5; k++) {
+      const a = Math.PI / 2 + k * 2 * Math.PI / 5;
+      for (const f of [0.45, 0.65, 0.82]) { const b = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.025 : 0.032, 8, 6), bump); b.position.set(Math.cos(a) * R * f, 0.06 - f * 0.03, -Math.sin(a) * R * f); body.add(b); }
     }
-    if (!mini) { // zigzag crack over the top and down the front, between the eyes
-      const pts = [[0, -0.33], [0.05, -0.2], [-0.05, -0.07], [0.05, 0.06], [-0.05, 0.19], [0, 0.33]];
-      for (let k = 0; k < pts.length - 1; k++) {
-        const [x1, z1] = pts[k], [x2, z2] = pts[k + 1], len = Math.hypot(x2 - x1, z2 - z1);
-        const seg = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, len + 0.02), crackMat);
-        seg.position.set((x1 + x2) / 2, sz * 0.45 + 0.005, (z1 + z2) / 2); seg.rotation.y = Math.atan2(x2 - x1, z2 - z1); body.add(seg);
-      }
-      for (const [y1, y2, x] of [[0.27, 0.12, 0.03], [0.12, -0.02, -0.03], [-0.02, -0.17, 0.03], [-0.17, -0.29, -0.02]]) {
-        const seg = new THREE.Mesh(new THREE.BoxGeometry(0.03, Math.abs(y1 - y2) + 0.02, 0.02), crackMat);
-        seg.position.set(x, (y1 + y2) / 2 * sz / 0.6, sz / 2 + 0.006); seg.rotation.z = x > 0 ? -0.35 : 0.35; body.add(seg);
-      }
+    // eyes on top, looking forward
+    for (const sx of [-1, 1]) {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.06 : 0.075, 12, 8), eyeWhite); e.position.set(sx * (mini ? 0.06 : 0.08), mini ? 0.09 : 0.11, 0.03); body.add(e);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(mini ? 0.033 : 0.04, 8, 6), pupilMat); p.position.set(sx * (mini ? 0.06 : 0.08), mini ? 0.12 : 0.15, 0.07); body.add(p);
     }
-    g.userData.fish = { body, fins: [], tail: null, skin, base: 0xb6f24a, wobble: [cube], jelly: true };
-    g.scale.setScalar(mini ? 1.0 : 1.1);
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(mini ? 0.035 : 0.045, 0.012, 6, 14, Math.PI), pupilMat); smile.rotation.x = -Math.PI / 2; smile.rotation.z = Math.PI; smile.position.set(0, 0.075, mini ? 0.1 : 0.13); body.add(smile);
+    g.userData.fish = { body, fins: [], tail: null, skin, base: 0xff6a3d, star };
+    g.scale.setScalar(mini ? 1.0 : 1.12);
     return g;
   }
   function makeShark() { // the Hunter: a small, sleek shark with a tall fin and a toothy grin
@@ -607,11 +601,11 @@ body {
     eater: { name: 'Chomper', text: 'Bites off a piece of your land every time it bounces off it.' },
     saw: { name: 'Buzzsaw', text: 'Rolls along your land and never leaves it. Touch it while you are on land and you lose a life.' },
     zipper: { name: 'Dart', text: 'Small and very fast. Keep your trails short when it is around.' },
-    splitter: { name: 'Splitter', text: 'Trap it and it splits into two little ones. Trap those too.' },
+    splitter: { name: 'Splitter', text: 'A starfish. Trap it and it splits into two baby starfish, which are faster. Trap those too.' },
     hunter: { name: 'Hunter', text: 'While you draw in its part of the sea, it swims around land to chase you, and dashes when it has a clear line. Do not linger at sea.' },
     inker: { name: 'Inker', text: 'Leaves blots of ink in the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
     magnet: { name: 'Magnet', text: 'Pulls you one square toward it when you draw nearby. Watch the blue ring.' },
-    mini: { name: 'Splitling', text: 'A small, quick piece of a Splitter.' }
+    mini: { name: 'Splitling', text: 'A baby starfish from a Splitter. Small and quick.' }
   };
 
 
@@ -970,7 +964,7 @@ body {
   function foeIcon(k) { // a small rendered picture of the monster for the intro card
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setSize(176, 176);
     const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x6a7ab0, 1)); const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(-2, 4, 5); s.add(d);
-    const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (k === 'saw') m.rotation.x = 0.7; if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
+    const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (k === 'saw') m.rotation.x = 0.7; if (k === 'splitter' || k === 'mini') { m.rotation.set(0.95, 0, 0); } if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
     const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.render(s, c);
     const url = r.domElement.toDataURL(); r.dispose(); return '<img alt="" src="' + url + '">';
   }
@@ -1266,7 +1260,7 @@ body {
         fishU.fins.forEach((f, k) => { f.rotation.y = Math.sin(sw * 12 + k * 1.3) * 0.5; });
         m.puff = Math.max(0, m.puff - dt * 4); const pf = 1 + Math.sin(m.puff * Math.PI) * 0.28;
         fishU.body.scale.setScalar(pf); fishU.body.position.y = Math.sin(m.t * 5) * 0.04;
-        if (fishU.jelly) { fishU.body.scale.set(pf * (1 + Math.sin(m.t * 7) * 0.06), pf * (1 - Math.sin(m.t * 7) * 0.08), pf); fishU.wobble.forEach((b, k) => { b.scale.y = 0.9 + Math.sin(m.t * 7 + k * Math.PI) * 0.06; }); }
+        if (fishU.star) { fishU.star.rotation.z = Math.sin(m.t * 3) * 0.12; fishU.body.scale.set(pf * (1 + Math.sin(m.t * 6) * 0.04), pf, pf * (1 - Math.sin(m.t * 6) * 0.04)); } // a slow crawl-wiggle
         if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
       }
       if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y += dt; f.material.opacity = 0.25 + 0.2 * Math.sin(t * 4); }
