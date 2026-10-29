@@ -740,10 +740,13 @@ body {
   function cellAt(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return inside(cx, cy) ? cells[idx(cx, cy)] : LAND; }
   function seaCellOf(m) {
     const cx = Math.floor(m.x), cy = Math.floor(m.y);
-    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
-      const x = cx + dx, y = cy + dy; if (inside(x, y) && cells[idx(x, y)] === SEA) return idx(x, y);
+    if (inside(cx, cy) && cells[idx(cx, cy)] === SEA) return idx(cx, cy);
+    let best = -1, bd = 9;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+      const x = cx + dx, y = cy + dy; if (!inside(x, y) || cells[idx(x, y)] !== SEA) continue;
+      const d = Math.hypot(x + 0.5 - m.x, y + 0.5 - m.y); if (d < bd) { bd = d; best = idx(x, y); }
     }
-    return -1;
+    return best;
   }
   const W2 = (x, y) => [x + ox, y + oz];
 
@@ -776,6 +779,13 @@ body {
       }
     }
     mask.needsUpdate = true;
+    // Safety net: a sea monster whose body is now on land (it was on your trail or between two areas
+    // when the loop closed) counts as trapped too, so nothing is ever left stranded on land.
+    for (const m of monsters) {
+      if (m.kind === 'saw' || m.dead || trapped.includes(m)) continue;
+      const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1));
+      if (cells[c] === LAND) trapped.push(m);
+    }
     // power-ups inside the claimed area stay, riding up on the new land; fly over them to collect
     // sparkles across the new land
     const n = Math.min(60, fresh.length);
