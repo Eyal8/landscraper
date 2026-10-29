@@ -438,16 +438,18 @@ body {
         return j;
       };
       const top = jaw(true), bot = jaw(false); g.add(top, bot); g.userData.jaws = [top, bot];
-    } else if (kind === 'spike') { // a spiky mine that lives on land
-      const mat = new THREE.MeshPhongMaterial({ color: 0xff5a7a, shininess: 80, specular: 0xffffff });
-      g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), mat));
-      const cone = new THREE.ConeGeometry(0.08, 0.26, 8); cone.translate(0, 0.38, 0);
-      const ico = new THREE.IcosahedronGeometry(1, 0), p = ico.attributes.position, seen = new Set();
-      for (let k = 0; k < p.count; k++) {
-        const v = new THREE.Vector3().fromBufferAttribute(p, k).normalize(), key = v.toArray().map((n) => n.toFixed(2)).join();
-        if (seen.has(key)) continue; seen.add(key);
-        const s = new THREE.Mesh(cone, mat); s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v); g.add(s);
-      }
+    } else if (kind === 'saw') { // a buzzsaw wheel that rolls on land only
+      const steel = new THREE.MeshPhongMaterial({ color: 0xd6deea, shininess: 140, specular: 0xffffff });
+      const edge = new THREE.MeshPhongMaterial({ color: 0x8a96aa, shininess: 120, specular: 0xffffff });
+      const red = new THREE.MeshPhongMaterial({ color: 0xff4d6d, shininess: 90, specular: 0xffffff });
+      const wheel = new THREE.Group();
+      // a flat spinning blade, readable from the top-down camera
+      wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 32), steel));
+      wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.03, 8, 32).rotateX(Math.PI / 2).translate(0, 0.045, 0), edge));
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.18, 20), red); wheel.add(hub);
+      const tooth = new THREE.ConeGeometry(0.08, 0.2, 4).rotateZ(-Math.PI / 2).translate(0.5, 0, 0);
+      for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
+      g.add(wheel); g.userData.wheel = wheel;
     } else {
       const ball = new THREE.Mesh(ballGeo, ballMats[(Math.random() * ballMats.length) | 0]);
       if (kind === 'zipper') { ball.material = new THREE.MeshPhongMaterial({ map: stripeTex('#ffe14d', '#1d1d1d', 6), shininess: 110, specular: 0xffffff }); g.scale.setScalar(0.72); }
@@ -459,7 +461,7 @@ body {
   const MONSTER_INFO = {
     bouncer: { name: 'Bouncer', text: 'Bounces around the sea. If it touches your trail, a fuse races along it to you.' },
     eater: { name: 'Chomper', text: 'Bites off a piece of your land every time it bounces off it.' },
-    spike: { name: 'Spike', text: 'Rolls along your land. Touch it while you are on land and you lose a life.' },
+    saw: { name: 'Buzzsaw', text: 'Rolls along your land and never leaves it. Touch it while you are on land and you lose a life.' },
     zipper: { name: 'Zipper', text: 'Small and very fast. Keep your trails short when it is around.' }
   };
 
@@ -492,7 +494,7 @@ body {
     const d = e * 10 + l, mon = [];
     const nb = Math.min(5, 1 + Math.floor(d / 4)); for (let k = 0; k < nb; k++) mon.push('bouncer');
     if (d >= 3) mon.push('eater'); if (d >= 16) mon.push('eater');
-    if (d >= 5) mon.push('spike'); if (d >= 14) mon.push('spike'); if (d >= 24) mon.push('spike');
+    if (d >= 5) mon.push('saw'); if (d >= 14) mon.push('saw'); if (d >= 24) mon.push('saw');
     if (d >= 10) mon.push('zipper'); if (d >= 21) mon.push('zipper');
     LEVELS.push({ e, l, world: e, mon, speed: 3.9 + d * 0.11, goal: [75, 78, 80][e], obst: OBST[(l + e * 3) % OBST.length], powers: d >= 2 });
   }
@@ -553,7 +555,7 @@ body {
     }
     const seen = new Int32Array(N).fill(-1); let id = 0, any = false;
     for (const m of monsters) {
-      if (m.kind === 'spike' || m.dead) continue;
+      if (m.kind === 'saw' || m.dead) continue;
       const s0 = seaCellOf(m); if (s0 < 0 || wall[s0]) continue;
       if (seen[s0] >= 0) continue;
       const reg = [s0], stack = [s0]; seen[s0] = id;
@@ -566,18 +568,24 @@ body {
       }
       if (reg.length <= TRAP_MAX) {
         reg.forEach((i) => { maskData[i * 4 + 1] = 255; }); any = true;
-        monsters.forEach((o) => { if (o.kind !== 'spike' && !o.dead && seen[seaCellOf(o)] === id) o.ring.visible = true; });
+        monsters.forEach((o) => { if (o.kind !== 'saw' && !o.dead && seen[seaCellOf(o)] === id) o.ring.visible = true; });
       }
       id++;
     }
     if (any) { mask.needsUpdate = true; if (!trapHinted) { trapHinted = true; flash('Trap it!', 'reach land to catch it', 1000); } }
   }
+  function settleOnLand(m) {
+    const cx = Math.floor(m.x), cy = Math.floor(m.y);
+    for (let r = 1; r < Math.max(W, Hh); r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = cx + dx, y = cy + dy; if (inside(x, y) && cells[idx(x, y)] === LAND) { m.x = x + 0.5; m.y = y + 0.5; return; }
+    }
+  }
   function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
   function spawnMonster(kind, at) {
-    const sp = L.speed * (kind === 'zipper' ? 1.55 : kind === 'eater' ? 0.85 : kind === 'spike' ? 0.62 : 1);
+    const sp = L.speed * (kind === 'zipper' ? 1.55 : kind === 'eater' ? 0.85 : kind === 'saw' ? 0.62 : 1);
     let x, y;
-    if (kind === 'spike') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'spike').length * 6; }
-    else if (at) { [x, y] = at; }
+    if (at) { [x, y] = at; }
+    else if (kind === 'saw') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'saw').length * 6; }
     else { const free = seaCellsFree().filter(([cx, cy]) => Math.abs(cx - W / 2) + Math.abs(cy - (Hh - 3)) > 10); const c = free[(Math.random() * free.length) | 0]; x = c[0] + 0.5; y = c[1] + 0.5; }
     const m = { kind, x, y, vx: (Math.random() < 0.5 ? -1 : 1) * sp, vy: (Math.random() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(kind === 'zipper' ? 0.8 : 1.1), eatCd: 0, t: rand(0, 6) };
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
@@ -609,7 +617,7 @@ body {
     trail.forEach((i) => { cells[i] = LAND; trailIdx[i] = -1; });
     const region = new Int32Array(N).fill(-1), regions = [];
     for (const m of monsters) {
-      if (m.kind === 'spike' || m.dead) continue;
+      if (m.kind === 'saw' || m.dead) continue;
       const s = seaCellOf(m); if (s < 0) continue;
       if (region[s] >= 0) { regions[region[s]].monsters.push(m); continue; }
       const r = { size: 0, monsters: [m], cells: [] }, id = regions.length; regions.push(r);
@@ -747,7 +755,7 @@ body {
   function foeIcon(k) { // a small rendered picture of the monster for the intro card
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setSize(176, 176);
     const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x6a7ab0, 1)); const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(-2, 4, 5); s.add(d);
-    const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
+    const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (k === 'saw') m.rotation.x = 0.7; if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
     const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.render(s, c);
     const url = r.domElement.toDataURL(); r.dispose(); return '<img alt="" src="' + url + '">';
   }
@@ -916,28 +924,34 @@ body {
         continue;
       }
       if (live && !testFrozen && mult > 0) {
-        const solid = (c) => m.kind === 'spike' ? c !== LAND : c === LAND;
-        const step = dt * mult;
+        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const c = cells[idx(cx, cy)]; return m.kind === 'saw' ? c !== LAND : c === LAND; };
+        const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
+        if (m.kind === 'saw' && solid(m.x, m.y)) settleOnLand(m);
         let nx = m.x + m.vx * step;
-        if (solid(cellAt(nx, m.y))) { const hit = idx(Math.floor(nx), Math.floor(m.y)); m.vx = -m.vx; nx = m.x; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        const ex = nx + Math.sign(m.vx) * R;
+        if (solid(ex, m.y)) { const hit = idx(clamp(Math.floor(ex), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); m.vx = -m.vx; nx = m.x; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
         let ny = m.y + m.vy * step;
-        if (solid(cellAt(nx, ny))) { const hit = idx(Math.floor(nx), Math.floor(ny)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        const ey = ny + Math.sign(m.vy) * R;
+        if (solid(nx, ey)) { const hit = idx(clamp(Math.floor(nx), 0, W - 1), clamp(Math.floor(ey), 0, Hh - 1)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
         m.x = nx; m.y = ny; m.eatCd -= dt;
-        if (m.kind !== 'spike') { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
+        if (m.kind !== 'saw') { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
         if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8) {
-          if (m.kind !== 'spike' && !onLand) die('a monster caught you');
-          if (m.kind === 'spike' && onLand) die('a spike caught you on land');
+          if (m.kind !== 'saw' && !onLand) die('a monster caught you');
+          if (m.kind === 'saw' && onLand) die('a buzzsaw caught you on land');
         }
       }
       const r = (m.kind === 'zipper' ? 0.29 : 0.4) * 1.22;
-      const baseY = m.kind === 'spike' ? H_LAND + 0.45 : r;
+      const baseY = m.kind === 'saw' ? H_LAND + 0.3 : r;
       const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz;
-      m.mesh.position.set(wx, baseY + (m.kind === 'spike' ? Math.abs(Math.sin(m.t * 5)) * 0.15 : 0), wz);
-      m.shadow.position.set(wx, (m.kind === 'spike' ? H_LAND : 0) + 0.02, wz);
+      m.mesh.position.set(wx, baseY, wz);
+      m.shadow.position.set(wx, (m.kind === 'saw' ? H_LAND : 0) + 0.02, wz);
       if (m.mesh.userData.ball && live && mult > 0) { // roll along the velocity
         const sp = Math.hypot(m.vx, m.vy) * dt * mult; dpos.set(m.vy, 0, -m.vx).normalize(); dq.setFromAxisAngle(dpos, sp / r); m.mesh.userData.ball.quaternion.premultiply(dq);
       }
-      if (m.kind === 'spike') m.mesh.rotation.y += dt * 2;
+      if (m.mesh.userData.wheel) { // face the way it rolls, spin the wheel
+        if (live && mult > 0) m.mesh.userData.wheel.rotation.y -= dt * mult * 14;
+        m.mesh.rotation.set(Math.sign(m.vy) * 0.18, 0, -Math.sign(m.vx) * 0.18); // leans into its motion
+      }
       if (m.ring.visible) { const k = 1 + Math.sin(t * 10) * 0.12; m.ring.scale.setScalar(k / m.shadow.scale.x); }
       if (m.mesh.userData.jaws) { m.mesh.rotation.y = Math.atan2(m.vx, m.vy); const o = Math.abs(Math.sin(m.t * 7)) * 0.5; m.mesh.userData.jaws[0].rotation.x = -o; m.mesh.userData.jaws[1].rotation.x = o * 0.4; }
     }
