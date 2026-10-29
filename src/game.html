@@ -633,8 +633,7 @@ body {
       }
     }
     mask.needsUpdate = true;
-    // power-ups inside the claimed area are collected
-    for (const p of powers) if (cells[idx(p.x, p.y)] === LAND && !p.taken) takePower(p);
+    // power-ups inside the claimed area stay, riding up on the new land; fly over them to collect
     // sparkles across the new land
     const n = Math.min(60, fresh.length);
     for (let k = 0; k < n; k++) { const i = fresh[(Math.random() * fresh.length) | 0], [wx, wz] = W2(i % W, (i / W) | 0); setTimeout(() => burst(wx, H_LAND + 0.1, wz, 0xffffff, 2, 1.5, 3.5), delay[i] * 1000 + 120); }
@@ -948,8 +947,8 @@ body {
       p.t += dt; const [wx, wz] = W2(p.x, p.y);
       if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
       if (live && Math.hypot(p.x - fx, p.y - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
-      p.mesh.position.set(wx, 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.y += dt * 1.8;
-      p.mesh.scale.setScalar(Math.min(1, p.t * 3));
+      p.mesh.position.set(wx, Math.max(0, hNow[idx(p.x, p.y)]) + 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5, 0); // faces the camera, gently swaying
+      p.mesh.scale.setScalar(1.5 * Math.min(1, p.t * 3));
     }
     powers = powers.filter((p) => { if (p.taken && p.mesh.scale.x < 0.02) { scene.remove(p.mesh); return false; } return true; });
     drawParticles(dt);
