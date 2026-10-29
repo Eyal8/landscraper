@@ -612,7 +612,7 @@ body {
     zipper: { name: 'Dart', text: 'Small and very fast. Keep your trails short when it is around.' },
     splitter: { name: 'Splitter', text: 'A starfish. Trap it and it splits into two baby starfish, which are faster. Trap those too.' },
     hunter: { name: 'Hunter', text: 'While you draw in its part of the sea, it swims around land to chase you, and dashes when it has a clear line. Do not linger at sea.' },
-    inker: { name: 'Inker', text: 'An octopus that squirts ink into the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
+    inker: { name: 'Inker', text: 'An octopus. When it glows it squirts ink into the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
     magnet: { name: 'Magnet', text: 'Pulls you one square toward it when you draw nearby. Watch the blue ring.' },
     mini: { name: 'Splitling', text: 'A baby starfish from a Splitter. Small and quick.' }
   };
@@ -1238,7 +1238,16 @@ body {
             }
           } else if (m.mode === 'chase') { m.mode = 'roam'; diag(m); }
         }
-        if (m.kind === 'inker') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } m.squirt = (m.squirt || 0) + 1; if (m.squirt % 2 === 0) { const f = m.mesh.userData.fish, cl = f && f.clouds.find((q) => q.t >= 1.2); if (cl) { cl.t = 0; cl.c.visible = true; cl.c.position.set(0, -0.2, -0.55); } } } }
+        if (m.kind === 'inker') { // calm, then it glows as a warning, then it squirts for a moment
+          if (m.inkPhase === undefined) { m.inkPhase = 'calm'; m.inkT = rand(1.5, 3); }
+          m.inkT -= step;
+          if (m.inkT <= 0) {
+            if (m.inkPhase === 'calm') { m.inkPhase = 'warn'; m.inkT = 0.7; }
+            else if (m.inkPhase === 'warn') { m.inkPhase = 'squirt'; m.inkT = 1.6; tone(200, 0.3, 'triangle', 0.05, 120); }
+            else { m.inkPhase = 'calm'; m.inkT = rand(2.5, 3.5); }
+          }
+        }
+        if (m.kind === 'inker' && m.inkPhase === 'squirt') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } m.squirt = (m.squirt || 0) + 1; if (m.squirt % 2 === 0) { const f = m.mesh.userData.fish, cl = f && f.clouds.find((q) => q.t >= 1.2); if (cl) { cl.t = 0; cl.c.visible = true; cl.c.position.set(0, -0.2, -0.55); } } } }
         const vx0 = m.vx, vy0 = m.vy;
         if (m.kind === 'saw' && solid(m.x, m.y)) settleOnLand(m);
         let nx = m.x + m.vx * step;
@@ -1293,7 +1302,9 @@ body {
         fishU.body.scale.setScalar(pf); fishU.body.position.y = Math.sin(m.t * 5) * 0.04;
         if (fishU.octo) {
           fishU.octo.forEach((o, k) => o.segs.forEach((seg, j) => { const w = Math.sin(m.t * 6 + k * 0.8 - j * 0.7) * 0.05 * j; seg.position.x = w; seg.position.y = Math.sin(m.t * 4 + k) * 0.02 * j; }));
-          const pump = Math.max(0, Math.sin(m.t * 8)); fishU.head.scale.set(1 - pump * 0.08, 1.1 + pump * 0.12, 1.05 - pump * 0.08);
+          const ph = m.inkPhase, glowK = ph === 'squirt' ? 0.9 : ph === 'warn' ? 0.5 + 0.5 * Math.sin(t * 28) : 0;
+          fishU.skin.emissive.setRGB(glowK * 0.6, glowK * 0.25, glowK * 0.9); // glows violet while it inks, flickers just before
+          const pump = ph === 'squirt' ? Math.max(0, Math.sin(m.t * 12)) : 0; fishU.head.scale.set(1 - pump * 0.08, 1.1 + pump * 0.12, 1.05 - pump * 0.08);
           fishU.clouds.forEach((cl) => { if (cl.t < 1.2) { cl.t += dt; const q = cl.t / 1.2; cl.c.scale.set(0.6 + q * 1.6, 0.35, 0.6 + q * 1.6); cl.c.material.opacity = 0.75 * (1 - q); } else cl.c.visible = false; });
         }
         if (fishU.star) { fishU.star.rotation.z = Math.sin(m.t * 3) * 0.12; fishU.body.scale.set(pf * (1 + Math.sin(m.t * 6) * 0.04), pf, pf * (1 - Math.sin(m.t * 6) * 0.04)); } // a slow crawl-wiggle
