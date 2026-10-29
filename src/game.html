@@ -479,6 +479,30 @@ body {
     g.scale.setScalar(f.size);
     return g;
   }
+  function makeShark() { // the Hunter: a small, sleek shark with a tall fin and a toothy grin
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const skin = phong(0x7f8a96, { shininess: 110 }), belly = phong(0xf2f6fb), dark = phong(0x56606c), tooth = phong(0xffffff, { shininess: 60 });
+    const torso = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 18), skin); torso.scale.set(1, 0.85, 1.75); body.add(torso);
+    const under = new THREE.Mesh(new THREE.SphereGeometry(0.29, 24, 14, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45), belly); under.scale.set(1, 0.85, 1.7); under.position.y = -0.01; body.add(under);
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 12), skin); snout.scale.set(1, 0.75, 1.1); snout.position.set(0, 0.03, 0.42); body.add(snout);
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.46, 3), dark); fin.scale.set(0.28, 1, 1); fin.position.set(0, 0.42, -0.02); fin.rotation.x = -0.45; body.add(fin);
+    const fins = [];
+    for (const sx of [-1, 1]) { const pf = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.34, 3), dark); pf.scale.set(1, 1, 0.25); pf.position.set(sx * 0.3, -0.12, 0.1); pf.rotation.set(0.3, 0, sx * 1.9); body.add(pf); fins.push(pf); }
+    const tail = new THREE.Group(); tail.position.set(0, 0.02, -0.5); body.add(tail);
+    for (const up of [1, -1]) { const lobe = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.36, 3), dark); lobe.scale.set(0.3, 1, 1); lobe.rotation.x = up * 0.8 - Math.PI / 2; lobe.position.set(0, up * 0.11, -0.12); tail.add(lobe); }
+    // grin with teeth
+    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.025, 6, 20, Math.PI), phong(0x2a1020)); mouth.rotation.set(0.25, 0, Math.PI); mouth.position.set(0, -0.06, 0.5); body.add(mouth);
+    for (let k = 0; k < 5; k++) { const a = Math.PI * (0.15 + k * 0.175), t = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.06, 4), tooth); t.position.set(Math.cos(a) * 0.12, -0.075 - Math.sin(a) * 0.04, 0.53 - Math.sin(a) * 0.02); t.rotation.x = Math.PI; body.add(t); }
+    // narrowed eyes and angry brows on the sides of the head
+    for (const sx of [-1, 1]) {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), eyeWhite); e.position.set(sx * 0.17, 0.12, 0.38); e.scale.set(1, 0.7, 1); body.add(e);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), pupilMat); p.position.set(sx * 0.19, 0.12, 0.44); body.add(p);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.03, 0.03), pupilMat); b.position.set(sx * 0.16, 0.2, 0.42); b.rotation.z = -sx * 0.5; body.add(b);
+    }
+    g.userData.fish = { body, fins, tail, skin, base: 0x7f8a96 };
+    g.scale.setScalar(1.15);
+    return g;
+  }
   function makeInker() { // a little squid
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const skin = phong(0x9b5cff), light = phong(0xd9c2ff);
@@ -538,7 +562,7 @@ body {
       for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
       g.add(wheel); g.userData.wheel = wheel;
     } else {
-      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : makeFish(kind);
+      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : makeFish(kind);
       g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f;
     }
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
@@ -1202,7 +1226,7 @@ body {
         fishU.fins.forEach((f, k) => { f.rotation.y = Math.sin(sw * 12 + k * 1.3) * 0.5; });
         m.puff = Math.max(0, m.puff - dt * 4); const pf = 1 + Math.sin(m.puff * Math.PI) * 0.28;
         fishU.body.scale.setScalar(pf); fishU.body.position.y = Math.sin(m.t * 5) * 0.04;
-        if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.5 + 0.5 * Math.sin(t * 30) : m.mode === 'dash' ? 0.6 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.15, glowOn * 0.1); }
+        if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
       }
       if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y += dt; f.material.opacity = 0.25 + 0.2 * Math.sin(t * 4); }
       if (m.pop > 0) { m.pop = Math.max(0, m.pop - dt * 3); const q = 1 - m.pop; m.mesh.scale.setScalar(m.mesh.userData.s * (q < 0.7 ? q / 0.7 * 1.25 : 1.25 - (q - 0.7) / 0.3 * 0.25)); }
