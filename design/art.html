@@ -12,9 +12,11 @@
   #text { position: absolute; z-index: 1; left: 64px; top: 0; bottom: 0; display: none; flex-direction: column; justify-content: center; gap: 14px; }
   #text h1 { margin: 0; font-weight: 800; font-size: 76px; line-height: 1; letter-spacing: -0.01em; text-shadow: 0 4px 24px rgba(20, 10, 40, 0.45); }
   #text p { margin: 0; font: 500 22px 'DM Mono', monospace; letter-spacing: 0.18em; text-transform: uppercase; color: #ffd166; }
+  #splashText { display: none; position: absolute; left: 0; right: 0; bottom: 16%; text-align: center; font: 500 64px 'DM Mono', monospace; letter-spacing: 0.3em; color: rgba(251, 247, 255, 0.85); }
   #text small { margin-top: 18px; font: 500 15px 'DM Mono', monospace; letter-spacing: 0.2em; color: rgba(251, 247, 255, 0.7); }
 </style>
 <div id="text"><h1>Landscraper</h1><p>Draw &amp; Conquer</p><small>BENO74 STUDIOS</small></div>
+<div id="splashText">BENO74 STUDIOS</div>
 <script src="../node_modules/three/build/three.min.js"></script>
 <script>
 // Renders the app icon, adaptive foreground, splash and Play feature graphic.
@@ -103,6 +105,7 @@ if (mode === 'feature') {
   if (mode === 'icon') { camera.zoom = 1.2; camera.updateProjectionMatrix(); }
 }
 if (mode === 'feature') document.getElementById('text').style.display = 'flex';
+if (mode === 'splash') document.getElementById('splashText').style.display = 'block';
 renderer.render(scene, camera);
 Promise.all([document.fonts.load('800 76px Unbounded'), document.fonts.load('500 22px "DM Mono"')]).then(() => document.fonts.ready).then(() => { document.title = 'ready'; });
 </script>

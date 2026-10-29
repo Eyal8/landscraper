@@ -893,7 +893,7 @@ body {
   function showTitle() {
     state = 'menu'; $('hud').hidden = true; $('hint').textContent = '';
     const next = Math.min(prog.unlocked, LEVELS.length - 1);
-    panel('<div class="kicker">BENO74 Studios</div><h1>Landscraper</h1><p>Draw your trail across the sea, get back to land, and claim every area without a monster in it.</p>' +
+    panel('<h1>Landscraper</h1><p>Draw your trail across the sea, get back to land, and claim every area without a monster in it.</p>' +
       '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + levelName(next) + '</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
       { play: () => startLevel(next), levels: showLevels });
   }
