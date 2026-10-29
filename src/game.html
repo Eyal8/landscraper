@@ -549,7 +549,7 @@ body {
     saw: { name: 'Buzzsaw', text: 'Rolls along your land and never leaves it. Touch it while you are on land and you lose a life.' },
     zipper: { name: 'Dart', text: 'Small and very fast. Keep your trails short when it is around.' },
     splitter: { name: 'Splitter', text: 'Trap it and it splits into two little ones. Trap those too.' },
-    hunter: { name: 'Hunter', text: 'Every few seconds it stops, glows and dashes straight at you. Do not linger at sea.' },
+    hunter: { name: 'Hunter', text: 'While you are out drawing, it stops, glows and dashes straight at you. Do not linger at sea.' },
     inker: { name: 'Inker', text: 'Leaves blots of ink in the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
     magnet: { name: 'Magnet', text: 'Pulls you one square toward it when you draw nearby. Watch the blue ring.' },
     mini: { name: 'Splitling', text: 'A small, quick piece of a Splitter.' }
@@ -691,6 +691,11 @@ body {
     const [wx, wz] = W2(x, 0); burst(wx, H_LAND + 0.3, wz, 0xffffff, 20, 3, 5); tone(520, 0.12, 'triangle', 0.08, 900);
   }
   function settleOnLand(m) { resetSaw(m); }
+  function seesPlayer(m, tx2, ty2) { // a straight line of sea between the hunter and the player
+    const dx = tx2 - m.x, dy = ty2 - m.y, n = Math.ceil(Math.hypot(dx, dy) * 2);
+    for (let k = 1; k < n; k++) { const x = m.x + dx * k / n, y = m.y + dy * k / n, c = cellAt(x, y); if (c === LAND) return false; }
+    return true;
+  }
   function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
   const SPEEDS = { zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.7 };
   const SIZES = { zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05 };
@@ -1115,9 +1120,17 @@ body {
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
         if (m.kind === 'hunter') { // roam, then stop and aim, then dash at the player
           m.hT -= step;
-          if (m.mode === 'roam' && m.hT <= 0) { m.mode = 'aim'; m.hT = 0.7; m.spd = Math.hypot(m.vx, m.vy) || L.speed; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420); }
-          else if (m.mode === 'aim' && m.hT <= 0) { const ax = fx + 0.5 - m.x, ay = fy + 0.5 - m.y, l = Math.hypot(ax, ay) || 1; m.vx = ax / l * m.spd * 2.6; m.vy = ay / l * m.spd * 2.6; m.mode = 'dash'; m.hT = 1.1; tone(520, 0.2, 'square', 0.04, 260); }
-          else if (m.mode === 'dash' && m.hT <= 0) { const l = Math.hypot(m.vx, m.vy) || 1; m.vx = m.vx / l * m.spd; m.vy = m.vy / l * m.spd; m.mode = 'roam'; m.hT = rand(3, 5); }
+          if (m.mode === 'roam' && m.hT <= 0) {
+            if (drawing && seesPlayer(m, fx + 0.5, fy + 0.5)) { // only hunts while you are out drawing m.mode = 'aim'; m.hT = 0.7; m.spd = Math.hypot(m.vx, m.vy) || L.speed; m.vx = m.vy = 0; tone(180, 0.6, 'sawtooth', 0.04, 420); }
+            else m.hT = 0.4; // you are on land, or land is in the way: keep roaming and look again soon
+          }
+          else if (m.mode === 'aim' && m.hT <= 0) {
+            let ax = fx + 0.5 - m.x, ay = fy + 0.5 - m.y; const l = Math.hypot(ax, ay) || 1; ax /= l; ay /= l;
+            // never dash exactly along an axis, so it cannot get pinned bouncing on one line
+            if (Math.abs(ax) < 0.35) ax = 0.35 * (Math.sign(ax) || 1); if (Math.abs(ay) < 0.35) ay = 0.35 * (Math.sign(ay) || 1);
+            const l2 = Math.hypot(ax, ay); m.vx = ax / l2 * m.spd * 2.6; m.vy = ay / l2 * m.spd * 2.6; m.mode = 'dash'; m.hT = 1.1; tone(520, 0.2, 'square', 0.04, 260);
+          }
+          else if (m.mode === 'dash' && m.hT <= 0) { const a = m.spd / Math.SQRT2; m.vx = (Math.sign(m.vx) || 1) * a; m.vy = (Math.sign(m.vy) || 1) * a; m.mode = 'roam'; m.hT = rand(3, 5); } // back to a clean diagonal
         }
         if (m.kind === 'inker') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } } }
         const vx0 = m.vx, vy0 = m.vy;
