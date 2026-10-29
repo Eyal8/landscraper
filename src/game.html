@@ -22,6 +22,7 @@ body {
   overflow: hidden; touch-action: none; overscroll-behavior: none;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
+#stage:focus { outline: none; }
 #stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--sky1, #7cc8ff) 0%, var(--sky2, #d6efff) 100%); transition: background 0.6s; }
 #stage canvas { position: absolute; inset: 0; display: block; }
 .ts { text-shadow: 0 1px 8px rgba(10, 20, 50, 0.45); }
@@ -119,7 +120,7 @@ body {
 @media (prefers-reduced-motion: reduce) { #flash, .card, .stars svg.on, .pop { animation: none; transition: none; } }
 </style>
 
-<main id="stage">
+<main id="stage" tabindex="-1">
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
@@ -1257,6 +1258,7 @@ body {
   stage.addEventListener('pointerdown', (e) => {
     if (e.target.closest('#panel') || e.target.closest('#pauseBtn')) return;
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
+    try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
     if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knob.style.transform = ''; knobIcon.style.transform = 'rotate(' + (dir ? ROT[dir] : 0) + 'deg)'; pad.classList.add('on'); }
   });
@@ -1271,7 +1273,10 @@ body {
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
-  window.addEventListener('blur', () => { release(); keysHeld.clear(); });
+  window.addEventListener('blur', () => { release(); keysHeld.clear(); if (state === 'play' && !isApp && matchMedia('(pointer: fine)').matches) $('hint').textContent = 'Click the game to use the arrow keys'; });
+  window.addEventListener('focus', () => { if ($('hint').textContent.startsWith('Click the game')) $('hint').textContent = ''; });
+  // clicks on buttons and cards also bring the keyboard back to the game
+  document.addEventListener('click', () => { try { window.focus(); } catch (err) {} }, true);
   window.addEventListener('keydown', (e) => {
     const k = KEYS[e.key]; if (!k) { if (e.key === 'Escape') showPause(); return; }
     e.preventDefault(); if (!keysHeld.has(e.key)) { keysHeld.add(e.key); steer(k); }
