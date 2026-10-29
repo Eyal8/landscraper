@@ -389,8 +389,8 @@ body {
   // ---------- the player: a little hover drone ----------
   const drone = new THREE.Group();
   const body = new THREE.Group(); drone.add(body);
-  const white = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x666666 });
-  const accent = new THREE.MeshPhongMaterial({ color: 0xff7a59, shininess: 80, specular: 0x555555 });
+  const white = new THREE.MeshPhongMaterial({ color: 0xff2e55, shininess: 110, specular: 0xffffff, emissive: 0x3a0010 }); // the drone's body: one bright hero color in every world
+  const accent = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x888888 });
   const dark = new THREE.MeshPhongMaterial({ color: 0x1c2240, shininess: 120, specular: 0x8899ff });
   const glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
   const hull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 18), white); hull.scale.set(1, 0.72, 1); body.add(hull);
@@ -409,6 +409,9 @@ body {
   drone.scale.setScalar(1.45);
   scene.add(drone);
   const droneShadow = blob(1.4);
+  const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 10, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.55, 'rgba(255,90,120,0.55)'); gr.addColorStop(0.75, 'rgba(255,255,255,0.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, depthWrite: false }));
+  halo.renderOrder = 2; scene.add(halo);
   // ---------- the landing pad: every level start and every respawn drops the drone in here ----------
   const SPAWN_X = Math.floor(W / 2), SPAWN_Y = Hh - 1, ENTER = 1.7;
   const padMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
@@ -444,7 +447,7 @@ body {
   const phong = (color, extra) => new THREE.MeshPhongMaterial(Object.assign({ color, shininess: 90, specular: 0x777777 }, extra || {}));
   const eyeWhite = phong(0xffffff, { shininess: 120 }), pupilMat = new THREE.MeshBasicMaterial({ color: 0x141428 });
   const FISH = {
-    bouncer: { colors: [0xffa23a, 0xffd23f, 0xff7aa8, 0xff6b5b], spikes: 0xfff1c9, size: 1 },
+    bouncer: { colors: [0xffa23a, 0xffd23f, 0xffc46b, 0xb98cff], spikes: 0xfff1c9, size: 1 },
     zipper: { colors: [0x38d6ff], spikes: 0xd9f8ff, size: 0.72, brows: true, stripes: 0x0e5aa8 },
     hunter: { colors: [0xff4d5e], spikes: 0xffd0d6, size: 1.05, brows: true, fin: true }
   };
@@ -1168,7 +1171,8 @@ body {
     body.rotation.x = (stepP < 1 && (mdx || mdy)) ? 0.22 : 0; // lean forward when moving
     rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); });
     drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
-    droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible; droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
+    droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
+    halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !(hideT > 0); const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
     // fuse
     if (fuse && live) {
