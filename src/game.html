@@ -3,12 +3,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=DM+Mono:wght@500&display=swap">
 <style>
 :root {
-  --ink: #fbf7ff;
-  --ink-soft: rgba(251, 247, 255, 0.72);
-  --shell: #17122a;
-  --card: rgba(23, 18, 42, 0.58);
-  --line: rgba(255, 255, 255, 0.16);
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.78);
+  --shade: rgba(16, 24, 56, 0.55);
+  --card: rgba(18, 24, 58, 0.72);
+  --line: rgba(255, 255, 255, 0.18);
   --gold: #ffd166;
+  --bad: #ff5a7a;
+  --good: #7cf3c4;
   --display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
   --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   color-scheme: dark;
@@ -16,70 +18,129 @@
 html, body { height: 100%; margin: 0; }
 [hidden] { display: none !important; }
 body {
-  background: var(--shell); color: var(--ink); font-family: var(--mono);
+  background: #1b2a55; color: var(--ink); font-family: var(--mono);
   overflow: hidden; touch-action: none; overscroll-behavior: none;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
-#stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, #1f2a5a 0%, #3a2f74 60%, #5a3b80 100%); }
+#stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--sky1, #7cc8ff) 0%, var(--sky2, #d6efff) 100%); transition: background 0.6s; }
 #stage canvas { position: absolute; inset: 0; display: block; }
+.ts { text-shadow: 0 1px 8px rgba(10, 20, 50, 0.45); }
+
+/* HUD */
 #hud {
-  position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; pointer-events: none;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
 }
-.stat { display: flex; flex-direction: column; gap: 3px; text-shadow: 0 1px 10px rgba(20, 10, 40, 0.45); }
-.stat b { font: 800 30px/1 var(--display); font-variant-numeric: tabular-nums; }
-.stat span { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
-.stat.right { align-items: flex-end; }
-.lives { display: flex; gap: 6px; margin-top: 4px; }
-.lives i { width: 11px; height: 11px; border-radius: 50%; background: var(--ink); box-shadow: 0 1px 6px rgba(20,10,40,0.4); }
-.lives i.off { background: transparent; border: 1.5px solid var(--ink-soft); box-sizing: border-box; }
+#pauseBtn {
+  pointer-events: auto; width: 40px; height: 40px; border-radius: 14px; border: 0; cursor: pointer; display: grid; place-items: center;
+  background: var(--shade); color: var(--ink); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+#pauseBtn svg { width: 16px; height: 16px; }
+.mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mid .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+.mid .row b { font: 800 15px var(--display); letter-spacing: 0; }
+.bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
+.bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
+.bar em { position: absolute; top: -2px; bottom: -2px; width: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.8); }
+.lives { display: flex; gap: 4px; }
+.lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
+.lives svg.off { opacity: 0.28; }
+#power { position: absolute; top: calc(66px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
+#power span { padding: 5px 10px; border-radius: 999px; background: var(--shade); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+
 #flash {
-  position: absolute; left: 50%; top: 17%; transform: translate(-50%, 0); text-align: center; pointer-events: none;
-  font: 800 clamp(20px, 6vw, 30px)/1.15 var(--display); white-space: nowrap; opacity: 0; transition: opacity 0.25s, transform 0.25s;
-  text-shadow: 0 2px 16px rgba(20, 10, 40, 0.35);
+  position: absolute; left: 50%; top: 20%; transform: translate(-50%, 0) scale(0.9); text-align: center; pointer-events: none;
+  font: 800 clamp(24px, 8vw, 36px)/1.1 var(--display); white-space: nowrap; opacity: 0; transition: opacity 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.4);
+  text-shadow: 0 3px 0 rgba(20, 30, 80, 0.35), 0 4px 18px rgba(20, 10, 40, 0.35);
 }
-#flash.show { opacity: 1; transform: translate(-50%, -6px); }
-#flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; }
+#flash.show { opacity: 1; transform: translate(-50%, -6px) scale(1); }
+#flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(10,20,50,0.5); }
+#flash.bad { color: #ffe0e6; }
+.pop { position: absolute; pointer-events: none; font: 800 18px var(--display); color: #fff; text-shadow: 0 2px 0 rgba(20,30,80,0.35); transform: translate(-50%, -50%); animation: pop 1s ease-out forwards; }
+@keyframes pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); } 15% { opacity: 1; transform: translate(-50%, -60%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
+#vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px 30px rgba(255, 40, 80, 0.55); opacity: 0; transition: opacity 0.35s; }
+#vignette.on { opacity: 1; transition: none; }
+
+/* direction pad that appears under the finger */
+#pad { position: absolute; width: 88px; height: 88px; margin: -44px 0 0 -44px; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+#pad.on { opacity: 1; }
+#pad .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,0.55); background: rgba(16, 24, 56, 0.18); }
+#pad .ring::before, #pad .ring::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(255,255,255,0.25); }
+#pad .ring::before { width: 2px; height: 70%; transform: translate(-50%, -50%); }
+#pad .ring::after { width: 70%; height: 2px; transform: translate(-50%, -50%); }
+#pad .knob { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(10,20,50,0.35); transition: transform 0.08s; display: grid; place-items: center; }
+#pad .knob svg { width: 16px; height: 16px; color: #2a3a7a; transition: transform 0.08s; }
+
+/* panels */
 #panel {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));
-  background: rgba(15, 10, 30, 0.32);
+  padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(12, 18, 44, 0.38);
 }
 .card {
-  width: min(340px, 100%); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 14px;
-  padding: 22px 20px 20px; border-radius: 26px; text-align: center;
-  background: var(--card); border: 1px solid var(--line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  width: min(360px, 100%); max-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 24px 20px 20px; border-radius: 28px; text-align: center; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--line); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  animation: cardIn 0.35s cubic-bezier(.2,.9,.3,1.25);
 }
+@keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+.card h1 { margin: 0; font: 800 34px/1 var(--display); letter-spacing: -0.01em; }
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
 .card p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
-.card .big { font: 800 46px/1 var(--display); font-variant-numeric: tabular-nums; }
-.card .kicker { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.card .kicker { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.card .big { font: 800 44px/1 var(--display); font-variant-numeric: tabular-nums; }
+.btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 .btn {
   cursor: pointer; width: 100%; padding: 15px 18px; border-radius: 999px; border: 0;
-  background: var(--ink); color: var(--shell); font: 500 13px var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+  background: #fff; color: #1d2a63; font: 500 13px var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+  box-shadow: 0 4px 0 rgba(10, 20, 60, 0.35);
 }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(10, 20, 60, 0.35); }
+.btn.alt { background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.stars { display: flex; gap: 10px; }
+.stars svg { width: 44px; height: 44px; color: rgba(255,255,255,0.18); }
+.stars svg.on { color: var(--gold); animation: star 0.45s cubic-bezier(.2,.9,.3,1.6) backwards; filter: drop-shadow(0 2px 8px rgba(255, 209, 102, 0.6)); }
+@keyframes star { from { transform: scale(0) rotate(-40deg); } }
+.foe { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+.foe img { width: 88px; height: 88px; }
+.eps { width: 100%; display: flex; flex-direction: column; gap: 18px; text-align: left; }
+.ep h3 { margin: 0 0 8px; font: 800 15px var(--display); display: flex; justify-content: space-between; align-items: baseline; }
+.ep h3 small { font: 500 11px var(--mono); letter-spacing: 0.14em; color: var(--ink-soft); }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.lvl { cursor: pointer; aspect-ratio: 1; border-radius: 14px; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: rgba(255,255,255,0.14); color: var(--ink); font: 800 16px var(--display); }
+.lvl small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); min-height: 11px; }
+.lvl.cur { background: #fff; color: #1d2a63; }
+.lvl[disabled] { cursor: default; opacity: 0.4; }
 .hint { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; pointer-events: none;
-  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
-@media (prefers-reduced-motion: reduce) { #flash { transition: none; } }
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); transition: opacity 0.4s; }
+@media (prefers-reduced-motion: reduce) { #flash, .card, .stars svg.on, .pop { animation: none; transition: none; } }
 </style>
 
 <main id="stage">
-  <div id="hud">
-    <div class="stat"><b id="hudA">0%</b><span id="hudALabel">Claimed</span></div>
-    <div class="stat right"><b id="hudB">1</b><span id="hudBLabel">Level</span><div class="lives" id="lives"></div></div>
+  <div id="hud" hidden>
+    <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
+    <div class="mid ts">
+      <div class="row"><span><b id="lvlLabel">1-1</b></span><span id="pctLabel">0% · goal 75%</span></div>
+      <div class="bar" id="bar"><i id="barFill"></i><em id="barGoal"></em></div>
+    </div>
+    <div class="lives" id="lives"></div>
   </div>
+  <div id="power"></div>
+  <div id="vignette"></div>
   <div id="flash"></div>
-  <div class="hint" id="hint">Swipe to move</div>
+  <div id="pad"><div class="ring"></div><div class="knob"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2 14 10H10V14H6V10H2Z"/></svg></div></div>
+  <div class="hint" id="hint"></div>
   <div id="panel"><div class="card" id="card"></div></div>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// Landscraper: Draw & Conquer. Xonix in 3D. Leave your land to draw a trail;
-// get back to land to claim every area with no monster in it. Claim 75% to clear the level.
-// Claimed land grows a little world (trees, houses, lamps). Enclose a monster in a small
-// area to trap it.
+// Landscraper: Draw & Conquer. Xonix in 3D.
+// Leave your land to draw a trail; get back to land to claim every area with no monster in it.
+// On land you move only while your finger is down; out at sea you are committed until you reach land.
 (() => {
   const $ = (id) => document.getElementById(id);
   const stage = $('stage');
@@ -88,31 +149,31 @@ body {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // ---------- renderer, sound, haptics, HUD ----------
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  stage.prepend(renderer.domElement);
+  // ---------- sound and haptics ----------
   let ac = null;
-  function tone(f, d, type, v) {
+  function tone(f, d, type, v, slide) {
     try {
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
       const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
-      o.type = type || 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(v || 0.14, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+      g.gain.setValueAtTime(v || 0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
       o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
     } catch (e) {}
   }
-  // Native haptics in the apps (iOS has no navigator.vibrate); vibration patterns on the web.
+  const arp = (notes, gap, dur, type) => notes.forEach((f, k) => setTimeout(() => tone(f, dur || 0.18, type), k * (gap || 70)));
   const capx = window.Capacitor && window.capacitorExports;
   const isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const Haptics = isApp && capx ? window.capacitorExports.registerPlugin('Haptics') : null;
-  const VIBE = { tick: 6, claim: 12, big: [15, 30, 15], trap: [20, 40, 30], clear: [20, 40, 20, 40, 40], hit: [30, 40, 60] };
+  const VIBE = { tick: 5, claim: 12, big: [15, 30, 15], trap: [20, 40, 30], clear: [20, 40, 20, 40, 40], hit: [30, 40, 60], eat: 8 };
   function buzz(kind) {
     try {
       if (Haptics) {
-        if (kind === 'tick') Haptics.impact({ style: 'LIGHT' });
+        if (kind === 'tick' || kind === 'eat') Haptics.impact({ style: 'LIGHT' });
         else if (kind === 'claim') Haptics.impact({ style: 'MEDIUM' });
         else if (kind === 'big' || kind === 'trap') Haptics.impact({ style: 'HEAVY' });
         else if (kind === 'clear') Haptics.notification({ type: 'SUCCESS' });
@@ -120,218 +181,397 @@ body {
       } else if (navigator.vibrate) navigator.vibrate(VIBE[kind] || 10);
     } catch (e) {}
   }
+
+  // ---------- HUD helpers ----------
   let flashT = 0;
-  function flash(text, small, ms) {
+  function flash(text, small, ms, bad) {
     const f = $('flash');
-    f.innerHTML = ''; f.append(text);
+    f.innerHTML = ''; f.append(text); f.classList.toggle('bad', !!bad);
     if (small) { const s = document.createElement('small'); s.textContent = small; f.append(s); }
-    f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), ms || 900);
+    f.classList.remove('show'); void f.offsetWidth; f.classList.add('show');
+    clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), ms || 1000);
   }
-  function hud(a, aLabel, b, bLabel, lives, maxLives) {
-    $('hudA').textContent = a; $('hudALabel').textContent = aLabel;
-    $('hudB').textContent = b; $('hudBLabel').textContent = bLabel;
-    const l = $('lives'); l.innerHTML = '';
-    for (let i = 0; i < maxLives; i++) { const d = document.createElement('i'); if (i >= lives) d.className = 'off'; l.append(d); }
-  }
-  function panel(html, onGo) {
+  const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
+  const STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>';
+  function panel(html, actions) {
     $('card').innerHTML = html; $('panel').hidden = false;
-    const go = $('card').querySelector('.btn');
-    if (go) go.addEventListener('click', (e) => { e.stopPropagation(); $('panel').hidden = true; onGo(); });
+    $('card').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation(); const a = actions[b.dataset.act]; if (a) a(b);
+    }));
   }
-  const best = (v) => { const b = store.get('ls_best', 0); if (v > b) { store.set('ls_best', v); return v; } return b; };
-  const rand = (a, b) => a + Math.random() * (b - a);
+  const hidePanel = () => { $('panel').hidden = true; };
+  function popAt(wx, wz, text, color) {
+    const v = new THREE.Vector3(wx, 1.4, wz).project(camera);
+    const d = document.createElement('div'); d.className = 'pop'; d.textContent = text;
+    if (color) d.style.color = color;
+    d.style.left = ((v.x + 1) / 2 * stage.clientWidth) + 'px'; d.style.top = ((1 - v.y) / 2 * stage.clientHeight) + 'px';
+    stage.append(d); setTimeout(() => d.remove(), 1000);
+  }
 
-  // ---------- scene ----------
-  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(48, 1, 0.1, 300);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3270, 0.95));
-  const sunL = new THREE.DirectionalLight(0xffffff, 0.55); sunL.position.set(5, 12, 7); scene.add(sunL);
+  // ---------- renderer and scene ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.prepend(renderer.domElement);
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(46, 1, 0.1, 300);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x5a6aa0, 0.62); scene.add(hemi);
+  const sunL = new THREE.DirectionalLight(0xfff4e0, 0.62); sunL.position.set(-6, 14, 8); scene.add(sunL);
 
-  const W = 24, Hh = 38, N = W * Hh, GOAL = 75;
+  const W = 24, Hh = 38, N = W * Hh;
   const SEA = 0, LAND = 1, TRAIL = 2;
   const TRAP_MAX = 40; // a monster enclosed in a sea area this small (cells) is trapped
-  const cells = new Uint8Array(N);
+  const SPEED = 9, FUSE = 2.5; // cells per second; the fuse runs 2.5x faster than you
+  const cells = new Uint8Array(N), fixed = new Uint8Array(N); // fixed: border and obstacles (not counted, never eaten)
   const idx = (x, y) => y * W + x;
   const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < Hh;
   const isBorder = (x, y) => x < 2 || y < 2 || x >= W - 2 || y >= Hh - 2;
-  // tiles
-  const geo = new THREE.BoxGeometry(0.94, 1, 0.94); geo.translate(0, 0.5, 0);
-  const tiles = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), N);
-  scene.add(tiles);
   const ox = -W / 2 + 0.5, oz = -Hh / 2 + 0.5;
-  const hNow = new Float32Array(N), hGoal = new Float32Array(N), delay = new Float32Array(N), flashC = new Float32Array(N);
-  const m4 = new THREE.Matrix4(), c3 = new THREE.Color(), WHITE = new THREE.Color(0xffffff);
-  const landCol = new THREE.Color(), seaA = new THREE.Color(0x2b2f63), seaB = new THREE.Color(0x30356c), trailCol = new THREE.Color(0x7ff0ff);
-  // Float32 heights: keep the constants in float32 so comparisons with the arrays are exact
-  const H_SEA = Math.fround(0.12), H_LAND = Math.fround(0.85), H_TRAIL = Math.fround(0.3);
-  const patch = new Float32Array(N); // -1..1 terrain patches, reseeded each level
-  function seedPatches() {
-    const a = rand(0, 6.28), b = rand(0, 6.28), c = rand(0, 6.28);
-    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++)
-      patch[idx(x, y)] = (Math.sin(x * 0.45 + a) * Math.cos(y * 0.33 + b) + Math.sin((x + y) * 0.21 + c)) / 2;
+  const H_LAND = Math.fround(0.9);
+
+  // ---------- worlds: procedural textures ----------
+  function tileCanvas(paint) {
+    const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+    const wrap = (fn) => { for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.save(); g.translate(dx, dy); fn(g); g.restore(); } };
+    paint(g, wrap);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
   }
+  let seed = 7; const srand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const TEX = {
+    grass: () => tileCanvas((g, wrap) => {
+      seed = 11; g.fillStyle = '#6cc35a'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 70; i++) { const x = srand() * 256, y = srand() * 256, r = 10 + srand() * 26, c = srand() < 0.5 ? 'rgba(120,214,96,0.45)' : 'rgba(78,170,72,0.4)', a = srand() * 3; wrap((h) => { h.fillStyle = c; h.beginPath(); h.ellipse(x, y, r, r * 0.7, a, 0, 7); h.fill(); }); }
+      g.lineCap = 'round';
+      for (let i = 0; i < 260; i++) { const x = srand() * 256, y = srand() * 256, a = -1.2 - srand() * 0.7, l = 4 + srand() * 5; g.strokeStyle = srand() < 0.5 ? 'rgba(60,140,58,0.55)' : 'rgba(160,232,120,0.55)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+      for (let i = 0; i < 16; i++) { const x = srand() * 256, y = srand() * 256, c = ['#ffffff', '#ffe16b', '#ffb3cf'][i % 3]; wrap((h) => { h.fillStyle = c; for (let k = 0; k < 5; k++) { h.beginPath(); h.arc(x + Math.cos(k * 1.26) * 2.6, y + Math.sin(k * 1.26) * 2.6, 1.9, 0, 7); h.fill(); } h.fillStyle = '#ffcf40'; h.beginPath(); h.arc(x, y, 1.6, 0, 7); h.fill(); }); }
+    }),
+    sand: () => tileCanvas((g, wrap) => {
+      seed = 23; g.fillStyle = '#f1cf8f'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 40; i++) { const x = srand() * 256, y = srand() * 256, r = 14 + srand() * 30, c = srand() < 0.5 ? 'rgba(255,232,180,0.35)' : 'rgba(214,170,104,0.25)'; wrap((h) => { h.fillStyle = c; h.beginPath(); h.ellipse(x, y, r * 1.6, r, 0.3, 0, 7); h.fill(); }); }
+      g.lineWidth = 2.2;
+      for (let k = 0; k < 9; k++) { const y0 = k * 256 / 9 + 6, ph = srand() * 6.28; g.strokeStyle = 'rgba(190,138,70,0.38)'; g.beginPath(); for (let x = 0; x <= 256; x += 4) { const y = y0 + Math.sin(x / 256 * 6.283 * 2 + ph) * 7 + Math.sin(x / 256 * 6.283 + ph * 2) * 4; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.strokeStyle = 'rgba(255,240,200,0.5)'; g.lineWidth = 1.2; g.beginPath(); for (let x = 0; x <= 256; x += 4) { const y = y0 + 3 + Math.sin(x / 256 * 6.283 * 2 + ph) * 7 + Math.sin(x / 256 * 6.283 + ph * 2) * 4; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.lineWidth = 2.2; }
+      for (let i = 0; i < 500; i++) { g.fillStyle = srand() < 0.5 ? 'rgba(150,100,50,0.35)' : 'rgba(255,255,240,0.6)'; g.fillRect(srand() * 256, srand() * 256, 1.4, 1.4); }
+    }),
+    snow: () => tileCanvas((g, wrap) => {
+      seed = 31; g.fillStyle = '#eef5ff'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 50; i++) { const x = srand() * 256, y = srand() * 256, r = 12 + srand() * 30, c = srand() < 0.6 ? 'rgba(200,222,255,0.45)' : 'rgba(255,255,255,0.7)', a = srand() * 3; wrap((h) => { h.fillStyle = c; h.beginPath(); h.ellipse(x, y, r, r * 0.8, a, 0, 7); h.fill(); }); }
+      g.lineWidth = 1.4; g.strokeStyle = 'rgba(120,160,225,0.55)';
+      for (let i = 0; i < 14; i++) { const x = srand() * 256, y = srand() * 256, path = []; let qx = x, qy = y; for (let k = 0; k < 5; k++) { qx += (srand() - 0.5) * 30; qy += (srand() - 0.5) * 30; path.push([qx, qy]); } wrap((h) => { h.beginPath(); h.moveTo(x, y); path.forEach(([a, b]) => h.lineTo(a, b)); h.stroke(); }); }
+      for (let i = 0; i < 120; i++) { g.fillStyle = 'rgba(255,255,255,0.95)'; const x = srand() * 256, y = srand() * 256; g.fillRect(x, y, 2, 2); }
+    })
+  };
+  const WORLDS = [
+    { name: 'Meadow', tex: 'grass', side: 0x9b6a45, sky: ['#6ec3ff', '#d9f1ff'], deep: '#1677b8', shallow: '#3fd0ea', foam: '#effcff', trail: 0xfff27a },
+    { name: 'Dunes', tex: 'sand', side: 0xc98a4c, sky: ['#ffb36e', '#ffe7c4'], deep: '#0d8a92', shallow: '#46e0c8', foam: '#f4fffb', trail: 0xffffff },
+    { name: 'Glacier', tex: 'snow', side: 0x7d9ed8, sky: ['#8f9cff', '#e3e8ff'], deep: '#18306e', shallow: '#3a6cc8', foam: '#ffffff', trail: 0xffe46b }
+  ];
+  const texCache = {};
+  const worldTex = (w) => texCache[w.tex] || (texCache[w.tex] = TEX[w.tex]());
+
+  // ---------- floor: animated water with grid and shoreline foam ----------
+  const maskData = new Uint8Array(N * 4);
+  const mask = new THREE.DataTexture(maskData, W, Hh, THREE.RGBAFormat);
+  mask.magFilter = THREE.LinearFilter; mask.minFilter = THREE.LinearFilter; mask.needsUpdate = true;
+  const floorMat = new THREE.ShaderMaterial({
+    uniforms: { uMask: { value: mask }, uTime: { value: 0 }, uSize: { value: new THREE.Vector2(W, Hh) },
+      uDeep: { value: new THREE.Color() }, uShallow: { value: new THREE.Color() }, uFoam: { value: new THREE.Color() } },
+    vertexShader: `varying vec2 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `
+      uniform sampler2D uMask; uniform float uTime; uniform vec2 uSize; uniform vec3 uDeep, uShallow, uFoam; varying vec2 vW;
+      void main(){
+        vec2 c = vW + uSize * 0.5; vec2 uv = c / uSize;
+        float land = texture2D(uMask, uv).r;
+        float t = uTime; vec2 p = c * 0.5;
+        float w = sin(p.x*1.7 + t*1.1) + sin(p.y*1.3 - t*0.9) + sin((p.x+p.y)*1.1 + t*0.7) + sin(length(p - vec2(5.0, 9.0))*1.6 - t*1.4);
+        w *= 0.25;
+        float caust = pow(abs(sin(w*3.14159 + p.x*0.35)), 7.0) + pow(abs(sin(w*2.6 - p.y*0.4 + t*0.3)), 9.0);
+        vec3 col = mix(uDeep, uShallow, clamp(0.45 + 0.3*w, 0.0, 1.0));
+        col += caust * 0.16;
+        vec2 g = abs(fract(c) - 0.5);
+        col *= 1.0 - smoothstep(0.44, 0.5, max(g.x, g.y)) * 0.12;
+        float shore = smoothstep(0.04, 0.5, land);
+        float ripple = 0.55 + 0.45 * sin(t*2.4 - shore*9.0);
+        col = mix(col, uFoam, shore * ripple * 0.7);
+        col = mix(col, col * 0.75, smoothstep(0.35, 0.5, land));
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh).rotateX(-Math.PI / 2), floorMat);
+  scene.add(floor);
+  // a slab under the board so it reads as an island
+  const baseMat = new THREE.MeshLambertMaterial({ color: 0x9b6a45 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 3, Hh + 0.4), baseMat); base.position.y = -1.52; scene.add(base);
+
+  // ---------- land tiles: one instanced box per cell, textured in world space ----------
+  const tileGeo = new THREE.BoxGeometry(1, 1, 1); tileGeo.translate(0, 0.5, 0);
+  const landMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 12, specular: 0x222222 });
+  const landU = { uTop: { value: null }, uSide: { value: new THREE.Color() } };
+  landMat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, landU);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLW; varying float vUp;')
+      .replace('#include <project_vertex>', `#include <project_vertex>
+        vec4 lw = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          lw = instanceMatrix * lw;
+        #endif
+        lw = modelMatrix * lw; vLW = lw.xyz; vUp = normal.y;`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uTop; uniform vec3 uSide; varying vec3 vLW; varying float vUp;')
+      .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `
+        vec3 topc = texture2D(uTop, vLW.xz * 0.22).rgb;
+        float lip = smoothstep(0.62, 0.86, vLW.y);
+        vec3 sidec = mix(uSide * 0.78, mix(uSide, topc, 0.65), lip);
+        vec4 diffuseColor = vec4(mix(sidec, topc, step(0.5, vUp)) * diffuse, opacity);`);
+  };
+  const tiles = new THREE.InstancedMesh(tileGeo, landMat, N);
+  tiles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(tiles);
+  const hNow = new Float32Array(N), hGoal = new Float32Array(N), hVel = new Float32Array(N), delay = new Float32Array(N), flashC = new Float32Array(N);
+  const m4 = new THREE.Matrix4(), c3 = new THREE.Color();
   function setTile(i) {
-    const x = i % W, y = (i / W) | 0;
-    m4.makeScale(1, Math.max(0.02, hNow[i]), 1); m4.setPosition(x + ox, 0, y + oz);
+    const x = i % W, y = (i / W) | 0, h = hNow[i];
+    m4.makeScale(1, Math.max(0.001, h), 1); m4.setPosition(x + ox, h > 0.01 ? 0 : -3, y + oz); // tucked under the slab when flat
     tiles.setMatrixAt(i, m4);
-    const c = cells[i];
-    if (c === LAND) { c3.copy(landCol).offsetHSL(patch[i] * 0.03, 0, ((x + y) % 2) * 0.03 - 0.015 + patch[i] * 0.06); if (flashC[i] > 0) c3.lerp(WHITE, flashC[i]); }
-    else if (c === TRAIL) c3.copy(trailCol);
-    else c3.copy((x + y) % 2 ? seaA : seaB);
+    const k = 1 + flashC[i] * 0.9; c3.setRGB(k, k, k * (1 + flashC[i] * 0.05));
     tiles.setColorAt(i, c3);
   }
+  function setMask(i) { maskData[i * 4] = cells[i] === LAND ? 255 : 0; }
 
-  // ---------- the world that grows on claimed land ----------
-  // Each decoration is a few instanced parts; parts share one scale animation.
-  const MAXD = 420;
-  function part(geometry, color, emissive) {
-    const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    if (emissive) { mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = 0.9; }
-    const m = new THREE.InstancedMesh(geometry, mat, MAXD);
-    m.userData.base = new THREE.Color(color);
-    m.setColorAt(0, m.userData.base); // create instance colors before the first render compiles the shader
-    m.count = 0; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    scene.add(m); return m;
-  }
-  const g = (geom, y) => { geom.translate(0, y, 0); return geom; };
-  const KINDS = {
-    tree: [
-      { mesh: part(g(new THREE.CylinderGeometry(0.06, 0.08, 0.22, 6), 0.11), 0x8a5a44) },
-      { mesh: part(g(new THREE.ConeGeometry(0.27, 0.5, 7), 0.45), 0x5fcf8f), tint: true }
-    ],
-    round: [
-      { mesh: part(g(new THREE.CylinderGeometry(0.05, 0.07, 0.2, 6), 0.1), 0x8a5a44) },
-      { mesh: part(g(new THREE.IcosahedronGeometry(0.24, 0), 0.36), 0x7ad9a0), tint: true }
-    ],
-    house: [
-      { mesh: part(g(new THREE.BoxGeometry(0.46, 0.32, 0.4), 0.16), 0xfff1e0), tint: true },
-      { mesh: part(g(new THREE.ConeGeometry(0.4, 0.26, 4).rotateY(Math.PI / 4), 0.45), 0xff8a7a) }
-    ],
-    lamp: [
-      { mesh: part(g(new THREE.CylinderGeometry(0.025, 0.03, 0.4, 5), 0.2), 0x3b2350) },
-      { mesh: part(g(new THREE.SphereGeometry(0.07, 10, 8), 0.43), 0xffd166, 0xffb84d) }
-    ]
-  };
-  const TREE_TINTS = [0x5fcf8f, 0x7ad9a0, 0x4fbf9f, 0x9be38a], HOUSE_TINTS = [0xfff1e0, 0xffe0ec, 0xe4ecff, 0xfff6c9];
-  let decor = [], decorOn = new Int16Array(N).fill(-1);
-  function addDecor(i, kind, wait) {
-    if (decor.length >= MAXD || decorOn[i] >= 0) return;
-    const tints = kind === 'house' ? HOUSE_TINTS : TREE_TINTS;
-    decorOn[i] = decor.length;
-    decor.push({ i, kind, x: i % W, y: (i / W) | 0, s: 0, wait, squash: 1, rot: kind === 'house' ? (Math.random() < 0.5 ? 0 : Math.PI / 2) : rand(0, 6.28),
-      jx: rand(-0.1, 0.1), jz: rand(-0.1, 0.1), size: rand(1.2, 1.55), tint: new THREE.Color(tints[(Math.random() * tints.length) | 0]) });
-  }
-  function clearDecor() { decor = []; decorOn.fill(-1); }
-  // Plant decorations on newly claimed cells. Interior cells (far from the sea) get houses.
-  function grow(newCells) {
-    const seaNear = (x, y) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const nx = x + dx, ny = y + dy; if (inside(nx, ny) && cells[idx(nx, ny)] !== LAND) return true; } return false; };
-    for (const i of newCells) {
-      const x = i % W, y = (i / W) | 0, wait = delay[i] + 0.12 + rand(0, 0.12), r = Math.random();
-      const interior = !seaNear(x, y);
-      if (interior && r < 0.06) addDecor(i, 'house', wait);
-      else if (r < 0.075) addDecor(i, 'lamp', wait);
-      else if (r < 0.2) addDecor(i, Math.random() < 0.55 ? 'tree' : 'round', wait);
+  // ---------- particles (pooled) ----------
+  const PMAX = 900;
+  const pPos = new Float32Array(PMAX * 3), pCol = new Float32Array(PMAX * 3), pVel = new Float32Array(PMAX * 3), pLife = new Float32Array(PMAX), pBase = new Float32Array(PMAX * 3);
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3).setUsage(THREE.DynamicDrawUsage));
+  const dot = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.42, map: dot, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  pts.frustumCulled = false; scene.add(pts);
+  let pNext = 0;
+  function burst(wx, wy, wz, color, n, spd, up) {
+    const col = new THREE.Color(color);
+    for (let k = 0; k < (n || 20); k++) {
+      const i = pNext; pNext = (pNext + 1) % PMAX;
+      pPos[i * 3] = wx; pPos[i * 3 + 1] = wy; pPos[i * 3 + 2] = wz;
+      const a = rand(0, 6.283), s = rand(0.4, 1) * (spd || 4);
+      pVel[i * 3] = Math.cos(a) * s; pVel[i * 3 + 1] = rand(0.4, 1) * (up || 5); pVel[i * 3 + 2] = Math.sin(a) * s;
+      pLife[i] = rand(0.6, 1);
+      pBase[i * 3] = col.r; pBase[i * 3 + 1] = col.g; pBase[i * 3 + 2] = col.b;
     }
   }
-  const dq = new THREE.Quaternion(), dpos = new THREE.Vector3(), dscl = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
-  function drawDecor(dt, fx, fy) {
-    for (const k in KINDS) KINDS[k].forEach((p) => { p.mesh.count = 0; });
-    for (const d of decor) {
-      if (d.wait > 0) { d.wait -= dt; continue; }
-      d.s = Math.min(1, d.s + dt * 3.2);
-      const near = Math.abs(d.x - fx) < 0.75 && Math.abs(d.y - fy) < 0.75; // flatten as the player rolls over
-      d.squash += ((near ? 0.25 : 1) - d.squash) * Math.min(1, dt * 14);
-      const pop = d.s < 1 ? 1 + Math.sin(d.s * Math.PI) * 0.35 : 1; // overshoot as it pops up
-      const sxz = d.size * d.s * pop, sy = d.size * d.s * pop * d.squash;
-      dq.setFromAxisAngle(UP, d.rot);
-      dpos.set(d.x + ox + d.jx, H_LAND, d.y + oz + d.jz); dscl.set(sxz, Math.max(0.001, sy), sxz);
-      m4.compose(dpos, dq, dscl);
-      for (const p of KINDS[d.kind]) {
-        const n = p.mesh.count++;
-        p.mesh.setMatrixAt(n, m4);
-        p.mesh.setColorAt(n, p.tint ? d.tint : p.mesh.userData.base);
+  function drawParticles(dt) {
+    for (let i = 0; i < PMAX; i++) {
+      if (pLife[i] <= 0) { pCol[i * 3] = pCol[i * 3 + 1] = pCol[i * 3 + 2] = 0; continue; }
+      pLife[i] -= dt * 1.2; pVel[i * 3 + 1] -= 11 * dt;
+      pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] = Math.max(0.05, pPos[i * 3 + 1] + pVel[i * 3 + 1] * dt); pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+      const f = Math.max(0, pLife[i]);
+      pCol[i * 3] = pBase[i * 3] * f; pCol[i * 3 + 1] = pBase[i * 3 + 1] * f; pCol[i * 3 + 2] = pBase[i * 3 + 2] * f;
+    }
+    pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+  }
+
+  // ---------- blob shadows ----------
+  const shadowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 4, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,30,0.45)'); gr.addColorStop(1, 'rgba(0,0,30,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const shadowGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+  const blob = (s) => { const m = new THREE.Mesh(shadowGeo, shadowMat); m.scale.set(s, 1, s); m.renderOrder = 1; scene.add(m); return m; };
+
+  // ---------- the player: a little hover drone ----------
+  const drone = new THREE.Group();
+  const body = new THREE.Group(); drone.add(body);
+  const white = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x666666 });
+  const accent = new THREE.MeshPhongMaterial({ color: 0xff7a59, shininess: 80, specular: 0x555555 });
+  const dark = new THREE.MeshPhongMaterial({ color: 0x1c2240, shininess: 120, specular: 0x8899ff });
+  const glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
+  const hull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 18), white); hull.scale.set(1, 0.72, 1); body.add(hull);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 10, 32), accent); band.rotation.x = Math.PI / 2; body.add(band);
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2), dark); visor.rotation.x = Math.PI / 2; visor.position.set(0, 0.05, 0.22); visor.scale.set(1.15, 1, 0.55); body.add(visor);
+  for (const sx of [-0.08, 0.08]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glow); e.position.set(sx, 0.07, 0.36); body.add(e); }
+  const rotors = [];
+  for (let k = 0; k < 4; k++) {
+    const a = Math.PI / 4 + k * Math.PI / 2, arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.07), white);
+    arm.position.set(Math.cos(a) * 0.36, 0.12, Math.sin(a) * 0.36); arm.rotation.y = -a; body.add(arm);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), accent); hub.position.set(Math.cos(a) * 0.52, 0.15, Math.sin(a) * 0.52); body.add(hub);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
+    disc.position.set(Math.cos(a) * 0.52, 0.2, Math.sin(a) * 0.52); body.add(disc);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.015, 0.05), dark); blade.position.copy(disc.position); body.add(blade); rotors.push(blade);
+  }
+  drone.scale.setScalar(1.45);
+  scene.add(drone);
+  const droneShadow = blob(1.4);
+  // direction chevron on the ground in front of the drone
+  const chev = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0.28), new THREE.Vector2(0.24, -0.02), new THREE.Vector2(0.1, -0.02), new THREE.Vector2(0, 0.1), new THREE.Vector2(-0.1, -0.02), new THREE.Vector2(-0.24, -0.02)])).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
+  chev.renderOrder = 2; scene.add(chev);
+
+  // ---------- trail: a thin dashed line, with a fuse that burns toward you ----------
+  const DMAX = N * 2;
+  const trailCol = new THREE.Color(), fuseCol = new THREE.Color(0xff3355);
+  const dashGeo = new THREE.BoxGeometry(0.38, 0.08, 0.15);
+  const dashes = new THREE.InstancedMesh(dashGeo, new THREE.MeshBasicMaterial({ color: trailCol }), DMAX);
+  dashes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); dashes.count = 0; dashes.frustumCulled = false; scene.add(dashes);
+  // burnt dashes share the same matrices, drawn slightly larger in red over the part the fuse has passed
+  const burnt = new THREE.InstancedMesh(dashGeo.clone().scale(1.12, 1.3, 1.3), new THREE.MeshBasicMaterial({ color: fuseCol }), DMAX);
+  burnt.instanceMatrix = dashes.instanceMatrix; burnt.count = 0; burnt.frustumCulled = false; scene.add(burnt);
+  const spark = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  spark.visible = false; scene.add(spark);
+
+  // ---------- monsters ----------
+  function stripeTex(a, b, n) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64; const g = c.getContext('2d');
+    for (let k = 0; k < n; k++) { g.fillStyle = k % 2 ? b : a; g.fillRect(k * 128 / n, 0, 128 / n + 1, 64); }
+    g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(0, 29, 128, 6);
+    return new THREE.CanvasTexture(c);
+  }
+  const BALLS = [['#ff5a7a', '#ffd166'], ['#4fd2ff', '#ffffff'], ['#9b6bff', '#7cf3c4'], ['#ff9f43', '#ff5a7a'], ['#2ecc71', '#f9f871']];
+  const ballMats = BALLS.map(([a, b]) => new THREE.MeshPhongMaterial({ map: stripeTex(a, b, 4), shininess: 110, specular: 0xffffff }));
+  const ballGeo = new THREE.SphereGeometry(0.4, 28, 18);
+  function makeBall(kind) {
+    const g = new THREE.Group();
+    if (kind === 'eater') { // a chomper: two jaws that open and close
+      const mat = new THREE.MeshPhongMaterial({ color: 0x8a3cff, shininess: 90, specular: 0xffffff });
+      const inner = new THREE.MeshBasicMaterial({ color: 0x3a0a2a, side: THREE.BackSide });
+      const tooth = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 });
+      const jaw = (up) => {
+        const j = new THREE.Group();
+        const shell = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 12, 0, Math.PI * 2, up ? 0 : Math.PI / 2, Math.PI / 2), mat);
+        const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.41, 24, 12, 0, Math.PI * 2, up ? 0 : Math.PI / 2, Math.PI / 2), inner);
+        j.add(shell, mouth);
+        for (let k = 0; k < 6; k++) { const a = -0.9 + k * 0.36, t = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 6), tooth); t.position.set(Math.sin(a) * 0.34, up ? -0.04 : 0.04, Math.cos(a) * 0.34); if (up) t.rotation.x = Math.PI; j.add(t); }
+        if (up) for (const sx of [-0.14, 0.14]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), tooth); e.position.set(sx, 0.26, 0.24); const p = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshBasicMaterial({ color: 0x111111 })); p.position.set(sx, 0.27, 0.31); j.add(e, p); }
+        return j;
+      };
+      const top = jaw(true), bot = jaw(false); g.add(top, bot); g.userData.jaws = [top, bot];
+    } else if (kind === 'spike') { // a spiky mine that lives on land
+      const mat = new THREE.MeshPhongMaterial({ color: 0xff5a7a, shininess: 80, specular: 0xffffff });
+      g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), mat));
+      const cone = new THREE.ConeGeometry(0.08, 0.26, 8); cone.translate(0, 0.38, 0);
+      const ico = new THREE.IcosahedronGeometry(1, 0), p = ico.attributes.position, seen = new Set();
+      for (let k = 0; k < p.count; k++) {
+        const v = new THREE.Vector3().fromBufferAttribute(p, k).normalize(), key = v.toArray().map((n) => n.toFixed(2)).join();
+        if (seen.has(key)) continue; seen.add(key);
+        const s = new THREE.Mesh(cone, mat); s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v); g.add(s);
       }
+    } else {
+      const ball = new THREE.Mesh(ballGeo, ballMats[(Math.random() * ballMats.length) | 0]);
+      if (kind === 'zipper') { ball.material = new THREE.MeshPhongMaterial({ map: stripeTex('#ffe14d', '#1d1d1d', 6), shininess: 110, specular: 0xffffff }); g.scale.setScalar(0.72); }
+      g.add(ball); g.userData.ball = ball;
     }
-    for (const k in KINDS) KINDS[k].forEach((p) => { p.mesh.instanceMatrix.needsUpdate = true; if (p.mesh.instanceColor) p.mesh.instanceColor.needsUpdate = true; });
+    g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
+    scene.add(g); return g;
+  }
+  const MONSTER_INFO = {
+    bouncer: { name: 'Bouncer', text: 'Bounces around the sea. If it touches your trail, a fuse races along it to you.' },
+    eater: { name: 'Chomper', text: 'Bites off a piece of your land every time it bounces off it.' },
+    spike: { name: 'Spike', text: 'Rolls along your land. Touch it while you are on land and you lose a life.' },
+    zipper: { name: 'Zipper', text: 'Small and very fast. Keep your trails short when it is around.' }
+  };
+
+  // ---------- power-ups ----------
+  const POWERS = {
+    slow: { label: 'Slow', color: 0x4fd2ff, secs: 7 },
+    freeze: { label: 'Freeze', color: 0xb8f0ff, secs: 4 },
+    life: { label: '+1 Life', color: 0xff5a7a, secs: 0 }
+  };
+  function makePower(kind) {
+    const g = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.07, 10, 28), new THREE.MeshPhongMaterial({ color: POWERS[kind].color, emissive: POWERS[kind].color, emissiveIntensity: 0.35, shininess: 80 }));
+    g.add(ring);
+    let icon;
+    if (kind === 'life') { const s = new THREE.Shape(); s.moveTo(0, -0.16); s.bezierCurveTo(-0.3, 0.05, -0.12, 0.26, 0, 0.1); s.bezierCurveTo(0.12, 0.26, 0.3, 0.05, 0, -0.16); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xff5a7a })); icon.position.z = -0.03; }
+    else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff }); const face = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), m); face.rotation.x = Math.PI / 2; const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshBasicMaterial({ color: 0x1d2a63 })); h.position.set(0, 0.06, 0.04); const h2 = h.clone(); h2.rotation.z = -1.2; h2.position.set(0.05, 0, 0.04); icon.add(face, h, h2); }
+    else { icon = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x88ddff, emissiveIntensity: 0.4, shininess: 100 })); }
+    g.add(icon); scene.add(g); return g;
   }
 
-  // ---------- particles ----------
-  let bursts = [];
-  function burst(x, y, h, col, n) {
-    const geom = new THREE.BufferGeometry(), pos = [], v = [];
-    n = n || 36;
-    for (let k = 0; k < n; k++) { pos.push(x + ox - 0.5, h, y + oz - 0.5); const a = rand(0, 6.28), up = rand(0.3, 1); v.push(Math.cos(a) * rand(1.5, 4), up * 5, Math.sin(a) * rand(1.5, 4)); }
-    geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    const pts = new THREE.Points(geom, new THREE.PointsMaterial({ color: col, size: 0.24, transparent: true, depthWrite: false }));
-    scene.add(pts); bursts.push({ pts, v, t: 0 });
+  // ---------- levels ----------
+  // Obstacles are fixed land blocks inside the field, as [x0, y0, x1, y1] (inclusive, field is x 2..21, y 2..35).
+  const OBST = [
+    [], [[10, 17, 13, 20]], [[6, 10, 8, 13], [15, 24, 17, 27]], [[2, 18, 9, 19], [14, 18, 21, 19]],
+    [[11, 8, 12, 29]], [[5, 6, 7, 8], [16, 6, 18, 8], [5, 29, 7, 31], [16, 29, 18, 31]], [[10, 15, 13, 22], [2, 26, 6, 27], [17, 9, 21, 10]],
+    [[2, 12, 14, 13], [9, 24, 21, 25]], [[8, 16, 15, 17], [11, 12, 12, 21]], [[6, 6, 7, 31], [16, 6, 17, 31]]
+  ];
+  const LEVELS = [];
+  for (let e = 0; e < 3; e++) for (let l = 0; l < 10; l++) {
+    const d = e * 10 + l, mon = [];
+    const nb = Math.min(5, 1 + Math.floor(d / 4)); for (let k = 0; k < nb; k++) mon.push('bouncer');
+    if (d >= 3) mon.push('eater'); if (d >= 16) mon.push('eater');
+    if (d >= 5) mon.push('spike'); if (d >= 14) mon.push('spike'); if (d >= 24) mon.push('spike');
+    if (d >= 10) mon.push('zipper'); if (d >= 21) mon.push('zipper');
+    LEVELS.push({ e, l, world: e, mon, speed: 3.9 + d * 0.11, goal: [75, 78, 80][e], obst: OBST[(l + e * 3) % OBST.length], powers: d >= 2 });
   }
-  function drawBursts(dt) {
-    for (const b of bursts) {
-      b.t += dt; const a = b.pts.geometry.attributes.position;
-      for (let k = 0; k < b.v.length / 3; k++) { b.v[k * 3 + 1] -= 9 * dt; a.array[k * 3] += b.v[k * 3] * dt; a.array[k * 3 + 1] += b.v[k * 3 + 1] * dt; a.array[k * 3 + 2] += b.v[k * 3 + 2] * dt; }
-      a.needsUpdate = true; b.pts.material.opacity = Math.max(0, 1 - b.t * 1.2);
-    }
-    bursts = bursts.filter((b) => { if (b.t > 0.9) { scene.remove(b.pts); b.pts.geometry.dispose(); b.pts.material.dispose(); return false; } return true; });
-  }
+  const levelName = (i) => (LEVELS[i].e + 1) + '-' + (LEVELS[i].l + 1);
+  const prog = store.get('ls_prog', { unlocked: 0, stars: {}, best: {}, seen: [] });
+  const saveProg = () => store.set('ls_prog', prog);
 
-  // ---------- player + monsters ----------
-  const player = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0xffd166, emissiveIntensity: 0.6 }));
-  scene.add(player);
-  const seaGeo = new THREE.SphereGeometry(0.42, 20, 14), landGeo = new THREE.OctahedronGeometry(0.5);
-  const seaMat = new THREE.MeshLambertMaterial({ color: 0xff6b8f, emissive: 0xff3366, emissiveIntensity: 0.45 });
-  const landMat = new THREE.MeshLambertMaterial({ color: 0x3a2350, emissive: 0xffd166, emissiveIntensity: 0.25 });
-  let state = 'menu', paused = false, frozen = false, level = 1, lives = 3, score = 0, pct = 0;
-  let px = 0, py = 0, tx = 0, ty = 0, prog = 1, dir = null, queue = [], drawing = false, trail = [], monsters = [], invuln = 0, lastLand = [0, 0];
-  let trapsThisLevel = 0, clearT = 0;
+  // ---------- game state ----------
+  let state = 'menu', paused = false, frozenT = 0, slowT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
+  let px = 0, py = 0, tx = 0, ty = 0, stepP = 1, dir = null, queue = [], drawing = false, trail = [], trailFrom = 0, monsters = [], powers = [], invuln = 0, lastLand = [0, 0];
+  let fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false;
+  const trailIdx = new Int32Array(N).fill(-1);
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
-  const SPEED = 9;          // cells per second
-  const CORNER = 0.3;       // a turn this early into a step still turns at the cell just left
+  const CORNER = 0.3;
   const opposite = (a, b) => a && b && DIRS[a][0] === -DIRS[b][0] && DIRS[a][1] === -DIRS[b][1];
 
-  function build() {
-    landCol.setHSL(((level * 0.13) + 0.85) % 1, 0.55, 0.72); seedPatches();
-    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
-      const i = idx(x, y), border = isBorder(x, y);
-      cells[i] = border ? LAND : SEA; hGoal[i] = hNow[i] = border ? H_LAND : H_SEA; delay[i] = 0; flashC[i] = 0; setTile(i);
-    }
-    tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
-    clearDecor();
-    monsters.forEach((m) => scene.remove(m.mesh)); monsters = [];
-    const nSea = 1 + level, nLand = level >= 2 ? Math.min(3, level - 1) : 0, sp = 4.2 + level * 0.45;
-    for (let k = 0; k < nSea; k++) addSea(rand(4, W - 4), rand(5, Hh - 5), (Math.random() < 0.5 ? -1 : 1) * sp, (Math.random() < 0.5 ? -1 : 1) * sp);
-    for (let k = 0; k < nLand; k++) {
-      const mesh = new THREE.Mesh(landGeo, landMat); scene.add(mesh);
-      monsters.push({ kind: 'land', x: W - 1.5, y: 1 + k * 0.5 + 0.5, vx: -sp * 0.6, vy: sp * 0.6, mesh, s: 1 });
-    }
-    px = tx = Math.floor(W / 2); py = ty = Hh - 1; prog = 1; dir = null; queue = []; drawing = false; trail = []; invuln = 1.2; lastLand = [px, py];
-    pct = 0; trapsThisLevel = 0; draw();
+  function applyWorld(w) {
+    landU.uTop.value = worldTex(w); landU.uSide.value.setHex(w.side);
+    baseMat.color.setHex(w.side).multiplyScalar(0.7);
+    floorMat.uniforms.uDeep.value.set(w.deep); floorMat.uniforms.uShallow.value.set(w.shallow); floorMat.uniforms.uFoam.value.set(w.foam);
+    trailCol.setHex(w.trail);
+    stage.style.setProperty('--sky1', w.sky[0]); stage.style.setProperty('--sky2', w.sky[1]);
   }
-  function addSea(x, y, vx, vy) {
-    const mesh = new THREE.Mesh(seaGeo, seaMat); scene.add(mesh);
-    const m = { kind: 'sea', x, y, vx, vy, mesh, s: 1 };
+  function build(i) {
+    cur = i; L = LEVELS[i]; applyWorld(WORLDS[L.world]);
+    fixed.fill(0); total = 0;
+    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
+      const k = idx(x, y);
+      let land = isBorder(x, y);
+      if (!land) for (const [x0, y0, x1, y1] of L.obst) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) land = true;
+      cells[k] = land ? LAND : SEA; fixed[k] = land ? 1 : 0; if (!land) total++;
+      hGoal[k] = hNow[k] = land ? H_LAND : 0; hVel[k] = 0; delay[k] = 0; flashC[k] = 0; trailIdx[k] = -1;
+      setTile(k); setMask(k);
+    }
+    tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; mask.needsUpdate = true;
+    monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = [];
+    powers.forEach((p) => scene.remove(p.mesh)); powers = [];
+    for (const kind of L.mon) spawnMonster(kind);
+    px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
+    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = 6;
+    lives = 3; score = 0; drawHud();
+  }
+  function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
+  function spawnMonster(kind, at) {
+    const sp = L.speed * (kind === 'zipper' ? 1.55 : kind === 'eater' ? 0.85 : kind === 'spike' ? 0.62 : 1);
+    let x, y;
+    if (kind === 'spike') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'spike').length * 6; }
+    else if (at) { [x, y] = at; }
+    else { const free = seaCellsFree().filter(([cx, cy]) => Math.abs(cx - W / 2) + Math.abs(cy - (Hh - 3)) > 10); const c = free[(Math.random() * free.length) | 0]; x = c[0] + 0.5; y = c[1] + 0.5; }
+    const m = { kind, x, y, vx: (Math.random() < 0.5 ? -1 : 1) * sp, vy: (Math.random() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(kind === 'zipper' ? 0.8 : 1.1), eatCd: 0, t: rand(0, 6) };
     monsters.push(m); return m;
   }
-  function percent() { let land = 0, tot = 0; for (let y = 2; y < Hh - 2; y++) for (let x = 2; x < W - 2; x++) { tot++; if (cells[idx(x, y)] === LAND) land++; } return Math.floor(land / tot * 100); }
-  function draw() { hud(pct + '%', 'Claimed · goal ' + GOAL + '%', level, 'Level', lives, 3); }
+  function drawHud() {
+    $('lvlLabel').textContent = L ? levelName(cur) : '';
+    $('pctLabel').textContent = pct + '% · goal ' + L.goal + '%';
+    $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
+    $('bar').classList.toggle('goal', pct >= L.goal);
+    const l = $('lives'); l.innerHTML = '';
+    for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
+    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT));
+    $('power').innerHTML = pw.map((t) => '<span class="ts">' + t + '</span>').join('');
+  }
+  function percent() { let n = 0; for (let i = 0; i < N; i++) if (!fixed[i] && cells[i] === LAND) n++; return Math.floor(n / total * 100); }
   function cellAt(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return inside(cx, cy) ? cells[idx(cx, cy)] : LAND; }
-  // The sea cell a monster sits in (or touches, if bouncing left it on an edge).
   function seaCellOf(m) {
     const cx = Math.floor(m.x), cy = Math.floor(m.y);
     for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
-      const x = cx + dx, y = cy + dy;
-      if (inside(x, y) && cells[idx(x, y)] === SEA) return idx(x, y);
+      const x = cx + dx, y = cy + dy; if (inside(x, y) && cells[idx(x, y)] === SEA) return idx(x, y);
     }
     return -1;
   }
+  const W2 = (x, y) => [x + ox, y + oz];
 
+  // ---------- claiming ----------
   function claim() {
-    trail.forEach((i) => { cells[i] = LAND; });
-    // Flood the sea from each monster. Every sea area with a monster stays sea, unless it is
-    // small enough to trap the monsters in it. Everything else becomes land.
+    trail.forEach((i) => { cells[i] = LAND; trailIdx[i] = -1; });
     const region = new Int32Array(N).fill(-1), regions = [];
     for (const m of monsters) {
-      if (m.kind !== 'sea' || m.trapped) continue;
-      const s = seaCellOf(m);
-      if (s < 0) continue;
+      if (m.kind === 'spike' || m.dead) continue;
+      const s = seaCellOf(m); if (s < 0) continue;
       if (region[s] >= 0) { regions[region[s]].monsters.push(m); continue; }
       const r = { size: 0, monsters: [m], cells: [] }, id = regions.length; regions.push(r);
       const stack = [s]; region[s] = id;
@@ -348,144 +588,322 @@ body {
     const fresh = [];
     for (let i = 0; i < N; i++) {
       if (cells[i] === SEA && region[i] < 0) cells[i] = LAND;
-      if (cells[i] === LAND && hGoal[i] !== H_LAND) { // newly claimed: rise in a wave from the player
-        const x = i % W, y = (i / W) | 0; hGoal[i] = H_LAND; delay[i] = reduceMotion ? 0 : Math.hypot(x - px, y - py) * 0.018; flashC[i] = 1;
-        fresh.push(i);
+      if (cells[i] === LAND && hGoal[i] !== H_LAND) {
+        const x = i % W, y = (i / W) | 0; hGoal[i] = H_LAND; delay[i] = reduceMotion ? 0 : Math.hypot(x - px, y - py) * 0.022; flashC[i] = 1;
+        fresh.push(i); setMask(i);
       }
     }
-    grow(fresh);
-    const add = fresh.length; trail = []; drawing = false;
-    const before = pct; pct = percent(); score += add * level;
-    const big = pct - before;
+    mask.needsUpdate = true;
+    // power-ups inside the claimed area are collected
+    for (const p of powers) if (cells[idx(p.x, p.y)] === LAND && !p.taken) takePower(p);
+    // sparkles across the new land
+    const n = Math.min(60, fresh.length);
+    for (let k = 0; k < n; k++) { const i = fresh[(Math.random() * fresh.length) | 0], [wx, wz] = W2(i % W, (i / W) | 0); setTimeout(() => burst(wx, H_LAND + 0.1, wz, 0xffffff, 2, 1.5, 3.5), delay[i] * 1000 + 120); }
+    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false;
+    const before = pct; pct = percent();
+    const gained = pct - before, pts = fresh.length * 10 * (1 + (gained >= 12 ? 1 : 0));
+    score += pts;
+    const [wx, wz] = W2(px, py); if (fresh.length) popAt(wx, wz, '+' + pts);
     if (trapped.length) {
-      trapped.forEach((m) => { m.trapped = 0.0001; burst(m.x, m.y, H_SEA + 0.6, 0xff8fb1, 44); });
-      trapsThisLevel += trapped.length;
-      const bonus = 100 * level * trapped.length * trapped.length;
-      score += bonus;
-      flash(trapped.length > 1 ? 'Double trap!' : 'Trapped!', '+' + bonus, 1200);
-      [392, 523, 784, 1047].forEach((f, k) => setTimeout(() => tone(f, 0.16, 'triangle', 0.13), k * 60));
-      buzz('trap');
-    } else if (big >= 12) { flash('Huge claim!', '+' + big + '%'); [523, 659, 784, 1047].forEach((f, k) => setTimeout(() => tone(f, 0.18), k * 70)); buzz('big'); }
-    else { tone(600 + big * 25, 0.16); buzz('claim'); }
-    draw();
-    if (pct >= GOAL) levelClear();
+      trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
+      const bonus = 250 * trapped.length * trapped.length; score += bonus;
+      flash(trapped.length > 1 ? 'Double trap!' : 'Trapped!', '+' + bonus, 1300);
+      arp([392, 523, 784, 1047], 60, 0.16, 'triangle'); buzz('trap'); shake = 0.25;
+    } else if (gained >= 12) { flash('Huge claim!', '+' + gained + '%'); arp([523, 659, 784, 1047], 70); buzz('big'); shake = 0.2; }
+    else if (fresh.length) { tone(560 + gained * 30, 0.16, 'triangle'); buzz('claim'); }
+    drawHud();
+    if (pct >= L.goal) levelClear();
   }
+  function takePower(p) {
+    p.taken = true; const [wx, wz] = W2(p.x, p.y);
+    burst(wx, 1.2, wz, POWERS[p.kind].color, 30, 3, 6);
+    if (p.kind === 'life') lives = Math.min(5, lives + 1);
+    if (p.kind === 'slow') slowT = POWERS.slow.secs;
+    if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
+    setTimeout(() => flash(POWERS[p.kind].label, p.kind === 'life' ? null : POWERS[p.kind].secs + ' seconds', 1000), 250);
+    arp([880, 1175, 1568], 60, 0.14, 'sine');
+  }
+  function spawnPower() {
+    const free = seaCellsFree(); if (!free.length) return;
+    const [x, y] = free[(Math.random() * free.length) | 0], kinds = lives < 3 ? ['life', 'slow', 'freeze'] : ['slow', 'freeze', 'slow', 'freeze', 'life'];
+    const kind = kinds[(Math.random() * kinds.length) | 0];
+    powers.push({ kind, x, y, mesh: makePower(kind), t: 0 });
+  }
+
+  // ---------- eaters bite land ----------
+  function eat(i, m) {
+    const x = i % W, y = (i / W) | 0;
+    if (fixed[i] || cells[i] !== LAND) return false;
+    if ((x === px && y === py) || (x === tx && y === ty)) return false;
+    cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = 0; setMask(i); mask.needsUpdate = true;
+    const [wx, wz] = W2(x, y); burst(wx, H_LAND, wz, 0xc9a27a, 14, 2.5, 4);
+    tone(140, 0.08, 'square', 0.06); buzz('eat');
+    pct = percent(); drawHud(); return true;
+  }
+
+  // ---------- level flow ----------
   function levelClear() {
-    state = 'clear'; clearT = 0;
-    const trees = decor.filter((d) => d.kind === 'tree' || d.kind === 'round').length, houses = decor.filter((d) => d.kind === 'house').length;
-    const bits = [trees + (trees === 1 ? ' tree' : ' trees'), houses + (houses === 1 ? ' house' : ' houses')];
-    if (trapsThisLevel) bits.push(trapsThisLevel + ' trapped');
-    setTimeout(() => flash('Level ' + level + ' clear!', bits.join(' · '), 2200), 350);
-    [523, 659, 784, 1047, 1319].forEach((f, k) => setTimeout(() => tone(f, 0.22), 350 + k * 90));
-    setTimeout(() => buzz('clear'), 350);
-    setTimeout(() => { level++; build(); state = 'play'; flash('Level ' + level, null, 900); }, 3000);
+    state = 'clear'; clearT = 0; $('hint').textContent = '';
+    const stars = 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
+    monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
+    // the rest of the sea rises too, slowly, as a victory wave
+    setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
+    flash('Level ' + levelName(cur) + ' clear!', pct + '% claimed', 1600);
+    arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
+    const best = prog.stars[cur] || 0; if (stars > best) prog.stars[cur] = stars;
+    if ((prog.best[cur] || 0) < score) prog.best[cur] = score;
+    if (cur + 1 < LEVELS.length && prog.unlocked < cur + 1) prog.unlocked = cur + 1;
+    saveProg();
+    setTimeout(() => {
+      $('hud').hidden = true;
+      const next = cur + 1 < LEVELS.length;
+      panel('<div class="kicker">Level ' + levelName(cur) + ' · ' + WORLDS[L.world].name + '</div><h2>Level clear!</h2>' +
+        '<div class="stars">' + [0, 1, 2].map((k) => '<svg class="' + (k < stars ? 'on' : '') + '" style="animation-delay:' + (0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>' +
+        '<div class="big">' + score + '</div><p>' + pct + '% claimed. ' + (stars < 3 ? 'Claim ' + (L.goal + (stars === 1 ? 7 : 14)) + '% for ' + (stars + 1) + ' stars: save a big area for your last cut.' : 'Perfect clear.') + '</p>' +
+        '<div class="btns">' + (next ? '<button class="btn" type="button" data-act="next">Next level</button>' : '<button class="btn" type="button" data-act="levels">All levels</button>') +
+        '<button class="btn alt" type="button" data-act="retry">Replay</button>' + (next ? '<button class="btn alt" type="button" data-act="levels">Levels</button>' : '') + '</div>',
+        { next: () => startLevel(cur + 1), retry: () => startLevel(cur), levels: showLevels });
+      [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => tone(880 + k * 220, 0.2, 'triangle'), 350 + k * 180); });
+    }, 2600);
   }
   function die(why) {
     if (invuln > 0 || state !== 'play') return;
-    lives--; tone(120, 0.45, 'sawtooth', 0.12); buzz('hit');
-    flash(lives > 0 ? 'Ouch!' : 'Game over', why);
-    trail.forEach((i) => { cells[i] = SEA; hGoal[i] = H_SEA; });
-    trail = []; drawing = false;
-    px = tx = lastLand[0]; py = ty = lastLand[1]; prog = 1; dir = null; queue = []; invuln = 1.5;
-    draw();
-    if (lives <= 0) { state = 'over'; setTimeout(over, 1200); }
+    lives--; tone(220, 0.5, 'sawtooth', 0.1, 70); buzz('hit'); shake = 0.35;
+    const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
+    burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
+    $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
+    flash(lives > 0 ? 'Ouch!' : 'Out of lives', why, 1100, true);
+    trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
+    trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false;
+    let [lx, ly] = lastLand;
+    if (cells[idx(lx, ly)] !== LAND) { lx = Math.floor(W / 2); ly = Hh - 1; }
+    px = tx = lx; py = ty = ly; stepP = 1; dir = null; queue = []; invuln = 1.6;
+    drawHud();
+    if (lives <= 0) { state = 'over'; setTimeout(outOfLives, 1300); }
   }
-  function over() { const b = best(score); panel('<div class="kicker">Game over</div><div class="big">' + score + '</div><p>Level ' + level + ' · best ' + b + '</p><button class="btn" type="button">Play again</button>', start); }
-  function start() { level = 1; lives = 3; score = 0; build(); state = 'play'; flash('Claim the board', 'swipe to move', 1500); }
+  function outOfLives() {
+    $('hud').hidden = true;
+    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>You claimed ' + pct + '% of ' + L.goal + '%. Try again.</p>' +
+      '<div class="btns"><button class="btn" type="button" data-act="retry">Try again</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
+      { retry: () => startLevel(cur), levels: showLevels });
+  }
+  function startLevel(i) {
+    hidePanel(); build(i); state = 'play'; paused = false; $('hud').hidden = false;
+    const fresh = L.mon.filter((k, j) => L.mon.indexOf(k) === j && !prog.seen.includes(k));
+    if (fresh.length) { // introduce a new monster before the level starts
+      state = 'intro'; const k = fresh[0]; prog.seen.push(...fresh); saveProg();
+      panel('<div class="kicker">New monster</div><div class="foe">' + foeIcon(k) + '</div><h2>' + MONSTER_INFO[k].name + '</h2><p>' + MONSTER_INFO[k].text + '</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
+        { go: () => { hidePanel(); state = 'play'; banner(); } });
+      return;
+    }
+    banner();
+  }
+  function banner() { flash('Level ' + levelName(cur), 'claim ' + L.goal + '%', 1300); invuln = 1.2; $('hint').textContent = cur === 0 ? 'Swipe to move · hold to keep moving on land' : ''; }
+  function foeIcon(k) { // a small rendered picture of the monster for the intro card
+    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setSize(176, 176);
+    const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x6a7ab0, 1)); const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(-2, 4, 5); s.add(d);
+    const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
+    const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.render(s, c);
+    const url = r.domElement.toDataURL(); r.dispose(); return '<img alt="" src="' + url + '">';
+  }
+
+  // ---------- menus ----------
+  function showTitle() {
+    state = 'menu'; $('hud').hidden = true; $('hint').textContent = '';
+    const next = Math.min(prog.unlocked, LEVELS.length - 1);
+    panel('<div class="kicker">BENO74 Studios</div><h1>Landscraper</h1><p>Draw your trail across the sea, get back to land, and claim every area without a monster in it.</p>' +
+      '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + levelName(next) + '</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
+      { play: () => startLevel(next), levels: showLevels });
+  }
+  function showLevels() {
+    state = 'menu'; $('hud').hidden = true; $('hint').textContent = '';
+    let html = '<h2>Levels</h2><div class="eps">';
+    for (let e = 0; e < 3; e++) {
+      const got = LEVELS.filter((x) => x.e === e).reduce((s, x, j) => s + (prog.stars[e * 10 + j] || 0), 0);
+      html += '<div class="ep"><h3>' + (e + 1) + ' · ' + WORLDS[e].name + '<small>' + got + ' / 30 stars</small></h3><div class="grid">';
+      for (let l = 0; l < 10; l++) {
+        const i = e * 10 + l, st = prog.stars[i] || 0, open = i <= prog.unlocked;
+        html += '<button class="lvl' + (i === prog.unlocked ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + levelName(i) + '">' + (l + 1) + '<small>' + (st ? '★'.repeat(st) : '') + '</small></button>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>';
+    panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showTitle });
+  }
+  function showPause() {
+    if (state !== 'play') return;
+    paused = true;
+    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart level</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
+      { resume: () => { hidePanel(); paused = false; }, retry: () => startLevel(cur), levels: showLevels });
+  }
+  $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
   // ---------- movement ----------
-  // Swipes queue up to two turns, so a quick right-then-up lands both. A turn that arrives
-  // just after leaving a cell still turns at that cell (corner forgiveness).
+  // Swipes queue up to two turns. On land you only keep moving while your finger (or key) is down.
+  let touchHeld = false; const keysHeld = new Set();
+  const held = () => touchHeld || keysHeld.size > 0;
   function steer(d) {
-    if (state !== 'play') return;
+    if (state !== 'play' || paused) return;
+    $('hint').textContent = '';
     const ref = queue.length ? queue[queue.length - 1] : dir;
     if (d === ref) return;
     if (drawing && opposite(d, ref)) return; // no U-turn into your own trail
     if (!dir) { dir = d; queue = []; return; }
-    if (!drawing && !queue.length && opposite(d, dir) && prog < 1) { // on land: reverse on the spot
-      [px, tx] = [tx, px]; [py, ty] = [ty, py]; prog = 1 - prog; dir = d; return;
-    }
-    if (!queue.length && prog < CORNER && !opposite(d, dir)) {
+    if (!drawing && !queue.length && opposite(d, dir) && stepP < 1) { [px, tx] = [tx, px]; [py, ty] = [ty, py]; stepP = 1 - stepP; dir = d; return; }
+    if (!queue.length && stepP < CORNER && !opposite(d, dir)) {
       const [dx, dy] = DIRS[d], nx = px + dx, ny = py + dy;
       if (inside(nx, ny) && cells[idx(nx, ny)] !== TRAIL) { dir = d; tx = nx; ty = ny; buzz('tick'); return; }
     }
     queue.push(d); if (queue.length > 2) queue.shift();
   }
   function arrive() {
+    const from = idx(px, py);
     px = tx; py = ty;
     const i = idx(px, py), c = cells[i];
     if (c === TRAIL) { die('you crossed your own trail'); return; }
-    if (c === SEA) { cells[i] = TRAIL; hGoal[i] = H_TRAIL; trail.push(i); drawing = true; }
-    else if (c === LAND) { lastLand = [px, py]; if (drawing) { claim(); dir = null; if (state !== 'play') return; } }
+    if (c === SEA) {
+      if (!drawing) { trailFrom = from; drawing = true; }
+      cells[i] = TRAIL; trailIdx[i] = trail.length; trail.push(i); addDashes(trail.length - 1);
+    } else if (c === LAND) {
+      lastLand = [px, py];
+      if (drawing) { claim(); dir = null; queue = []; if (state !== 'play') return; }
+      else if (!held() && !queue.length) { dir = null; return; } // let go on land: stop here
+    }
     while (queue.length) { const q = queue.shift(); if (!(drawing && opposite(q, dir))) { dir = q; break; } }
     if (!dir) return;
     const [dx, dy] = DIRS[dir], nx = px + dx, ny = py + dy;
     if (!inside(nx, ny)) { dir = null; return; }
-    tx = nx; ty = ny; prog = 0;
+    tx = nx; ty = ny; stepP = 0;
+  }
+  const dq = new THREE.Quaternion(), dpos = new THREE.Vector3(), dscl = new THREE.Vector3(1, 1, 1), UP = new THREE.Vector3(0, 1, 0);
+  function addDashes(k) {
+    const a = k === 0 ? trailFrom : trail[k - 1], b = trail[k];
+    const ax = a % W, ay = (a / W) | 0, bx = b % W, by = (b / W) | 0;
+    dq.setFromAxisAngle(UP, ax === bx ? Math.PI / 2 : 0);
+    for (const f of [0.28, 0.78]) {
+      dpos.set(ax + (bx - ax) * f + ox, 0.06, ay + (by - ay) * f + oz);
+      m4.compose(dpos, dq, dscl); const n = k * 2 + (f < 0.5 ? 0 : 1);
+      dashes.setMatrixAt(n, m4);
+    }
+    dashes.count = trail.length * 2; dashes.instanceMatrix.needsUpdate = true;
+  }
+  function lightFuse(k) {
+    if (!fuse) { fuse = { pos: k }; tone(300, 0.6, 'sawtooth', 0.05, 1200); flash('Fuse!', 'get back to land', 800, true); }
+    else if (k > fuse.pos) fuse.pos = k;
   }
 
-  // ---------- camera: top-down play view; a slow low orbit to show off the world at a level clear ----------
-  let camD = 40, camBlend = 0;
-  const camTarget = new THREE.Vector3();
+  // ---------- camera ----------
+  let camD = 40;
   function placeCamera(t) {
-    const yaw = camBlend * Math.sin(t * 0.5) * 0.28, k = 1 - camBlend * 0.12;
-    const y = camD * (0.84 - camBlend * 0.24) * k, z = camD * (0.5 + camBlend * 0.22) * k;
-    camera.position.set(Math.sin(yaw) * z, y, Math.cos(yaw) * z);
-    camTarget.set(0, 0, 0.8 - camBlend * 1.5); camera.lookAt(camTarget);
+    const win = state === 'clear' && !reduceMotion ? Math.min(1, clearT * 0.7) : 0;
+    const yaw = win * Math.sin(clearT * 0.6) * 0.25, k = 1 - win * 0.1;
+    const y = camD * (0.93 - win * 0.25) * k, z = camD * (0.34 + win * 0.26) * k;
+    const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0, sz = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+    camera.position.set(Math.sin(yaw) * z + sx, y, Math.cos(yaw) * z + sz);
+    camera.lookAt(sx * 0.5, 0, 2.2 - win * 2.2);
   }
 
+  // ---------- update ----------
+  const zero = new THREE.Vector3();
   function update(dt, t) {
-    // tiles
+    floorMat.uniforms.uTime.value = t;
+    if (shake > 0) shake = Math.max(0, shake - dt);
+    if (state === 'clear') clearT += dt;
+    // tiles: a springy rise
     let dirty = false;
     for (let i = 0; i < N; i++) {
-      if (cells[i] === TRAIL || hGoal[i] !== hNow[i] || flashC[i] > 0) {
+      if (hGoal[i] !== hNow[i] || hVel[i] !== 0 || flashC[i] > 0) {
         if (delay[i] > 0) { delay[i] -= dt; continue; }
-        const gh = hGoal[i];
-        if (hNow[i] !== gh) { const d = gh - hNow[i]; hNow[i] = Math.abs(d) < 0.01 ? gh : hNow[i] + d * Math.min(1, dt * 11); if (gh === H_LAND && Math.abs(d) < 0.08) hNow[i] = gh; }
-        if (flashC[i] > 0) flashC[i] = Math.max(0, flashC[i] - dt * 2.2);
+        const g = hGoal[i];
+        hVel[i] += ((g - hNow[i]) * 190 - hVel[i] * 13) * dt; hNow[i] += hVel[i] * dt;
+        if (Math.abs(g - hNow[i]) < 0.004 && Math.abs(hVel[i]) < 0.05) { hNow[i] = g; hVel[i] = 0; }
+        if (g === 0 && hNow[i] < 0) { hNow[i] = 0; hVel[i] = 0; }
+        if (flashC[i] > 0) flashC[i] = Math.max(0, flashC[i] - dt * 1.8);
         setTile(i); dirty = true;
       }
     }
     if (dirty) { tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; }
+    const live = state === 'play' && !paused;
     // player
-    if (state === 'play') {
+    if (live) {
       if (invuln > 0) invuln -= dt;
-      if (prog < 1) { prog = Math.min(1, prog + dt * SPEED); if (prog >= 1) arrive(); }
+      if (slowT > 0) slowT = Math.max(0, slowT - dt);
+      if (frozenT > 0) frozenT = Math.max(0, frozenT - dt);
+      if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
+      if (L.powers) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 1) spawnPower(); powerTimer = 18; } }
+      if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
-    const fx = px + (tx - px) * prog, fy = py + (ty - py) * prog;
+    const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
     const onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
-    player.position.set(fx + ox, (onLand ? H_LAND : H_TRAIL) + 0.42, fy + oz);
-    player.rotation.y += dt * 2;
-    player.visible = !(invuln > 0 && Math.floor(t * 10) % 2);
+    const ground = (x, y) => { const i = idx(clamp(Math.round(x), 0, W - 1), clamp(Math.round(y), 0, Hh - 1)); return Math.max(0, hNow[i]); };
+    const gy = Math.max(ground(px, py) * (1 - stepP) + ground(tx, ty) * stepP, 0);
+    drone.position.set(fx + ox, gy + 0.55 + Math.sin(t * 4) * 0.05, fy + oz);
+    const mdx = tx - px, mdy = ty - py;
+    if (dir) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
+    body.rotation.x = (stepP < 1 && (mdx || mdy)) ? 0.22 : 0; // lean forward when moving
+    rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); });
+    drone.visible = !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
+    droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
+    chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
+    // fuse
+    if (fuse && live) {
+      fuse.pos += dt * SPEED * FUSE;
+      const head = trail.length - 1 + stepP;
+      if (fuse.pos >= head) die('the fuse caught you');
+      else {
+        const k = Math.floor(fuse.pos), f = fuse.pos - k, a = k === 0 ? trailFrom : trail[k - 1], b = trail[k];
+        const ax = a % W, ay = (a / W) | 0, bx = b % W, by = (b / W) | 0;
+        spark.position.set(ax + (bx - ax) * f + ox, 0.15, ay + (by - ay) * f + oz); spark.visible = true; spark.scale.setScalar(1 + Math.sin(t * 40) * 0.3);
+        spark.material.color.setHSL(0.02 + Math.random() * 0.08, 1, 0.6);
+        burnt.count = Math.min(dashes.count, Math.ceil(fuse.pos * 2));
+        if (Math.random() < 0.6) burst(spark.position.x, 0.2, spark.position.z, 0xff7a3a, 1, 1.5, 2.5);
+      }
+    }
     // monsters
+    const mult = frozenT > 0 ? 0 : slowT > 0 ? 0.45 : 1;
     for (const m of monsters) {
-      if (m.trapped) { // caught: shrink and sink away
-        m.trapped += dt; m.s = Math.max(0, 1 - m.trapped * 2.5);
-        m.mesh.scale.setScalar(m.s); m.mesh.position.y -= dt * 0.6; m.mesh.rotation.y += dt * 14;
+      m.t += dt;
+      if (m.dead) {
+        m.dead += dt; const s = Math.max(0, 1 - m.dead * 2.5);
+        m.mesh.scale.setScalar(s * m.mesh.userData.s); m.mesh.position.y += dt * 1.2; m.mesh.rotation.y += dt * 14; m.shadow.visible = false;
         continue;
       }
-      if (state === 'play' && !frozen) {
-        const solid = (c) => m.kind === 'sea' ? c === LAND : c !== LAND;
-        let nx = m.x + m.vx * dt; if (solid(cellAt(nx, m.y))) { m.vx = -m.vx; nx = m.x; }
-        let ny = m.y + m.vy * dt; if (solid(cellAt(nx, ny))) { m.vy = -m.vy; ny = m.y; }
-        m.x = nx; m.y = ny;
-        if (m.kind === 'sea' && cellAt(m.x, m.y) === TRAIL) die('a monster hit your trail');
-        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.75) {
-          if (m.kind === 'sea' && !onLand) die('a monster caught you');
-          if (m.kind === 'land' && onLand) die('a mine caught you on land');
+      if (live && !testFrozen && mult > 0) {
+        const solid = (c) => m.kind === 'spike' ? c !== LAND : c === LAND;
+        const step = dt * mult;
+        let nx = m.x + m.vx * step;
+        if (solid(cellAt(nx, m.y))) { const hit = idx(Math.floor(nx), Math.floor(m.y)); m.vx = -m.vx; nx = m.x; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        let ny = m.y + m.vy * step;
+        if (solid(cellAt(nx, ny))) { const hit = idx(Math.floor(nx), Math.floor(ny)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        m.x = nx; m.y = ny; m.eatCd -= dt;
+        if (m.kind !== 'spike') { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
+        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8) {
+          if (m.kind !== 'spike' && !onLand) die('a monster caught you');
+          if (m.kind === 'spike' && onLand) die('a spike caught you on land');
         }
       }
-      const base = m.kind === 'sea' ? H_SEA + 0.42 : H_LAND + 0.5;
-      m.mesh.position.set(m.x - 0.5 + ox, base + Math.abs(Math.sin(t * 6 + m.x)) * 0.25, m.y - 0.5 + oz);
-      m.mesh.rotation.y += dt * 3;
+      const r = (m.kind === 'zipper' ? 0.29 : 0.4) * 1.22;
+      const baseY = m.kind === 'spike' ? H_LAND + 0.45 : r;
+      const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz;
+      m.mesh.position.set(wx, baseY + (m.kind === 'spike' ? Math.abs(Math.sin(m.t * 5)) * 0.15 : 0), wz);
+      m.shadow.position.set(wx, (m.kind === 'spike' ? H_LAND : 0) + 0.02, wz);
+      if (m.mesh.userData.ball && live && mult > 0) { // roll along the velocity
+        const sp = Math.hypot(m.vx, m.vy) * dt * mult; dpos.set(m.vy, 0, -m.vx).normalize(); dq.setFromAxisAngle(dpos, sp / r); m.mesh.userData.ball.quaternion.premultiply(dq);
+      }
+      if (m.kind === 'spike') m.mesh.rotation.y += dt * 2;
+      if (m.mesh.userData.jaws) { m.mesh.rotation.y = Math.atan2(m.vx, m.vy); const o = Math.abs(Math.sin(m.t * 7)) * 0.5; m.mesh.userData.jaws[0].rotation.x = -o; m.mesh.userData.jaws[1].rotation.x = o * 0.4; }
     }
-    monsters = monsters.filter((m) => { if (m.trapped && m.s <= 0) { scene.remove(m.mesh); return false; } return true; });
-    drawDecor(dt, fx, fy);
-    drawBursts(dt);
-    // camera
-    const want = state === 'clear' && !reduceMotion ? 1 : 0;
-    camBlend += (want - camBlend) * Math.min(1, dt * (want ? 1.6 : 3));
+    monsters = monsters.filter((m) => { if (m.dead && m.dead > 0.5) { scene.remove(m.mesh); scene.remove(m.shadow); return false; } return true; });
+    // power-ups
+    for (const p of powers) {
+      p.t += dt; const [wx, wz] = W2(p.x, p.y);
+      if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
+      p.mesh.position.set(wx, 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.y += dt * 1.8;
+      p.mesh.scale.setScalar(Math.min(1, p.t * 3));
+    }
+    powers = powers.filter((p) => { if (p.taken && p.mesh.scale.x < 0.02) { scene.remove(p.mesh); return false; } return true; });
+    drawParticles(dt);
     placeCamera(t);
   }
 
@@ -494,59 +912,69 @@ body {
     renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
     camera.aspect = w / h;
     const vt = Math.tan((camera.fov / 2) * Math.PI / 180);
-    camD = Math.max((Hh + 2) / (2 * vt) * 0.92, (W + 3) / (2 * vt * camera.aspect));
+    camD = Math.max((Hh + 4) / (2 * vt) * 0.86, (W + 1.5) / (2 * vt * camera.aspect) * 0.97);
     camera.updateProjectionMatrix(); placeCamera(0);
   }
   window.addEventListener('resize', resize);
 
-  // ---------- input: swipe (chained without lifting) or arrow keys ----------
+  // ---------- input: swipe anywhere (chained without lifting) or arrow keys ----------
   let sw = null;
-  stage.addEventListener('pointerdown', (e) => { if (e.target.closest('#panel')) return; e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; });
+  const pad = $('pad'), knob = pad.querySelector('.knob'), knobIcon = knob.querySelector('svg');
+  const ROT = { up: 0, right: 90, down: 180, left: 270 }, OFF = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  function padTo(d) { const [x, y] = OFF[d]; knob.style.transform = 'translate(' + x * 26 + 'px,' + y * 26 + 'px)'; knobIcon.style.transform = 'rotate(' + ROT[d] + 'deg)'; }
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('#panel') || e.target.closest('#pauseBtn')) return;
+    e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true;
+    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knob.style.transform = ''; knobIcon.style.transform = 'rotate(' + (dir ? ROT[dir] : 0) + 'deg)'; pad.classList.add('on'); }
+  });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
     const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
-    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-    sw = { x: e.clientX, y: e.clientY };
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    steer(d); padTo(d);
+    sw = { x: e.clientX, y: e.clientY }; pad.style.left = (e.clientX - OFF[d][0] * 26) + 'px'; pad.style.top = (e.clientY - OFF[d][1] * 26) + 'px';
   });
-  window.addEventListener('pointerup', () => { sw = null; });
-  window.addEventListener('pointercancel', () => { sw = null; });
+  const release = () => { sw = null; touchHeld = false; pad.classList.remove('on'); };
+  window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release);
+  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
   window.addEventListener('keydown', (e) => {
-    const k = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' }[e.key];
-    if (k) { e.preventDefault(); steer(k); }
+    const k = KEYS[e.key]; if (!k) { if (e.key === 'Escape') showPause(); return; }
+    e.preventDefault(); if (!keysHeld.has(e.key)) { keysHeld.add(e.key); steer(k); }
   });
-  document.addEventListener('visibilitychange', () => { paused = document.hidden; });
+  window.addEventListener('keyup', (e) => { keysHeld.delete(e.key); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
 
   // ---------- loop ----------
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!paused) update(dt, now / 1000);
+    update(dt, now / 1000);
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
-  resize(); build(); state = 'menu';
-  panel('<div class="kicker">BENO74 Studios</div><h2>Landscraper</h2><p>Swipe to leave your land and draw a trail. Get back to land to claim every area with no monster in it.</p><p>Trap a monster in a small area to catch it. Claim 75% to clear the level.</p><button class="btn" type="button">Play</button>', start);
+  resize(); build(Math.min(prog.unlocked, LEVELS.length - 1)); showTitle();
   requestAnimationFrame(loop);
 
   // Test hook (headless checks and store screenshots)
   window.__game = {
-    get state() { return state; }, get pct() { return pct; }, get level() { return level; }, get lives() { return lives; },
-    get score() { return score; }, get pos() { return [px, py, prog]; }, get monsters() { return monsters.map((m) => ({ kind: m.kind, x: m.x, y: m.y, trapped: !!m.trapped })); },
-    get decor() { return decor.length; }, get decorList() { return decor.map((d) => [d.x, d.y, d.kind]); },
-    steer, start,
-    freeze(v) { frozen = !!v; },
-    clearMonsters() { monsters.forEach((m) => scene.remove(m.mesh)); monsters = []; },
-    addSea(x, y) { addSea(x, y, 4, 4); },
-    setPlayer(x, y) { px = tx = x; py = ty = y; prog = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; },
-    // Store screenshots: lay a trail along [x, y] cells (sea cells only) and optionally close it with a claim.
+    get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
+    get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
+    get monsters() { return monsters.map((m) => ({ kind: m.kind, x: m.x, y: m.y, dead: !!m.dead })); },
+    get trailLen() { return trail.length; },
+    steer, startLevel, hold(v) { touchHeld = !!v; },
+    freeze(v) { testFrozen = !!v; },
+    clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
+    addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
+    setPlayer(x, y) { px = tx = x; py = ty = y; stepP = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; },
     trail(cellsXY, close) {
-      for (const [x, y] of cellsXY) { const i = idx(x, y); if (cells[i] === SEA) { cells[i] = TRAIL; hGoal[i] = H_TRAIL; trail.push(i); drawing = true; } }
-      const [lx, ly] = cellsXY[cellsXY.length - 1]; px = tx = lx; py = ty = ly; prog = 1; dir = null; queue = [];
+      trailFrom = idx(px, py);
+      for (const [x, y] of cellsXY) { const i = idx(x, y); if (cells[i] === SEA) { cells[i] = TRAIL; trailIdx[i] = trail.length; trail.push(i); drawing = true; addDashes(trail.length - 1); } }
+      const [lx, ly] = cellsXY[cellsXY.length - 1]; px = tx = lx; py = ty = ly; stepP = 1; dir = null; queue = [];
       if (close) claim();
     },
-    setLevel(n) { level = n; build(); state = 'play'; invuln = 0; },
-    setLives(n) { lives = n; draw(); }
+    setLives(n) { lives = n; drawHud(); }, power(kind, x, y) { powers.push({ kind, x, y, mesh: makePower(kind), t: 0 }); },
+    fuseAt(k) { lightFuse(k); }, unlockAll() { prog.unlocked = LEVELS.length - 1; saveProg(); }
   };
 })();
 </script>

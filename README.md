@@ -29,8 +29,9 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] Prototype ported to `src/game.html`
 - [x] Capacitor projects for `com.beno74.landscraper`
 - [x] App icon, splash, Play feature graphic and screenshots (first pass): `python3 design/render.py`, then `npx @capacitor/assets generate`; screenshots with `python3 design/screens-store.py android` after `npm run build`
-- [x] Controls: two-turn swipe queue, corner forgiveness, reverse on land, native haptics
-- [x] Claimed land grows a world (trees, houses, lamps); slow orbit at level clear
-- [x] Trap monsters: enclose one in 40 cells or less to catch it
-- [ ] More monsters, board shapes, themed worlds, power-ups
-- [ ] Ads, Remove Ads purchase, tutorial, Daily
+- [x] Controls: two-turn swipe queue, corner forgiveness; on land you move only while holding, at sea you are committed; on-screen direction pad
+- [x] Fuse: a monster touching your trail lights a fuse that runs to you at 2.5x your speed
+- [x] Monsters: Bouncer, Chomper (eats land), Spike (land only), Zipper (fast); trap any sea monster in 40 cells or less
+- [x] 3 worlds x 10 levels (Meadow, Dunes, Glacier) with obstacles, stars by % claimed, power-ups (Slow, Freeze, +1 Life)
+- [x] Graphics: textured land per world, animated water with shoreline foam, hover drone, springy claim wave, particles
+- [ ] Tutorial, Daily, ads, Remove Ads, Continue

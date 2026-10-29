@@ -19,11 +19,12 @@ with sync_playwright() as p:
     def page(level, monsters):
         pg = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=3)
         pg.on('pageerror', lambda e: print('JS error:', e))
-        pg.goto(url); pg.wait_for_function('window.__game'); pg.wait_for_timeout(300)
+        pg.goto(url); pg.wait_for_function('window.__game'); pg.wait_for_timeout(300); pg.evaluate('__game.unlockAll()')
         pg.add_style_tag(content='#hint{display:none!important}')
-        pg.click('.btn'); pg.wait_for_timeout(200)
-        pg.evaluate(f"__game.setLevel({level}); __game.freeze(true); __game.clearMonsters()")
-        for x, y in monsters: pg.evaluate(f"__game.addSea({x}, {y})")
+        pg.evaluate(f"__game.startLevel({level - 1})"); pg.wait_for_timeout(200)
+        if pg.locator('#panel:not([hidden]) [data-act=go]').count(): pg.click('#panel:not([hidden]) [data-act=go]')
+        pg.evaluate("__game.freeze(true); __game.clearMonsters()")
+        for x, y in monsters: pg.evaluate(f"__game.addMonster('bouncer', {x}, {y})")
         return pg
     def save(pg, shot):
         d = out / f'{name}-{shot}.png'; pg.screenshot(path=str(d)); Image.open(d).convert('RGB').save(d)
