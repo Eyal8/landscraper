@@ -922,8 +922,11 @@ body {
 
   // ---------- movement ----------
   // Swipes queue up to two turns. On land you only keep moving while your finger (or key) is down.
-  let touchHeld = false; const keysHeld = new Set();
-  const held = () => touchHeld || keysHeld.size > 0;
+  // You keep moving on land only while you hold the SAME direction you are moving in:
+  // a finger still down after a swipe in that direction, or that arrow key still pressed.
+  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+  let touchHeld = false, touchDir = null; const keysHeld = new Set();
+  const held = () => (touchHeld && (touchDir === dir || touchDir === 'any')) || [...keysHeld].some((k) => KEYS[k] === dir);
   function steer(d) {
     if (state !== 'play' || paused || hideT > 0 || enterT > 0) return;
     $('hint').textContent = '';
@@ -1203,20 +1206,22 @@ body {
   function padTo(d) { const [x, y] = OFF[d]; knob.style.transform = 'translate(' + x * 26 + 'px,' + y * 26 + 'px)'; knobIcon.style.transform = 'rotate(' + ROT[d] + 'deg)'; }
   stage.addEventListener('pointerdown', (e) => {
     if (e.target.closest('#panel') || e.target.closest('#pauseBtn')) return;
-    e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true;
+    e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
     if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knob.style.transform = ''; knobIcon.style.transform = 'rotate(' + (dir ? ROT[dir] : 0) + 'deg)'; pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0) { release(); return; } // mouse released outside the window
     const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
     const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-    steer(d); padTo(d);
+    steer(d); padTo(d); touchDir = d;
     sw = { x: e.clientX, y: e.clientY }; pad.style.left = (e.clientX - OFF[d][0] * 26) + 'px'; pad.style.top = (e.clientY - OFF[d][1] * 26) + 'px';
   });
-  const release = () => { sw = null; touchHeld = false; pad.classList.remove('on'); };
-  window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release);
-  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+  const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
+  window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
+  window.addEventListener('blur', () => { release(); keysHeld.clear(); });
   window.addEventListener('keydown', (e) => {
     const k = KEYS[e.key]; if (!k) { if (e.key === 'Escape') showPause(); return; }
     e.preventDefault(); if (!keysHeld.has(e.key)) { keysHeld.add(e.key); steer(k); }
@@ -1241,7 +1246,7 @@ body {
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, x: m.x, y: m.y, dead: !!m.dead })); },
     get trailLen() { return trail.length; }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
-    steer, startLevel, hold(v) { touchHeld = !!v; },
+    steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
