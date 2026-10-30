@@ -544,6 +544,12 @@ body {
   const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 10, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.55, 'rgba(255,90,120,0.55)'); gr.addColorStop(0.75, 'rgba(255,255,255,0.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, depthWrite: false }));
   halo.renderOrder = 2; scene.add(halo);
+  // the shield: a soap-bubble around the hero while it is active
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.95, 32, 20), new THREE.MeshPhongMaterial({ color: 0x9fe6ff, emissive: 0x1f5a78, specular: 0xffffff, shininess: 160, transparent: true, opacity: 0.3, depthWrite: false }));
+  bubble.renderOrder = 3; bubble.visible = false; scene.add(bubble);
+  const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.035, 8, 48), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.85, depthWrite: false }));
+  bubbleRim.rotation.x = Math.PI / 2; bubble.add(bubbleRim);
+  let bubbleK = 0;
   // ---------- the landing pad: every level start and every respawn drops the drone in here ----------
   const SPAWN_X = Math.floor(W / 2), SPAWN_Y = Hh - 1, ENTER = 1.7;
   const padMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
@@ -1109,7 +1115,7 @@ body {
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
-    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT)); if (shieldOn) pw.push('Shield'); if (lureT > 0) pw.push('Lure ' + Math.ceil(lureT));
+    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT)); if (lureT > 0) pw.push('Lure ' + Math.ceil(lureT));
     $('power').innerHTML = pw.map((t) => '<span class="ts">' + t + '</span>').join('');
   }
   function percent() { let n = 0; for (let i = 0; i < N; i++) if (!fixed[i] && cells[i] === LAND) n++; return Math.floor(n / total * 100); }
@@ -1197,7 +1203,7 @@ body {
     if (p.kind === 'life') lives = Math.min(5, lives + 1);
     if (p.kind === 'slow') slowT = POWERS.slow.secs;
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
-    if (p.kind === 'shield') shieldOn = true;
+    if (p.kind === 'shield') { shieldOn = true; bubbleK = 0; }
     if (p.kind === 'lure') lureT = POWERS.lure.secs;
     if (p.kind === 'bomb') { // claim everything within 3 squares, then settle the board like a normal claim
       const bx = Math.round(p.fx), by = Math.round(p.fy);
@@ -1261,7 +1267,15 @@ body {
   }
   function die(why) {
     if (invuln > 0 || state !== 'play') return;
-    lives--; tone(220, 0.5, 'sawtooth', 0.1, 70); buzz('hit'); shake = 0.35;
+    if (shieldOn) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
+      shieldOn = false; bubbleK = 0; invuln = 1.2; fuse = null; spark.visible = false; burnt.count = 0;
+      const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
+      burst(wx, 1, wz, 0x9fe6ff, 30, 4, 4); burst(wx, 1, wz, 0xffffff, 16, 3, 4);
+      tone(1200, 0.25, 'sine', 0.06, 300); buzz('hit'); flash('Shield!', 'it saved you', 800); drawHud();
+      return;
+    }
+    if (mode === 'rush') { rushHit(why); return; }
+    if (!tutorialSafe()) lives--; tone(220, 0.5, 'sawtooth', 0.1, 70); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
@@ -1672,6 +1686,8 @@ body {
     }
     drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
     droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
+    bubble.visible = shieldOn && hideT <= 0 && state !== 'over';
+    if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubble.material.opacity = 0.22 + Math.sin(t * 2.5) * 0.06; }
     halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !(hideT > 0); const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
     // fuse
@@ -1981,6 +1997,8 @@ body {
     freeze(v) { testFrozen = !!v; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
+    giveShield() { shieldOn = true; bubbleK = 0; },
+    get shield() { return shieldOn; },
     setPlayer(x, y) { px = tx = x; py = ty = y; stepP = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; hideT = enterT = 0; },
     trail(cellsXY, close) {
       trailFrom = idx(px, py);
