@@ -906,7 +906,10 @@ body {
   })();
   wearSkin(prog.skin);
   const saveProg = () => store.set('ls_prog', prog);
-  const isOpen = (i) => i === 0 || !!prog.done[LEVELS[i - 1].id];
+  // developer mode: tap the Settings title 7 times. Opens every level, mode and skin on this device only; progress is untouched.
+  let dev = false; try { dev = localStorage.getItem('ls_dev') === '1'; } catch (e) {}
+  const setDev = (on) => { dev = on; try { localStorage.setItem('ls_dev', on ? '1' : '0'); } catch (e) {} };
+  const isOpen = (i) => dev || i === 0 || !!prog.done[LEVELS[i - 1].id];
   const nextLevel = () => { const k = LEVELS.findIndex((x, i) => isOpen(i) && !prog.done[x.id]); return k < 0 ? LEVELS.length - 1 : k; };
   const totalStars = () => Object.values(prog.stars).reduce((a, b) => a + b, 0);
   const worldStars = (w) => LEVELS.filter((x) => x.w === w).reduce((a, x) => a + (prog.stars[x.id] || 0), 0);
@@ -1322,7 +1325,7 @@ body {
   }
 
   // ---------- menus ----------
-  const dailyOpen = () => !!prog.done['meadow-05'], rushOpen = () => !!prog.done['meadow-20'];
+  const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
   function toMenu() { state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   function showHome() {
     toMenu();
@@ -1370,7 +1373,10 @@ body {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    panel('<h2>Settings</h2><div class="btns">' + sb.html + '<button class="btn" type="button" data-act="back">Back</button></div>', Object.assign({ back: showHome }, sb.acts));
+    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.</p>' : '') + '<div class="btns">' + sb.html + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
+      Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); } }, sb.acts));
+    let taps = 0, tapT = 0;
+    $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev) { setDev(true); buzz('clear'); showSettings(); } });
   }
 
   // ---------- Daily: one level a day, the same for everyone ----------
@@ -1466,7 +1472,7 @@ body {
   }
   function showSkins() {
     toMenu(); const th = skinThumbs(), have = totalStars();
-    const cards = SKINS.map((sk) => { const open = have >= sk.stars, on = prog.skin === sk.id;
+    const cards = SKINS.map((sk) => { const open = dev || have >= sk.stars, on = prog.skin === sk.id;
       return '<button class="skin' + (on ? ' on' : '') + '" type="button" data-skin="' + sk.id + '"' + (open ? '' : ' disabled') + '>' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '<i></i>') + '<b>' + sk.name + '</b><small>' + (on ? 'Selected' : open ? 'Tap to use' : '★ ' + sk.stars) + '</small></button>'; }).join('');
     panel('<div class="kicker">★ ' + have + '</div><h2>Skins</h2><div class="skins">' + cards + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
     document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => { prog.skin = b.dataset.skin; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(); }));
