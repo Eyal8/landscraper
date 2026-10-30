@@ -37,5 +37,5 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] Home screen (Play / Daily / Rush), world map, settings; Daily calendar with streak; Rush (60s, +5s per claim)
 - [x] Tutorial inside 1-1; fixed direction pad
 - [x] Graphics: textured land per world, animated water with shoreline foam, hover drone, springy claim wave, particles
-- [ ] Hero skins (boat, raft, duck, drone, turtle)
+- [x] Hero skins (Motorboat, Raft, Duck, Drone, Turtle), unlocked by stars
 - [ ] Ads, Remove Ads, Continue

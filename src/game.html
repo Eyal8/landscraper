@@ -139,6 +139,13 @@ body {
 .world b { font: 800 17px var(--display); display: block; }
 .world span { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
 .world[disabled] { cursor: default; filter: grayscale(0.7); opacity: 0.55; }
+.skins { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.skin { cursor: pointer; border: 0; border-radius: 16px; padding: 6px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.skin img, .skin i { width: 100%; aspect-ratio: 1; display: block; }
+.skin b { font: 800 13px var(--display); }
+.skin small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); text-transform: uppercase; }
+.skin.on { background: rgba(255,255,255,0.3); box-shadow: inset 0 0 0 2px #fff; }
+.skin[disabled] { cursor: default; } .skin[disabled] img { filter: brightness(0) opacity(0.35); }
 .cal { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font: 500 11px var(--mono); }
 .cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 10px; }
 .cal div { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
@@ -457,6 +464,80 @@ body {
     disc.position.set(Math.cos(a) * 0.52, 0.2, Math.sin(a) * 0.52); body.add(disc);
     const blade = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.015, 0.05), dark); blade.position.copy(disc.position); body.add(blade); rotors.push(blade);
   }
+  // every skin lives inside body; the original drone is one of them. Front is +z.
+  const droneG = new THREE.Group(); while (body.children.length) droneG.add(body.children[0]); body.add(droneG);
+  const M = (color, o) => new THREE.MeshPhongMaterial(Object.assign({ color, shininess: 90, specular: 0x666666 }, o || {}));
+  const sph = (r, m, sx, sy, sz, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), m); o.scale.set(sx, sy, sz); o.position.set(x, y, z); return o; };
+  const boxM = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
+  const eyesOn = (g, y, z, sx, r) => { const wm = M(0xffffff), bm = M(0x111526, { shininess: 140, specular: 0xffffff }); for (const k of [-1, 1]) { g.add(sph(r, wm, 1, 1, 0.6, k * sx, y, z)); g.add(sph(r * 0.55, bm, 1, 1, 0.6, k * sx, y, z + r * 0.45)); } };
+  function makeBoat() { // a little motorboat with its captain
+    const g = new THREE.Group(), hullM = M(0xffffff), red = M(0xff2e55), wood = M(0xc98a52), skinM = M(0xffc9a0, { shininess: 30 }), navy = M(0x1c2a63);
+    const shape = new THREE.Shape(); shape.moveTo(-0.3, -0.42); shape.lineTo(0.3, -0.42); shape.lineTo(0.32, 0.18); shape.quadraticCurveTo(0.28, 0.42, 0, 0.6); shape.quadraticCurveTo(-0.28, 0.42, -0.32, 0.18); shape.lineTo(-0.3, -0.42);
+    const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 3 }), hullM); hull.rotation.x = Math.PI / 2; hull.position.y = 0.06; g.add(hull);
+    const stripe = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.06, bevelSegments: 2 }), red); stripe.rotation.x = Math.PI / 2; stripe.position.y = -0.1; stripe.scale.set(1.02, 1.02, 1); g.add(stripe);
+    g.add(boxM(0.5, 0.03, 0.62, wood, 0, 0.09, 0));
+    const shield = boxM(0.42, 0.16, 0.03, M(0x9fe6ff, { transparent: true, opacity: 0.7, shininess: 150, specular: 0xffffff }), 0, 0.17, 0.14); shield.rotation.x = -0.4; g.add(shield);
+    g.add(sph(0.12, navy, 1, 1.1, 0.9, 0, 0.2, -0.1)); // captain's body
+    g.add(sph(0.1, skinM, 1, 1, 1, 0, 0.36, -0.1)); // head
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.07, 18), hullM); cap.position.set(0, 0.45, -0.1); g.add(cap);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.015, 16, 1, false, -Math.PI / 2, Math.PI), navy); brim.position.set(0, 0.42, -0.03); g.add(brim);
+    const motor = boxM(0.14, 0.2, 0.12, M(0x2a2f45), 0, 0.12, -0.5); g.add(motor);
+    const prop = new THREE.Group(); prop.position.set(0, -0.06, -0.58); for (let k = 0; k < 3; k++) { const b = boxM(0.03, 0.14, 0.01, M(0xffd166), 0, 0.05, 0); const h = new THREE.Group(); h.add(b); h.rotation.z = k * 2.09; prop.add(h); } g.add(prop);
+    g.userData.anim = (t, dt, mv) => { prop.rotation.z += dt * (mv ? 40 : 8); };
+    return g;
+  }
+  function makeRaft() { // logs, a mast and a striped sail
+    const g = new THREE.Group(), log = M(0xb07a4a, { shininess: 25 }), rope = M(0xf2dfb0), cloth = M(0xfff7e8, { side: THREE.DoubleSide }), red = M(0xff2e55, { side: THREE.DoubleSide });
+    for (let k = 0; k < 5; k++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.95 + (k % 2) * 0.08, 12), log); c.rotation.x = Math.PI / 2; c.position.set(-0.32 + k * 0.16, 0.0, 0); g.add(c); }
+    for (const z of [-0.3, 0.3]) g.add(boxM(0.82, 0.03, 0.05, rope, 0, 0.07, z));
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.9, 8), log); mast.position.set(0, 0.48, -0.05); g.add(mast);
+    const sail = new THREE.Group(); sail.position.set(0, 0.48, -0.05);
+    const sg = new THREE.PlaneGeometry(0.62, 0.62, 6, 6); const pos = sg.attributes.position; for (let i = 0; i < pos.count; i++) pos.setZ(i, 0.12 * (1 - Math.pow(pos.getX(i) / 0.31, 2)) * (1 - Math.pow(pos.getY(i) / 0.31, 2) * 0.4)); sg.computeVertexNormals();
+    const s1 = new THREE.Mesh(sg, cloth); s1.position.y = 0.05; sail.add(s1);
+    const st = new THREE.Mesh(new THREE.PlaneGeometry(0.63, 0.12), red); st.position.set(0, 0.05, 0.125); sail.add(st);
+    g.add(sail);
+    const flag = boxM(0.16, 0.09, 0.01, M(0xffd166), 0.08, 0.92, -0.05); g.add(flag);
+    g.userData.anim = (t, dt, mv) => { sail.rotation.y = Math.sin(t * 1.6) * 0.12; flag.rotation.y = Math.sin(t * 9) * 0.3; };
+    return g;
+  }
+  function makeDuck() { // a rubber duck
+    const g = new THREE.Group(), yel = M(0xffd23a, { shininess: 120, specular: 0xffffff }), org = M(0xff8a1f, { shininess: 100 });
+    const bod = sph(0.36, yel, 1, 0.72, 1.2, 0, 0.12, -0.04); g.add(bod);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.24, 14), yel); tail.rotation.x = -2.2; tail.position.set(0, 0.3, -0.42); g.add(tail);
+    const head = new THREE.Group(); head.position.set(0, 0.48, 0.2); g.add(head);
+    head.add(sph(0.23, yel, 1, 1, 1, 0, 0, 0));
+    head.add(sph(0.11, org, 1.1, 0.42, 1.1, 0, -0.04, 0.22));
+    eyesOn(head, 0.07, 0.17, 0.1, 0.05);
+    for (const k of [-1, 1]) { const w = sph(0.16, yel, 0.45, 0.6, 1, k * 0.33, 0.16, -0.06); w.rotation.z = k * 0.3; g.add(w); }
+    g.userData.anim = (t, dt, mv) => { g.rotation.z = Math.sin(t * (mv ? 10 : 3)) * (mv ? 0.12 : 0.05); head.rotation.x = Math.sin(t * 2.2) * 0.08; };
+    return g;
+  }
+  function makeTurtle() { // a sea turtle that paddles
+    const g = new THREE.Group(), shellM = M(0x2f9e63, { shininess: 70 }), plate = M(0x7fd38a, { shininess: 60 }), skinM = M(0xb8e07a, { shininess: 40 });
+    g.add(sph(0.42, shellM, 1, 0.5, 1.15, 0, 0.12, 0));
+    const hex = new THREE.CylinderGeometry(0.1, 0.1, 0.04, 6);
+    [[0, 0.33, 0], [0, 0.29, 0.25], [0, 0.29, -0.25], [0.2, 0.28, 0.12], [-0.2, 0.28, 0.12], [0.2, 0.28, -0.12], [-0.2, 0.28, -0.12]].forEach(([x, y, z]) => { const h = new THREE.Mesh(hex, plate); h.position.set(x, y - 0.02, z); h.lookAt(x * 2.4, y * 3, z * 2); h.rotateX(Math.PI / 2); g.add(h); });
+    g.add(sph(0.44, skinM, 1, 0.12, 1.15, 0, 0.04, 0));
+    const head = new THREE.Group(); head.position.set(0, 0.12, 0.5); g.add(head);
+    head.add(sph(0.15, skinM, 1, 0.9, 1.15, 0, 0, 0)); eyesOn(head, 0.06, 0.1, 0.08, 0.04);
+    const fl = [];
+    for (const [x, z, s] of [[0.38, 0.22, 1], [-0.38, 0.22, 1], [0.3, -0.32, 0.65], [-0.3, -0.32, 0.65]]) { const f = new THREE.Group(); f.position.set(x, 0.06, z); const m = sph(0.2 * s, skinM, 1.4, 0.25, 0.6, Math.sign(x) * 0.15 * s, 0, 0); f.add(m); g.add(f); fl.push(f); }
+    g.userData.anim = (t, dt, mv) => { const sp = mv ? 9 : 2.5; fl.forEach((f, k) => { f.rotation.y = Math.sin(t * sp + (k % 2) * Math.PI + (k > 1 ? 1.2 : 0)) * 0.45 * (f.position.x > 0 ? 1 : -1); }); head.rotation.y = Math.sin(t * 1.3) * 0.15; };
+    return g;
+  }
+  droneG.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
+  const SKINS = [
+    { id: 'boat', name: 'Motorboat', stars: 0, make: makeBoat, lift: 0.3 },
+    { id: 'raft', name: 'Raft', stars: 10, make: makeRaft, lift: 0.26 },
+    { id: 'duck', name: 'Duck', stars: 30, make: makeDuck, lift: 0.26 },
+    { id: 'drone', name: 'Drone', stars: 60, make: null, lift: 0.55 },
+    { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26 },
+  ];
+  const skinGroups = { drone: droneG };
+  for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); body.add(skinGroups[sk.id]); }
+  let skinNow = SKINS[0];
+  function wearSkin(id) { skinNow = SKINS.find((k) => k.id === id) || SKINS[0]; for (const k in skinGroups) skinGroups[k].visible = k === skinNow.id; }
+  wearSkin('boat');
   drone.scale.setScalar(1.45);
   scene.add(drone);
   const droneShadow = blob(1.4);
@@ -773,6 +854,7 @@ body {
     pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
     return pr;
   })();
+  wearSkin(prog.skin);
   const saveProg = () => store.set('ls_prog', prog);
   const isOpen = (i) => i === 0 || !!prog.done[LEVELS[i - 1].id];
   const nextLevel = () => { const k = LEVELS.findIndex((x, i) => isOpen(i) && !prog.done[x.id]); return k < 0 ? LEVELS.length - 1 : k; };
@@ -1156,7 +1238,7 @@ body {
       '<button class="mode" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
-      '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Boats</button><button class="btn alt" type="button" data-act="settings">Settings</button></div>',
+      '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="settings">Settings</button></div>',
       { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, settings: showSettings });
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
@@ -1272,7 +1354,28 @@ body {
   }
 
   // ---------- skins (the hero) ----------
-  function showSkins() { toMenu(); panel('<h2>Boats</h2><p>Coming soon.</p><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>', { back: showHome }); }
+  let thumbs = null;
+  function skinThumbs() { // render each skin once into a small picture
+    if (thumbs) return thumbs; thumbs = {};
+    try {
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setPixelRatio(1); r.setSize(160, 160);
+      const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x445588, 0.9)); const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(2, 4, 3); sc.add(dl);
+      const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(1.75, 1.8, 2.55); cam.lookAt(0, 0.22, 0);
+      for (const sk of SKINS) {
+        const g = skinGroups[sk.id], was = g.visible, par = g.parent; g.visible = true; sc.add(g); g.rotation.set(0, 0.5, 0); g.position.set(0, 0, 0);
+        r.render(sc, cam); thumbs[sk.id] = r.domElement.toDataURL(); sc.remove(g); par.add(g); g.rotation.set(0, 0, 0); g.visible = was;
+      }
+      r.dispose(); if (r.forceContextLoss) r.forceContextLoss();
+    } catch (e) { thumbs = {}; }
+    return thumbs;
+  }
+  function showSkins() {
+    toMenu(); const th = skinThumbs(), have = totalStars();
+    const cards = SKINS.map((sk) => { const open = have >= sk.stars, on = prog.skin === sk.id;
+      return '<button class="skin' + (on ? ' on' : '') + '" type="button" data-skin="' + sk.id + '"' + (open ? '' : ' disabled') + '>' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '<i></i>') + '<b>' + sk.name + '</b><small>' + (on ? 'Selected' : open ? 'Tap to use' : '★ ' + sk.stars) + '</small></button>'; }).join('');
+    panel('<div class="kicker">★ ' + have + '</div><h2>Skins</h2><div class="skins">' + cards + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
+    document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => { prog.skin = b.dataset.skin; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(); }));
+  }
 
   // ---------- tutorial (first level only) ----------
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
@@ -1370,7 +1473,7 @@ body {
 
   // ---------- camera: tilted, and follows the player along the board when the board does not fit ----------
   let EL = 50 * Math.PI / 180; // elevation of the view above the board (steeper on tall phone screens)
-  let camD = 60, camTz = 0, camWantZ = 0, camLo = 0, camHi = 0, camInit = false, camFits = false;
+  let camD = 60, camTx = 0, camWantX = 0, camXR = 0, camTz = 0, camWantZ = 0, camLo = 0, camHi = 0, camInit = false, camFits = false;
   const camT = new THREE.Vector3();
   function camGeom(d) { // ground z (relative to the target) seen at the top and bottom of the usable screen
     const vf2 = camera.fov / 2 * Math.PI / 180, hgt = d * Math.sin(EL), back = d * Math.cos(EL);
@@ -1388,10 +1491,11 @@ body {
     const mid = (camLo + camHi) / 2;
     const follow = camFits ? mid : clamp(camWantZ, camLo, camHi); // whole board in view (tall phones): keep it centered
     const want = follow * (1 - win) + mid * win;
-    if (!camInit || !dt) { camTz = want; camInit = true; } else camTz += (want - camTz) * Math.min(1, dt * 3.2);
+    const wantX = clamp(camWantX, -camXR, camXR) * (1 - win);
+    if (!camInit || !dt) { camTz = want; camTx = wantX; camInit = true; } else { camTz += (want - camTz) * Math.min(1, dt * 3.2); camTx += (wantX - camTx) * Math.min(1, dt * 3.2); }
     const yaw = win * Math.sin(clearT * 0.6) * 0.3, el = EL - win * 0.12, d = camD * (1 - win * 0.08);
     const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0, sz = shake > 0 ? (Math.random() - 0.5) * shake : 0;
-    camT.set(sx * 0.5, 0, camTz);
+    camT.set(camTx + sx * 0.5, 0, camTz);
     camera.position.set(camT.x + Math.sin(yaw) * Math.cos(el) * d + sx, Math.sin(el) * d, camT.z + Math.cos(yaw) * Math.cos(el) * d + sz);
     camera.lookAt(camT);
   }
@@ -1454,11 +1558,16 @@ body {
     if (shockT > 0) { shockT -= dt; const q = 1 - shockT / 0.6; shock.scale.setScalar(1 + q * 4); shockMat.opacity = Math.max(0, 1 - q); } else shockMat.opacity = 0;
     const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
     if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
-    drone.position.set(heroX, gy + 0.55 + drop + Math.sin(t * 4) * 0.05, heroZ);
+    const floaty = skinNow.id === 'drone';
+    drone.position.set(heroX, gy + skinNow.lift + drop + Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025), heroZ);
     const mdx = tx - px, mdy = ty - py;
     if (dir && !entering) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
-    body.rotation.x = (stepP < 1 && (mdx || mdy)) ? 0.22 : 0; // lean forward when moving
-    rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); });
+    body.rotation.x = (stepP < 1 && (mdx || mdy)) ? (skinNow.id === 'drone' ? 0.22 : -0.08) : 0; // drone leans in, boats lift the bow
+    const moving = stepP < 1 && (mdx || mdy) && live;
+    const sg = skinGroups[skinNow.id]; if (sg.userData.anim) sg.userData.anim(t, paused ? 0 : dt, moving);
+    if (moving && !paused && !entering && skinNow.id !== 'drone' && cells[idx(px, py)] !== LAND && Math.random() < dt * 30) { // foam wake behind the hero at sea
+      const a = drone.rotation.y; burst(heroX - Math.sin(a) * 0.7 + rand(-0.15, 0.15), gy + 0.12, heroZ - Math.cos(a) * 0.7 + rand(-0.15, 0.15), 0xffffff, 1, 0.6, 0.6);
+    }
     drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
     droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
     halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !(hideT > 0); const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
@@ -1622,7 +1731,7 @@ body {
     }
     powers = powers.filter((p) => { if (p.taken && p.mesh.scale.x < 0.02) { scene.remove(p.mesh); return false; } return true; });
     drawParticles(dt);
-    camWantZ = fy + oz + 2.5; // keep a little more board ahead (up) of the player
+    camWantX = fx + ox; camWantZ = fy + oz + 2.5; // keep a little more board ahead (up) of the player
     placeCamera(t, dt);
   }
 
@@ -1635,16 +1744,17 @@ body {
     // Distance: the full board width always fits (checked at every visible row); on wide screens we also
     // come closer, showing about 70% of the board's length and following the player.
     const v = new THREE.Vector3(), saveShake = shake; shake = 0;
+    const zoomW = asp < 0.62 ? 0.78 : 1; camXR = (W / 2 - 1.3) * (1 - zoomW); camTx = 0; const saveWX = camWantX; camWantX = 0;
     const widthFits = (d) => {
       camD = d; camRange(); camInit = false; camWantZ = (camLo + camHi) / 2; placeCamera(0, 0); camera.updateMatrixWorld();
       const g = camGeom(d), z0 = Math.max(-Hh / 2, camTz + g.top), z1 = Math.min(Hh / 2, camTz + g.bot);
-      const hx = W / 2 - 1.3; // the whole sea plus most of the 2-cell border land stays in view
+      const hx = (W / 2 - 1.3) * zoomW; // phones show ~78% of the width and follow the player sideways
       for (const z of [z0, (z0 + z1) / 2, z1]) for (const x of [-hx, hx]) { v.set(x, H_LAND, z).project(camera); if (Math.abs(v.x) > 0.98) return false; }
       return true;
     };
     let lo = 8, hi = 300; for (let k = 0; k < 32; k++) { const mid = (lo + hi) / 2; if (widthFits(mid)) hi = mid; else lo = mid; }
     const g1 = camGeom(1), dDepth = 0.7 * (Hh + 1.8) / (g1.bot - g1.top);
-    camD = Math.max(hi, dDepth); camRange(); camInit = false; shake = saveShake; placeCamera(0, 0);
+    camD = Math.max(hi, dDepth); camRange(); camInit = false; shake = saveShake; camWantX = saveWX; placeCamera(0, 0);
   }
   window.addEventListener('resize', resize);
 
