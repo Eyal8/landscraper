@@ -21,15 +21,15 @@ if (game.includes('fonts.googleapis.com')) throw new Error('Google Fonts link no
 
 // Real ads only in store builds: ADS_TEST=false. Everything else shows Google's test ads.
 const realAds = process.env.ADS_TEST === 'false';
+// Developer mode exists only in test builds.
+if (realAds) { // first, so a store build can never keep it
+  if (!game.includes('const DEV_ALLOWED = true;')) throw new Error('DEV_ALLOWED flag not found');
+  game = game.replace('const DEV_ALLOWED = true;', 'const DEV_ALLOWED = false;');
+}
 // The ads module (added later) carries this flag; until then there is nothing to switch.
 if (realAds) {
   if (!game.includes('    testing: true,')) throw new Error('ads testing flag not found');
   game = game.replace('    testing: true,', '    testing: false,');
-}
-// Developer mode exists only in test builds.
-if (realAds) {
-  if (!game.includes('const DEV_ALLOWED = true;')) throw new Error('DEV_ALLOWED flag not found');
-  game = game.replace('const DEV_ALLOWED = true;', 'const DEV_ALLOWED = false;');
 }
 console.log(realAds ? 'Ads: REAL (store build)' : 'Ads: test mode');
 
@@ -44,6 +44,8 @@ ${game}
 </body>
 </html>
 `;
+// Last guard: a store build must not contain developer mode.
+if (realAds && (!html.includes('const DEV_ALLOWED = false;') || html.includes('const DEV_ALLOWED = true;'))) throw new Error('store build still has developer mode');
 fs.writeFileSync(path.join(www, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'node_modules/three/build/three.min.js'), path.join(www, 'three.min.js'));
 fs.copyFileSync(path.join(root, 'node_modules/@capacitor/core/dist/capacitor.js'), path.join(www, 'capacitor.js'));
