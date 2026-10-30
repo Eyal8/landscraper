@@ -31,7 +31,11 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] App icon, splash, Play feature graphic and screenshots (first pass): `python3 design/render.py`, then `npx @capacitor/assets generate`; screenshots with `python3 design/screens-store.py android` after `npm run build`
 - [x] Controls: two-turn swipe queue, corner forgiveness; on land you move only while holding, at sea you are committed; on-screen direction pad
 - [x] Fuse: a monster touching your trail lights a fuse that runs to you at 2.5x your speed
-- [x] Monsters (fish-style designs): Puffer, Dart (fast), Chomper (eats land), Buzzsaw (land only, respawns when stuck), Splitter (splits when trapped), Hunter (aims and dashes), Inker (ink lights the fuse), Magnet (tugs you toward it); trap any sea monster in 40 cells or less, with a gold preview
-- [x] 3 worlds x 10 levels (Meadow, Dunes, Glacier) with obstacles, stars by % claimed, power-ups (Slow, Freeze, +1 Life)
+- [x] Monsters: Puffer, Dart, Chomper, Buzzsaw, Starfish (splits), Shark (hunts), Octopus (ink), Whirlpool (pulls); trap any sea monster in 40 cells or less, with a gold preview
+- [x] 5 worlds x 20 levels (Meadow, Dunes, Glacier, Coral Reef, Volcano), sawtooth waves of 5, board shapes, boss on level 20
+- [x] Boosters: Life, Slow, Freeze, Shield, Bomb, Lure
+- [x] Home screen (Play / Daily / Rush), world map, settings; Daily calendar with streak; Rush (60s, +5s per claim)
+- [x] Tutorial inside 1-1; fixed direction pad
 - [x] Graphics: textured land per world, animated water with shoreline foam, hover drone, springy claim wave, particles
-- [ ] Tutorial, Daily, ads, Remove Ads, Continue
+- [ ] Hero skins (boat, raft, duck, drone, turtle)
+- [ ] Ads, Remove Ads, Continue

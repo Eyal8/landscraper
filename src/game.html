@@ -63,15 +63,27 @@ body {
 #vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px 30px rgba(255, 40, 80, 0.55); opacity: 0; transition: opacity 0.35s; }
 #vignette.on { opacity: 1; transition: none; }
 
-/* direction pad that appears under the finger */
-#pad { position: absolute; width: 88px; height: 88px; margin: -44px 0 0 -44px; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
-#pad.on { opacity: 1; }
-#pad .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,0.55); background: rgba(16, 24, 56, 0.18); }
-#pad .ring::before, #pad .ring::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(255,255,255,0.25); }
-#pad .ring::before { width: 2px; height: 70%; transform: translate(-50%, -50%); }
-#pad .ring::after { width: 70%; height: 2px; transform: translate(-50%, -50%); }
-#pad .knob { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(10,20,50,0.35); transition: transform 0.08s; display: grid; place-items: center; }
-#pad .knob svg { width: 16px; height: 16px; color: #2a3a7a; transition: transform 0.08s; }
+/* direction pad: appears where the finger lands and stays there; the active arrow lights up */
+#pad { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; pointer-events: none; opacity: 0; transform: scale(0.85); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
+#pad.on { opacity: 1; transform: scale(1); }
+#pad .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.32), rgba(255,255,255,0.1) 60%, rgba(255,255,255,0.05)); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 6px 18px rgba(10,20,50,0.25); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+#pad .ar { position: absolute; width: 26px; height: 26px; left: 43px; top: 43px; color: rgba(255,255,255,0.75); transition: color 0.1s, transform 0.12s; filter: drop-shadow(0 1px 2px rgba(10,20,50,0.4)); }
+#pad .ar svg { width: 100%; height: 100%; }
+#pad .ar.up { transform: translateY(-34px); } #pad .ar.down { transform: translateY(34px) rotate(180deg); }
+#pad .ar.left { transform: translateX(-34px) rotate(-90deg); } #pad .ar.right { transform: translateX(34px) rotate(90deg); }
+#pad .ar.lit { color: #ffd166; }
+#pad .ar.up.lit { transform: translateY(-38px) scale(1.2); } #pad .ar.down.lit { transform: translateY(38px) rotate(180deg) scale(1.2); }
+#pad .ar.left.lit { transform: translateX(-38px) rotate(-90deg) scale(1.2); } #pad .ar.right.lit { transform: translateX(38px) rotate(90deg) scale(1.2); }
+#pad .knob { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(10,20,50,0.35); transition: transform 0.1s; }
+
+/* coach: short tips with a moving finger, first level only */
+#coach { position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+#coach.on { opacity: 1; }
+#coach b { padding: 10px 18px; border-radius: 999px; background: rgba(16, 24, 56, 0.72); font: 800 18px var(--display); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+#coach .finger { width: 46px; height: 46px; filter: drop-shadow(0 3px 6px rgba(10,20,50,0.4)); animation: swipeUp 1.3s ease-in-out infinite; }
+#coach .finger[hidden] { display: none; }
+@keyframes swipeUp { 0% { transform: translateY(26px); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(-34px); opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #coach .finger { animation: none; } }
 
 /* panels */
 #panel {
@@ -115,6 +127,24 @@ body {
 .lvl small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); min-height: 11px; }
 .lvl.cur { background: #fff; color: #1d2a63; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
+.modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
+.mode b { font: 800 17px var(--display); }
+.mode span { color: var(--ink-soft); letter-spacing: 0.08em; text-transform: uppercase; }
+.mode[disabled] { cursor: default; opacity: 0.5; }
+.row3 { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.row3 .btn { padding: 12px 6px; font-size: 11px; }
+.worlds { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.world { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line); }
+.world b { font: 800 17px var(--display); display: block; }
+.world span { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.world[disabled] { cursor: default; filter: grayscale(0.7); opacity: 0.55; }
+.cal { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font: 500 11px var(--mono); }
+.cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 10px; }
+.cal div { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
+.cal div.done { background: var(--gold); color: #3a2a00; font-weight: 700; }
+.cal div.today { box-shadow: inset 0 0 0 2px #fff; }
+.cal div.blank { background: none; }
 .hint { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; pointer-events: none;
   font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); transition: opacity 0.4s; }
 @media (prefers-reduced-motion: reduce) { #flash, .card, .stars svg.on, .pop { animation: none; transition: none; } }
@@ -132,7 +162,8 @@ body {
   <div id="power"></div>
   <div id="vignette"></div>
   <div id="flash"></div>
-  <div id="pad"><div class="ring"></div><div class="knob"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2 14 10H10V14H6V10H2Z"/></svg></div></div>
+  <div id="pad"><div class="ring"></div><div class="ar up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="knob"></div></div>
+  <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
   <div id="panel"><div class="card" id="card"></div></div>
 </main>
@@ -151,6 +182,8 @@ body {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
   const rand = (a, b) => a + Math.random() * (b - a);
+  let rng = Math.random; // monster and booster placement; seeded for the Daily
+  const seeded = (n) => () => { n |= 0; n = (n + 0x6D2B79F5) | 0; let t = Math.imul(n ^ (n >>> 15), 1 | n); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // ---------- sound and haptics ----------
@@ -264,13 +297,31 @@ body {
       g.lineWidth = 1.4; g.strokeStyle = 'rgba(120,160,225,0.55)';
       for (let i = 0; i < 14; i++) { const x = srand() * 256, y = srand() * 256, path = []; let qx = x, qy = y; for (let k = 0; k < 5; k++) { qx += (srand() - 0.5) * 30; qy += (srand() - 0.5) * 30; path.push([qx, qy]); } wrap((h) => { h.beginPath(); h.moveTo(x, y); path.forEach(([a, b]) => h.lineTo(a, b)); h.stroke(); }); }
       for (let i = 0; i < 120; i++) { g.fillStyle = 'rgba(255,255,255,0.95)'; const x = srand() * 256, y = srand() * 256; g.fillRect(x, y, 2, 2); }
+    }),
+    reef: () => tileCanvas((g, wrap) => { // pink coral stone with little polyps and shells
+      seed = 41; g.fillStyle = '#f4a6a0'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 60; i++) { const x = srand() * 256, y = srand() * 256, r = 8 + srand() * 22, c = srand() < 0.5 ? 'rgba(255,200,190,0.5)' : 'rgba(220,120,130,0.35)', a = srand() * 3; wrap((h) => { h.fillStyle = c; h.beginPath(); h.ellipse(x, y, r, r * 0.75, a, 0, 7); h.fill(); }); }
+      for (let i = 0; i < 90; i++) { const x = srand() * 256, y = srand() * 256, r = 2 + srand() * 3; wrap((h) => { h.fillStyle = 'rgba(160,60,90,0.45)'; h.beginPath(); h.arc(x, y, r, 0, 7); h.fill(); h.fillStyle = 'rgba(255,230,220,0.8)'; h.beginPath(); h.arc(x - r * 0.3, y - r * 0.3, r * 0.4, 0, 7); h.fill(); }); }
+      for (let i = 0; i < 10; i++) { const x = srand() * 256, y = srand() * 256, rot = srand() * 6.28; wrap((h) => { h.save(); h.translate(x, y); h.rotate(rot); h.fillStyle = '#fff4e8'; h.beginPath(); h.moveTo(0, -6); for (let k = 0; k <= 6; k++) { const a = Math.PI + k * Math.PI / 6; h.lineTo(Math.cos(a) * 7, -Math.sin(a) * 7 + 1); } h.closePath(); h.fill(); h.strokeStyle = 'rgba(200,140,120,0.7)'; h.lineWidth = 0.8; for (let k = 1; k < 6; k++) { const a = Math.PI + k * Math.PI / 6; h.beginPath(); h.moveTo(0, -5); h.lineTo(Math.cos(a) * 6.5, -Math.sin(a) * 6.5 + 1); h.stroke(); } h.restore(); }); }
+    }),
+    basalt: () => tileCanvas((g, wrap) => { // dark volcanic rock with glowing lava cracks
+      seed = 53; g.fillStyle = '#4a4250'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 70; i++) { const x = srand() * 256, y = srand() * 256, r = 8 + srand() * 26, c = srand() < 0.5 ? 'rgba(90,80,100,0.5)' : 'rgba(40,34,48,0.45)', a = srand() * 3; wrap((h) => { h.fillStyle = c; h.beginPath(); h.ellipse(x, y, r, r * 0.8, a, 0, 7); h.fill(); }); }
+      g.lineCap = 'round';
+      for (let i = 0; i < 9; i++) { const x = srand() * 256, y = srand() * 256, path = []; let qx = x, qy = y; for (let k = 0; k < 6; k++) { qx += (srand() - 0.5) * 36; qy += (srand() - 0.5) * 36; path.push([qx, qy]); } wrap((h) => { for (const [w, c] of [[5, 'rgba(255,110,40,0.35)'], [2, 'rgba(255,190,80,0.95)']]) { h.strokeStyle = c; h.lineWidth = w; h.beginPath(); h.moveTo(x, y); path.forEach(([a, b]) => h.lineTo(a, b)); h.stroke(); } }); }
+      for (let i = 0; i < 300; i++) { g.fillStyle = srand() < 0.5 ? 'rgba(20,16,24,0.5)' : 'rgba(140,130,150,0.4)'; g.fillRect(srand() * 256, srand() * 256, 1.5, 1.5); }
     })
   };
   const WORLDS = [
     { name: 'Meadow', tex: 'grass', side: 0x9b6a45, sky: ['#6ec3ff', '#d9f1ff'], deep: '#1677b8', shallow: '#3fd0ea', foam: '#effcff', trail: 0xfff27a },
     { name: 'Dunes', tex: 'sand', side: 0xc98a4c, sky: ['#ffb36e', '#ffe7c4'], deep: '#0d8a92', shallow: '#46e0c8', foam: '#f4fffb', trail: 0xffffff },
-    { name: 'Glacier', tex: 'snow', side: 0x7d9ed8, sky: ['#8f9cff', '#e3e8ff'], deep: '#18306e', shallow: '#3a6cc8', foam: '#ffffff', trail: 0xffe46b }
+    { name: 'Glacier', tex: 'snow', side: 0x7d9ed8, sky: ['#8f9cff', '#e3e8ff'], deep: '#18306e', shallow: '#3a6cc8', foam: '#ffffff', trail: 0xffe46b },
+    { name: 'Coral Reef', tex: 'reef', side: 0xc0646f, sky: ['#48d1d0', '#e0fff8'], deep: '#05728a', shallow: '#26d6c4', foam: '#f0fffd', trail: 0xffffff },
+    { name: 'Volcano', tex: 'basalt', side: 0x2e2834, sky: ['#ff7a4a', '#ffd3a8'], deep: '#14304a', shallow: '#2c7d8c', foam: '#ffe9d6', trail: 0xffd166 }
   ];
+  // Stable ids: progress is saved by these, never by position, so worlds can be added in updates.
+  const WORLD_IDS = ['meadow', 'dunes', 'glacier', 'reef', 'volcano'];
+  WORLDS.forEach((w, k) => { w.id = WORLD_IDS[k]; });
   const texCache = {};
   const worldTex = (w) => texCache[w.tex] || (texCache[w.tex] = TEX[w.tex]());
 
@@ -425,7 +476,7 @@ body {
   const shockMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
   const shock = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.66, 40).rotateX(-Math.PI / 2), shockMat);
   shock.position.set(SPAWN_X + ox, H_LAND + 0.03, SPAWN_Y + oz); scene.add(shock);
-  let hideT = 0, enterT = 0, shockT = 0;
+  let hideT = 0, enterT = 0, shockT = 0, heroX = 0, heroZ = 0, heroInit = false;
   // direction chevron on the ground in front of the drone
   const chev = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0.28), new THREE.Vector2(0.24, -0.02), new THREE.Vector2(0.1, -0.02), new THREE.Vector2(0, 0.1), new THREE.Vector2(-0.1, -0.02), new THREE.Vector2(-0.24, -0.02)])).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
   chev.renderOrder = 2; scene.add(chev);
@@ -555,20 +606,31 @@ body {
     g.scale.setScalar(1.15);
     return g;
   }
-  function makeMagnet() { // a horseshoe magnet that floats on a buoy
+  function makeMagnet() { // the Whirlpool: a spinning vortex on the water that pulls you in
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-    const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), phong(0xf2f4f8, { shininess: 120 })); buoy.position.y = -0.05; body.add(buoy);
-    const red = phong(0xff3b4e), blue = phong(0x2f7bff), metal = phong(0xd8dee8, { shininess: 140, specular: 0xffffff });
-    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.09, 12, 24, Math.PI), red); arc.position.y = 0.42; body.add(arc);
-    for (const [sx, m] of [[-0.24, red], [0.24, blue]]) {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.26, 14), m); leg.position.set(sx, 0.29, 0); body.add(leg);
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.08, 14), metal); cap.position.set(sx, 0.14, 0); body.add(cap);
-    }
-    addEyes(body, 0.28, 0.06, 0.12, 0.08);
-    const field = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x7fb3ff, transparent: true, opacity: 0.5, depthWrite: false }));
-    field.position.y = -0.3; g.add(field);
-    g.userData.fish = { body, fins: [], tail: null, skin: red, base: 0xff3b4e }; g.userData.field = field;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+    const grd = x.createRadialGradient(64, 64, 4, 64, 64, 64); grd.addColorStop(0, 'rgba(10,30,80,0.95)'); grd.addColorStop(0.45, 'rgba(40,110,190,0.75)'); grd.addColorStop(1, 'rgba(160,230,255,0)');
+    x.fillStyle = grd; x.fillRect(0, 0, 128, 128);
+    x.strokeStyle = 'rgba(255,255,255,0.85)'; x.lineCap = 'round';
+    for (let arm = 0; arm < 4; arm++) { x.lineWidth = 3.2; x.beginPath(); for (let k = 0; k <= 40; k++) { const t = k / 40, r = 6 + t * 54, a = arm * Math.PI / 2 + t * 4.2; const px2 = 64 + Math.cos(a) * r, py2 = 64 + Math.sin(a) * r; k ? x.lineTo(px2, py2) : x.moveTo(px2, py2); } x.stroke(); }
+    const tex = new THREE.CanvasTexture(c);
+    const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.75, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    swirl.position.y = -0.44; body.add(swirl);
+    const funnel = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.5, 28, 1, true), new THREE.MeshPhongMaterial({ color: 0x3f9fe0, transparent: true, opacity: 0.55, side: THREE.DoubleSide, shininess: 120 }));
+    funnel.rotation.x = Math.PI; funnel.position.y = -0.2; body.add(funnel);
+    const field = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9fdcff, transparent: true, opacity: 0.5, depthWrite: false }));
+    field.position.y = -0.42; g.add(field);
+    g.userData.fish = { body, fins: [], tail: null, skin: funnel.material, base: 0x3f9fe0, swirl };
+    g.userData.field = field;
     return g;
+  }
+  function makeBoss() { // a big Puffer with a crown; each trap shrinks it until it is gone
+    const f = makeFish('bouncer'), crown = new THREE.Group(), gold = phong(0xffd23f, { shininess: 140, specular: 0xffffff });
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.1, 20, 1, true), gold); ring.material.side = THREE.DoubleSide; crown.add(ring);
+    for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5, sp = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 6), gold); sp.position.set(Math.cos(a) * 0.2, 0.11, Math.sin(a) * 0.2); crown.add(sp); }
+    crown.position.y = 0.47; f.userData.fish.body.add(crown);
+    f.userData.fish.skin.color.setHex(0xff8c2a);
+    return f;
   }
   function makeBall(kind) {
     const g = new THREE.Group();
@@ -599,30 +661,35 @@ body {
       for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
       g.add(wheel); g.userData.wheel = wheel;
     } else {
-      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : makeFish(kind);
+      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : kind === 'boss' ? makeBoss() : makeFish(kind);
       g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f;
     }
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
     scene.add(g); return g;
   }
-  const MONSTER_INFO = {
-    bouncer: { name: 'Puffer', text: 'Bounces around the sea. If it touches your trail, a fuse races along it to you.' },
-    eater: { name: 'Chomper', text: 'Bites off a piece of your land every time it bounces off it.' },
-    saw: { name: 'Buzzsaw', text: 'Rolls along your land and never leaves it. Touch it while you are on land and you lose a life.' },
-    zipper: { name: 'Dart', text: 'Small and very fast. Keep your trails short when it is around.' },
-    splitter: { name: 'Splitter', text: 'A starfish. Trap it and it splits into two baby starfish, which are faster. Trap those too.' },
-    hunter: { name: 'Hunter', text: 'While you draw in its part of the sea, it swims around land to chase you, and dashes when it has a clear line. Do not linger at sea.' },
-    inker: { name: 'Inker', text: 'An octopus. When it glows it squirts ink into the water. Draw through ink and a fuse lights at the start of your trail. Race it to land.' },
-    magnet: { name: 'Magnet', text: 'Pulls you one square toward it when you draw nearby. Watch the blue ring.' },
-    mini: { name: 'Splitling', text: 'A baby starfish from a Splitter. Small and quick.' }
+  const MONSTER_INFO = { // two short lines at most: people do not read long texts
+    bouncer: { name: 'Puffer', text: 'Touches your line? A fuse runs to you.' },
+    eater: { name: 'Chomper', text: 'Bites off your land.' },
+    saw: { name: 'Buzzsaw', text: 'Rolls on land. Don\'t touch.' },
+    zipper: { name: 'Dart', text: 'Very fast. Keep lines short.' },
+    splitter: { name: 'Starfish', text: 'Trap it, it splits in two.' },
+    hunter: { name: 'Shark', text: 'Hunts you while you draw.' },
+    inker: { name: 'Octopus', text: 'Glowing means ink. Avoid ink.' },
+    magnet: { name: 'Whirlpool', text: 'Pulls you in when you draw nearby.' },
+    mini: { name: 'Baby starfish', text: 'Small and quick.' },
+    boss: { name: 'Big Puffer', text: 'Trap it 3 times to win.' }
   };
+
 
 
   // ---------- power-ups ----------
   const POWERS = {
-    slow: { label: 'Slow', color: 0x4fd2ff, secs: 7 },
-    freeze: { label: 'Freeze', color: 0xb8f0ff, secs: 4 },
-    life: { label: '+1 Life', color: 0xff5a7a, secs: 0 }
+    slow: { label: 'Slow', color: 0x4fd2ff, secs: 7, text: 'Monsters slow down.' },
+    freeze: { label: 'Freeze', color: 0xb8f0ff, secs: 4, text: 'Monsters stop.' },
+    life: { label: '+1 Life', color: 0xff5a7a, secs: 0, text: 'One more life.' },
+    shield: { label: 'Shield', color: 0xffd166, secs: 0, text: 'Blocks the next hit.' },
+    bomb: { label: 'Bomb', color: 0xff8a3d, secs: 0, text: 'Claims the area around it.' },
+    lure: { label: 'Lure', color: 0xc59bff, secs: 10, text: 'Boosters come to you.' }
   };
   function makePower(kind) {
     const g = new THREE.Group();
@@ -631,37 +698,92 @@ body {
     let icon;
     if (kind === 'life') { const s = new THREE.Shape(); s.moveTo(0, -0.16); s.bezierCurveTo(-0.3, 0.05, -0.12, 0.26, 0, 0.1); s.bezierCurveTo(0.12, 0.26, 0.3, 0.05, 0, -0.16); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xff5a7a })); icon.position.z = -0.03; }
     else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff }); const face = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), m); face.rotation.x = Math.PI / 2; const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshBasicMaterial({ color: 0x1d2a63 })); h.position.set(0, 0.06, 0.04); const h2 = h.clone(); h2.rotation.z = -1.2; h2.position.set(0.05, 0, 0.04); icon.add(face, h, h2); }
+    else if (kind === 'shield') { const sh = new THREE.Shape(); sh.moveTo(0, 0.2); sh.lineTo(0.16, 0.13); sh.lineTo(0.13, -0.06); sh.quadraticCurveTo(0.06, -0.17, 0, -0.21); sh.quadraticCurveTo(-0.06, -0.17, -0.13, -0.06); sh.lineTo(-0.16, 0.13); sh.closePath(); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xffd166, shininess: 120 })); icon.position.z = -0.03; }
+    else if (kind === 'bomb') { icon = new THREE.Group(); const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 12), new THREE.MeshPhongMaterial({ color: 0x2a2a3a, shininess: 120 })); const fu = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6), new THREE.MeshPhongMaterial({ color: 0xc9a27a })); fu.position.set(0.06, 0.16, 0); fu.rotation.z = -0.5; const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb340 })); sp.position.set(0.1, 0.21, 0); icon.add(b, fu, sp); }
+    else if (kind === 'lure') { icon = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.04, 8, 18, Math.PI * 1.4), new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 100 })); icon.rotation.z = 0.8; }
     else { icon = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x88ddff, emissiveIntensity: 0.4, shininess: 100 })); }
     g.add(icon); scene.add(g); return g;
   }
 
   // ---------- levels ----------
-  // Obstacles are fixed land blocks inside the field, as [x0, y0, x1, y1] (inclusive, field is x 2..21, y 2..35).
-  const OBST = [
-    [], [[10, 17, 13, 20]], [[6, 10, 8, 13], [15, 24, 17, 27]], [[2, 18, 9, 19], [14, 18, 21, 19]],
-    [[11, 8, 12, 29]], [[5, 6, 7, 8], [16, 6, 18, 8], [5, 29, 7, 31], [16, 29, 18, 31]], [[10, 15, 13, 22], [2, 26, 6, 27], [17, 9, 21, 10]],
-    [[2, 12, 14, 13], [9, 24, 21, 25]], [[8, 16, 15, 17], [11, 12, 12, 21]], [[6, 6, 7, 31], [16, 6, 17, 31]]
-  ];
+  // Every level is data with a stable id ('meadow-07'). Progress is saved by id, so a world added in an
+  // update simply appears after the last one, and nobody's stars or progress move.
+  // Boards: obstacles are land blocks [x0, y0, x1, y1] inside the field (x 2..21, y 2..35); 'shape' trims
+  // the field to a round, heart or diamond outline (the land outside it is never eaten or counted).
+  const B = (shape, ...obst) => ({ shape, obst });
+  const BOARDS = {
+    meadow: [B('rect'), B('rect', [10, 17, 13, 20]), B('rect', [6, 10, 8, 13], [15, 24, 17, 27]), B('rect', [5, 6, 7, 8], [16, 6, 18, 8], [5, 29, 7, 31], [16, 29, 18, 31]), B('rect', [10, 15, 13, 22]), B('rect', [2, 18, 7, 19], [16, 18, 21, 19])],
+    dunes: [B('rect', [2, 18, 9, 19], [14, 18, 21, 19]), B('rect', [11, 8, 12, 29]), B('rect', [2, 12, 14, 13], [9, 24, 21, 25]), B('rect', [6, 6, 7, 31], [16, 6, 17, 31]), B('rect', [8, 16, 15, 17], [11, 12, 12, 21]), B('rect', [2, 11, 15, 12], [8, 25, 21, 26])],
+    glacier: [B('round'), B('diamond'), B('heart'), B('round', [10, 17, 13, 20]), B('diamond', [8, 18, 15, 19]), B('heart', [11, 14, 12, 22])],
+    reef: [B('rect', [5, 6, 6, 7], [12, 9, 13, 10], [17, 5, 18, 6], [7, 15, 8, 16], [15, 17, 16, 18], [4, 25, 5, 26], [11, 23, 12, 24], [17, 28, 18, 29]), B('round', [8, 10, 9, 11], [14, 14, 15, 15], [9, 24, 10, 25], [14, 28, 15, 29]), B('rect', [2, 13, 9, 14], [14, 13, 21, 14], [2, 24, 9, 25], [14, 24, 21, 25]), B('rect', [6, 6, 17, 7], [6, 30, 17, 31], [11, 12, 12, 25])],
+    volcano: [B('rect', [4, 5, 6, 7], [16, 9, 18, 11], [9, 16, 11, 18], [14, 22, 16, 24], [5, 27, 7, 29], [17, 30, 19, 32]), B('heart', [10, 16, 13, 19]), B('round', [6, 12, 8, 14], [15, 12, 17, 14], [10, 24, 13, 26]), B('diamond', [11, 8, 12, 29]), B('rect', [2, 9, 12, 10], [11, 18, 21, 19], [2, 27, 12, 28])]
+  };
+  // Monster lineup per level: b Puffer, e Chomper, s Buzzsaw, z Dart, p Starfish, h Shark (never more than
+  // one outside boss levels), i Octopus, w Whirlpool, B Big Puffer (boss). New monsters arrive on levels 1,
+  // 6 and 11 of a world, nearly alone; each world climbs in four waves of five (see the game plan doc).
+  const LINEUPS = {
+    meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bbes'],
+    dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzpess'],
+    glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzpiss'],
+    reef: ['bbzi', 'bbzpi', 'bbzpis', 'bbzpiess', 'bbbzpiess', 'bbzw', 'bbzpws', 'bbzhiws', 'bbzpiwess', 'bbzzphiwess', 'bbpi', 'bbzpis', 'bbzhpiss', 'bbzpiwess', 'bbbzphiwess', 'bbzpiss', 'bbzzpiwess', 'bbzhpiwess', 'bbbzzphiwess', 'Bbhhzpiwess'],
+    volcano: ['bbzzi', 'bbzzpi', 'bbzzpis', 'bbzzpiess', 'bbbzzpiess', 'bbzzw', 'bbzzpws', 'bbzzhiws', 'bbzzpiwess', 'bbzzzphiwess', 'bbzpi', 'bbzzpis', 'bbzzhpiss', 'bbzzpiwess', 'bbbzzphiwess', 'bbzzpiss', 'bbzzzpiwess', 'bbzzhpiwess', 'bbbzzzphiwess', 'Bbhhzzpiwesss']
+  };
+  // Boosters per world: what can appear, and the level where each one is first introduced.
+  const BOOSTERS = {
+    meadow: { pool: ['life', 'slow'], intro: { life: 3, slow: 16 } },
+    dunes: { pool: ['life', 'slow', 'freeze'], intro: { freeze: 16 } },
+    glacier: { pool: ['life', 'slow', 'freeze', 'shield'], intro: { shield: 6 } },
+    reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb'], intro: { bomb: 6 } },
+    volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'lure'], intro: { lure: 6 } }
+  };
+  const WAVE = [1, 2, 2.5, 3, 4, 3, 3.5, 4.5, 5, 6, 4.5, 5, 6, 6.5, 7.5, 6, 6.5, 7.5, 8, 9]; // the sawtooth
+  const KIND = { b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
   const LEVELS = [];
-  // Monster lineup per level: b Puffer, e Chomper, s Buzzsaw, z Dart, p Splitter, h Hunter, i Inker, m Magnet
-  const LINEUP = [
-    'b', 'bb', 'bb', 'be', 'bbe', 'bes', 'bbes', 'behs', 'bbehss', 'bbehss',
-    'bzs', 'bbzes', 'bpes', 'bbpess', 'bzpehss', 'bbzpess', 'bzheess', 'bpzhss', 'biess', 'bzpiehss',
-    'bbzhss', 'bzzpess', 'bpieehss', 'bmess', 'bzmpisss', 'bhhpzesss', 'bimzpesss', 'bbhhmiess', 'bzzpmiehss', 'bbhzpmieesss'
-  ];
-  const KIND = { b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', m: 'magnet' };
-  for (let e = 0; e < 3; e++) for (let l = 0; l < 10; l++) {
-    const d = e * 10 + l, mon = LINEUP[d].split('').map((c) => KIND[c]);
-    LEVELS.push({ e, l, world: e, mon, speed: 3.9 + d * 0.1, goal: [75, 78, 80][e], obst: OBST[(l + e * 3) % OBST.length], powers: d >= 2 });
-  }
-  const levelName = (i) => (LEVELS[i].e + 1) + '-' + (LEVELS[i].l + 1);
-  const prog = store.get('ls_prog', { unlocked: 0, stars: {}, best: {}, seen: [] });
+  WORLDS.forEach((wd, w) => {
+    const boards = BOARDS[wd.id], lineup = LINEUPS[wd.id], bo = BOOSTERS[wd.id];
+    for (let l = 0; l < 20; l++) {
+      const d = WAVE[l] + w * 2.6, mon = lineup[l].split('').map((c) => KIND[c]);
+      const firstOfWave = l % 5 === 0, introAt = Object.entries(bo.intro).filter(([, at]) => at - 1 <= l);
+      const pool = bo.pool.filter((k) => !bo.intro[k] || bo.intro[k] - 1 <= l);
+      LEVELS.push({
+        id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
+        mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
+        board: firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
+        powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
+        boss: lineup[l].includes('B')
+      });
+      void introAt;
+    }
+  });
+  const levelName = (i) => LEVELS[i] ? LEVELS[i].name : '';
+  const levelIndex = (id) => LEVELS.findIndex((x) => x.id === id);
+  // Progress, saved by level id. Version 1 (the first test builds) saved by position; it is moved over once.
+  const prog = (() => {
+    let pr = store.get('ls_prog', null);
+    if (!pr || pr.v !== 2) {
+      const old = pr || {}, next = { v: 2, done: {}, stars: {}, best: {}, seen: old.seen || [], skin: 'boat', daily: {}, rush: 0 };
+      if (typeof old.unlocked === 'number') for (let j = 0; j < 30; j++) {
+        const id = WORLD_IDS[Math.floor(j / 10)] + '-' + String(j % 10 + 1).padStart(2, '0');
+        if (j < old.unlocked) next.done[id] = true;
+        if (old.stars && old.stars[j]) next.stars[id] = old.stars[j];
+        if (old.best && old.best[j]) next.best[id] = old.best[j];
+      }
+      pr = next; store.set('ls_prog', pr);
+    }
+    pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
+    return pr;
+  })();
   const saveProg = () => store.set('ls_prog', prog);
+  const isOpen = (i) => i === 0 || !!prog.done[LEVELS[i - 1].id];
+  const nextLevel = () => { const k = LEVELS.findIndex((x, i) => isOpen(i) && !prog.done[x.id]); return k < 0 ? LEVELS.length - 1 : k; };
+  const totalStars = () => Object.values(prog.stars).reduce((a, b) => a + b, 0);
+  const worldStars = (w) => LEVELS.filter((x) => x.w === w).reduce((a, x) => a + (prog.stars[x.id] || 0), 0);
+  const worldOpen = (w) => isOpen(LEVELS.findIndex((x) => x.w === w));
 
   // ---------- game state ----------
   let state = 'menu', paused = false, frozenT = 0, slowT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
   let px = 0, py = 0, tx = 0, ty = 0, stepP = 1, dir = null, queue = [], drawing = false, trail = [], trailFrom = 0, monsters = [], powers = [], invuln = 0, lastLand = [0, 0];
-  let fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false;
+  let powersSeen = false, fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false, shieldOn = false, lureT = 0, bossHp = 0, mode = 'campaign';
   const trailIdx = new Int32Array(N).fill(-1);
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   const CORNER = 0.45; // a turn this late into a step still turns at the cell you just left
@@ -674,15 +796,24 @@ body {
     trailCol.setHex(w.trail);
     stage.style.setProperty('--sky1', w.sky[0]); stage.style.setProperty('--sky2', w.sky[1]);
   }
-  function build(i) {
+  function inShape(shape, x, y) {
+    const u = (x + 0.5 - 12) / 10, v = (y + 0.5 - 19) / 17;
+    if (shape === 'round') return u * u + v * v <= 1.02;
+    if (shape === 'diamond') return Math.abs(u) + Math.abs(v) <= 1.12;
+    if (shape === 'heart') { const hx = u * 1.25, hy = -v * 1.3 + 0.28; return Math.pow(hx * hx + hy * hy - 1, 3) - hx * hx * hy * hy * hy <= 0; }
+    return true;
+  }
+  function build(lv) {
     clearTrapHint(); trapHinted = false; inkT.fill(0); inkOn = false; magCd = 0; for (let i = 0; i < N; i++) maskData[i * 4 + 2] = 0;
-    cur = i; L = LEVELS[i]; applyWorld(WORLDS[L.world]);
+    if (typeof lv === 'number') { cur = lv; L = LEVELS[lv]; } else { cur = -1; L = lv; }
+    applyWorld(WORLDS[L.world]);
     fixed.fill(0); total = 0;
     for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
       const k = idx(x, y);
-      let land = isBorder(x, y);
-      if (!land) for (const [x0, y0, x1, y1] of L.obst) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) land = true;
-      cells[k] = land ? LAND : SEA; fixed[k] = land ? 1 : 0; if (!land) total++;
+      let land = isBorder(x, y), wall = land || !inShape(L.board.shape, x, y);
+      if (wall) land = true;
+      else for (const [x0, y0, x1, y1] of L.board.obst) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) land = true;
+      cells[k] = land ? LAND : SEA; fixed[k] = wall ? 2 : land ? 1 : 0; if (!land) total++;
       hGoal[k] = hNow[k] = land ? H_LAND : 0; hVel[k] = 0; delay[k] = 0; flashC[k] = 0; trailIdx[k] = -1;
       setTile(k); setMask(k);
     }
@@ -691,8 +822,8 @@ body {
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
     for (const kind of L.mon) spawnMonster(kind);
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
-    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = 6;
-    lives = 3; score = 0; drawHud();
+    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
+    lives = L.lives || 3; score = 0; shieldOn = false; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
@@ -771,33 +902,33 @@ body {
     return true;
   }
   function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
-  const SPEEDS = { zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.7 };
-  const SIZES = { zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05 };
+  const SPEEDS = { zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
+  const SIZES = { zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
   const MAG_R = 4.5; // cells
   const inkT = new Float32Array(N); let inkOn = false, magCd = 0, magHinted = false;
   function spawnMonster(kind, at) {
-    const sp = L.speed * (SPEEDS[kind] || 1);
+    const sp = L.speed * (SPEEDS[kind] || 1) * (tutorialSafe() ? 0.7 : 1);
     let x, y;
     if (at) { [x, y] = at; }
     else if (kind === 'saw') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'saw').length * 6; }
     else {
       const all = seaCellsFree(), far = all.filter(([cx, cy]) => Math.hypot(cx - px, cy - py) > 8);
-      const pool = far.length ? far : all, c = pool.length ? pool[(Math.random() * pool.length) | 0] : [W / 2, Hh / 2];
+      const pool = far.length ? far : all, c = pool.length ? pool[(rng() * pool.length) | 0] : [W / 2, Hh / 2];
       x = c[0] + 0.5; y = c[1] + 0.5;
     }
-    const m = { kind, x, y, vx: (Math.random() < 0.5 ? -1 : 1) * sp, vy: (Math.random() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(1.1 * (SIZES[kind] || 1)), eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
+    const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(1.1 * (SIZES[kind] || 1)), eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
     monsters.push(m); return m;
   }
   function drawHud() {
-    $('lvlLabel').textContent = L ? levelName(cur) : '';
-    $('pctLabel').textContent = pct + '% · goal ' + L.goal + '%';
+    $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
+    $('pctLabel').textContent = mode === 'rush' ? rushLabel() : L.boss ? 'Boss · ' + Math.max(0, bossHp) + ' to go' : pct + '% · goal ' + L.goal + '%';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
-    for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
-    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT));
+    if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
+    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT)); if (shieldOn) pw.push('Shield'); if (lureT > 0) pw.push('Lure ' + Math.ceil(lureT));
     $('power').innerHTML = pw.map((t) => '<span class="ts">' + t + '</span>').join('');
   }
   function percent() { let n = 0; for (let i = 0; i < N; i++) if (!fixed[i] && cells[i] === LAND) n++; return Math.floor(n / total * 100); }
@@ -833,7 +964,7 @@ body {
       }
     }
     const trapped = [];
-    for (const r of regions) if (r.size <= TRAP_MAX) { r.cells.forEach((i) => { region[i] = -1; }); trapped.push(...r.monsters); }
+    for (const r of regions) if (r.size <= (r.monsters.some((m) => m.kind === 'boss') ? TRAP_MAX * 2 : TRAP_MAX)) { r.cells.forEach((i) => { region[i] = -1; }); trapped.push(...r.monsters); }
     const fresh = [];
     for (let i = 0; i < N; i++) {
       if (cells[i] === SEA && region[i] < 0) cells[i] = LAND;
@@ -862,6 +993,12 @@ body {
     if (trapped.length) {
       const splits = trapped.filter((m) => m.kind === 'splitter').length;
       if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); buzz('split'); }, 450);
+      const bossT = trapped.find((m) => m.kind === 'boss');
+      if (bossT) {
+        bossHp--;
+        if (bossHp > 0) setTimeout(() => { if (state !== 'play') return; const nb = spawnMonster('boss'); nb.pop = 1; const k = 0.8 + bossHp * 0.1; nb.mesh.userData.s *= k; nb.mesh.scale.setScalar(nb.mesh.userData.s); const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 40, 4, 6); }, 700);
+        setTimeout(() => flash(bossHp > 0 ? 'Boss hit!' : 'Boss down!', bossHp > 0 ? bossHp + ' to go' : null, 1300), 200);
+      }
       trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
       const bonus = 250 * trapped.length * trapped.length; score += bonus;
       flash(trapped.length > 1 ? 'Double trap!' : 'Trapped!', '+' + bonus, 1300);
@@ -869,28 +1006,39 @@ body {
     } else if (gained >= 12) { flash('Huge claim!', '+' + gained + '%'); arp([523, 659, 784, 1047], 70); buzz('big'); shake = 0.2; }
     else if (fresh.length) { tone(560 + gained * 30, 0.16, 'triangle'); buzz('claim'); }
     drawHud();
-    if (pct >= L.goal) levelClear();
+    tutorialStep('claim');
+    if (mode === 'rush') rushClaimed(fresh.length);
+    else if (L.boss ? bossHp <= 0 : pct >= L.goal) levelClear();
   }
   function takePower(p) {
-    p.taken = true; const [wx, wz] = W2(p.x, p.y);
+    p.taken = true; const [wx, wz] = W2(p.fx, p.fy);
     burst(wx, 1.2, wz, POWERS[p.kind].color, 30, 3, 6);
     if (p.kind === 'life') lives = Math.min(5, lives + 1);
     if (p.kind === 'slow') slowT = POWERS.slow.secs;
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
-    setTimeout(() => flash(POWERS[p.kind].label, p.kind === 'life' ? null : POWERS[p.kind].secs + ' seconds', 1000), 250);
+    if (p.kind === 'shield') shieldOn = true;
+    if (p.kind === 'lure') lureT = POWERS.lure.secs;
+    if (p.kind === 'bomb') { // claim everything within 3 squares, then settle the board like a normal claim
+      const bx = Math.round(p.fx), by = Math.round(p.fy);
+      for (let y = by - 3; y <= by + 3; y++) for (let x = bx - 3; x <= bx + 3; x++) if (inside(x, y) && Math.hypot(x - bx, y - by) <= 3.2 && cells[idx(x, y)] === SEA) cells[idx(x, y)] = LAND;
+      burst(wx, 0.8, wz, 0xff8a3d, 60, 7, 6); burst(wx, 0.8, wz, 0xffffff, 30, 5, 7); shake = 0.4; tone(90, 0.5, 'sawtooth', 0.12, 40);
+      if (!drawing) setTimeout(() => { if (state === 'play' && !drawing) claim(); }, 0);
+    }
+    setTimeout(() => flash(POWERS[p.kind].label, POWERS[p.kind].secs ? POWERS[p.kind].secs + ' seconds' : null, 1000), 250);
     arp([880, 1175, 1568], 60, 0.14, 'sine'); buzz('pickup');
   }
-  function spawnPower() {
-    const free = seaCellsFree(); if (!free.length) return;
-    const [x, y] = free[(Math.random() * free.length) | 0], kinds = lives < 3 ? ['life', 'slow', 'freeze'] : ['slow', 'freeze', 'slow', 'freeze', 'life'];
-    const kind = kinds[(Math.random() * kinds.length) | 0];
-    powers.push({ kind, x, y, mesh: makePower(kind), t: 0 });
+  function spawnPower(force) {
+    const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
+    const [x, y] = free[(rng() * free.length) | 0];
+    let pool = L.powers.filter((k) => k !== 'life' || lives < 3); if (!pool.length) pool = L.powers;
+    const kind = force || pool[(rng() * pool.length) | 0];
+    powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
   }
 
   // ---------- eaters bite land ----------
   function eat(i, m) {
     const x = i % W, y = (i / W) | 0;
-    if (isBorder(x, y) || cells[i] !== LAND) return false; // the outer frame is never eaten
+    if (fixed[i] === 2 || cells[i] !== LAND) return false; // the outer frame and the board's outline are never eaten
     if (fixed[i]) { fixed[i] = 0; total++; } // an eaten obstacle becomes ordinary sea that you can claim back
     if ((x === px && y === py) || (x === tx && y === ty)) return false;
     cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = 0; setMask(i); mask.needsUpdate = true;
@@ -900,27 +1048,33 @@ body {
   }
 
   // ---------- level flow ----------
+  const starsSvg = (n) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg class="' + (k < n ? 'on' : '') + '" style="animation-delay:' + (0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
   function levelClear() {
-    state = 'clear'; clearT = 0; $('hint').textContent = '';
-    const stars = 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
+    state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd();
+    const stars = L.boss ? Math.max(1, Math.min(3, lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
-    // the rest of the sea rises too, slowly, as a victory wave
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
-    flash('Level ' + levelName(cur) + ' clear!', pct + '% claimed', 1600);
+    flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? 'Daily done' : pct + '% claimed', 1600);
     arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
-    const best = prog.stars[cur] || 0; if (stars > best) prog.stars[cur] = stars;
-    if ((prog.best[cur] || 0) < score) prog.best[cur] = score;
-    if (cur + 1 < LEVELS.length && prog.unlocked < cur + 1) prog.unlocked = cur + 1;
+    let newWorld = false;
+    if (mode === 'daily') { const d = todayKey(), was = prog.daily[d]; if (!was || was.stars < stars) prog.daily[d] = { stars, score }; }
+    else {
+      if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
+      if ((prog.best[L.id] || 0) < score) prog.best[L.id] = score;
+      newWorld = !prog.done[L.id] && L.l === 19 && cur + 1 < LEVELS.length;
+      prog.done[L.id] = true;
+    }
     saveProg();
     setTimeout(() => {
       $('hud').hidden = true;
-      const next = cur + 1 < LEVELS.length;
-      panel('<div class="kicker">Level ' + levelName(cur) + ' · ' + WORLDS[L.world].name + '</div><h2>Level clear!</h2>' +
-        '<div class="stars">' + [0, 1, 2].map((k) => '<svg class="' + (k < stars ? 'on' : '') + '" style="animation-delay:' + (0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>' +
-        '<div class="big">' + score + '</div><p>' + pct + '% claimed. ' + (stars < 3 ? 'Claim ' + (L.goal + (stars === 1 ? 7 : 14)) + '% for ' + (stars + 1) + ' stars: save a big area for your last cut.' : 'Perfect clear.') + '</p>' +
-        '<div class="btns">' + (next ? '<button class="btn" type="button" data-act="next">Next level</button>' : '<button class="btn" type="button" data-act="levels">All levels</button>') +
-        '<button class="btn alt" type="button" data-act="retry">Replay</button>' + (next ? '<button class="btn alt" type="button" data-act="levels">Levels</button>' : '') + '</div>',
-        { next: () => startLevel(cur + 1), retry: () => startLevel(cur), levels: showLevels });
+      const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
+      const tip = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + '.' : L.boss || stars === 3 ? 'Perfect clear.' : 'Claim ' + (L.goal + (stars === 1 ? 7 : 14)) + '% for ' + (stars + 1) + ' stars.';
+      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars) +
+        '<div class="big">' + score.toLocaleString('en-US') + '</div><p>' + tip + '</p>' +
+        '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' : '') +
+        (mode === 'daily' ? '<button class="btn" type="button" data-act="cal">Calendar</button>' : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
+        '<button class="btn alt" type="button" data-act="home">Home</button></div>',
+        { next: () => startLevel(cur + 1), retry: () => startLevel(cur), home: showHome, cal: showDaily });
       [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); });
     }, 2600);
   }
@@ -939,22 +1093,26 @@ body {
   }
   function outOfLives() {
     $('hud').hidden = true;
-    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>You claimed ' + pct + '% of ' + L.goal + '%. Try again.</p>' +
-      '<div class="btns"><button class="btn" type="button" data-act="retry">Try again</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
-      { retry: () => startLevel(cur), levels: showLevels });
+    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
+      '<div class="btns"><button class="btn" type="button" data-act="retry">Try again</button><button class="btn alt" type="button" data-act="home">Home</button></div>',
+      { retry: () => (mode === 'daily' ? startDaily() : startLevel(cur)), home: showHome });
   }
   function startLevel(i) {
-    hidePanel(); build(i); state = 'play'; paused = false; $('hud').hidden = false;
-    const fresh = L.mon.filter((k, j) => L.mon.indexOf(k) === j && !prog.seen.includes(k));
+    mode = 'campaign'; rng = Math.random;
+    begin(typeof i === 'number' ? i : levelIndex(i));
+  }
+  function begin(lv) {
+    hidePanel(); build(lv); state = 'play'; paused = false; $('hud').hidden = false;
+    const fresh = L.mon.filter((k, j) => L.mon.indexOf(k) === j && k !== 'mini' && !prog.seen.includes(k));
     if (fresh.length) { // introduce a new monster before the level starts
       state = 'intro'; const k = fresh[0]; prog.seen.push(...fresh); saveProg();
       panel('<div class="kicker">New monster</div><div class="foe">' + foeIcon(k) + '</div><h2>' + MONSTER_INFO[k].name + '</h2><p>' + MONSTER_INFO[k].text + '</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
         { go: () => { hidePanel(); state = 'play'; banner(); } });
       return;
     }
-    if (i === 1 && !prog.seen.includes('trap')) {
-      state = 'intro'; prog.seen.push('trap'); saveProg();
-      panel('<div class="kicker">Tip</div><h2>Trap monsters</h2><p>Close a monster into a small area, 40 squares or less, and it is caught for a big bonus.</p><p>While you draw, a monster you would trap by heading straight to land gets a gold ring and its water shimmers.</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
+    if (L.newPower && !prog.seen.includes('p-' + L.newPower)) { // and a new booster
+      state = 'intro'; prog.seen.push('p-' + L.newPower); saveProg(); const pw = POWERS[L.newPower];
+      panel('<div class="kicker">New booster</div><div class="foe">' + foeIcon(null, L.newPower) + '</div><h2>' + pw.label + '</h2><p>' + pw.text + ' Fly over it to grab it.</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
         { go: () => { hidePanel(); state = 'play'; banner(); } });
       return;
     }
@@ -969,46 +1127,171 @@ body {
     burst(wx, H_LAND + 0.1, wz, 0xfff6e0, 22, 3, 1.2); burst(wx, H_LAND + 0.1, wz, 0x9ff4ff, 12, 2, 2.5);
     shockT = 0.6; tone(330, 0.12, 'sine', 0.08); setTimeout(() => tone(660, 0.16, 'sine', 0.07), 70); setTimeout(() => tone(990, 0.2, 'sine', 0.05), 140); buzz('tick');
   }
-  function banner() { flash('Level ' + levelName(cur), 'claim ' + L.goal + '%', 1300); enter(0.25); $('hint').textContent = cur === 0 ? 'Swipe to move · hold to keep moving on land' : ''; }
-  function foeIcon(k) { // a small rendered picture of the monster for the intro card
-    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setSize(176, 176);
+  function banner() {
+    if (mode === 'rush') flash('Rush', 'claim fast · +5s per claim', 1300);
+    else flash(mode === 'daily' ? 'Daily' : L.boss ? 'Boss' : 'Level ' + L.name, L.boss ? 'trap it 3 times' : 'claim ' + L.goal + '%', 1300);
+    enter(0.25); $('hint').textContent = ''; tutorialStart();
+  }
+  let iconR = null;
+  function foeIcon(k, power) { // a small rendered picture of the monster (or booster) for the intro card
+    if (!iconR) { iconR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); iconR.setSize(176, 176); }
+    const r = iconR;
     const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x6a7ab0, 1)); const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(-2, 4, 5); s.add(d);
+    if (power) { const pm = makePower(power); scene.remove(pm); pm.scale.setScalar(2.2); s.add(pm); const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.2, 3.2); c.lookAt(0, 0, 0); r.clear(); r.render(s, c); return '<img alt="" src="' + r.domElement.toDataURL() + '">'; }
     const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (k === 'saw') m.rotation.x = 0.7; if (k === 'splitter' || k === 'mini') { m.rotation.set(0.95, 0, 0); } if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
-    const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.render(s, c);
-    const url = r.domElement.toDataURL(); r.dispose(); return '<img alt="" src="' + url + '">';
+    if (k === 'magnet') m.rotation.x = 0.6; if (k === 'boss') m.scale.setScalar(0.7);
+    const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.clear(); r.render(s, c);
+    return '<img alt="" src="' + r.domElement.toDataURL() + '">';
   }
 
   // ---------- menus ----------
-  function showTitle() {
-    state = 'menu'; $('hud').hidden = true; $('hint').textContent = '';
-    const next = Math.min(prog.unlocked, LEVELS.length - 1);
-    panel('<h1>Landscraper</h1><p>Draw your trail across the sea, get back to land, and claim every area without a monster in it.</p>' +
-      '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + levelName(next) + '</button><button class="btn alt" type="button" data-act="levels">Levels</button></div>',
-      { play: () => startLevel(next), levels: showLevels });
+  const dailyOpen = () => !!prog.done['meadow-05'], rushOpen = () => !!prog.done['meadow-20'];
+  function toMenu() { state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function showHome() {
+    toMenu();
+    const nx = nextLevel(), lv = LEVELS[nx], done = prog.daily[todayKey()];
+    panel('<h1>Landscraper</h1>' +
+      '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
+      '<div class="modes">' +
+      '<button class="mode" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
+      '<button class="mode" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
+      '</div>' +
+      '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Boats</button><button class="btn alt" type="button" data-act="settings">Settings</button></div>',
+      { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, settings: showSettings });
   }
-  function showLevels() {
-    state = 'menu'; $('hud').hidden = true; $('hint').textContent = '';
-    let html = '<h2>Levels</h2><div class="eps">';
-    for (let e = 0; e < 3; e++) {
-      const got = LEVELS.filter((x) => x.e === e).reduce((s, x, j) => s + (prog.stars[e * 10 + j] || 0), 0);
-      html += '<div class="ep"><h3>' + (e + 1) + ' · ' + WORLDS[e].name + '<small>' + got + ' / 30 stars</small></h3><div class="grid">';
-      for (let l = 0; l < 10; l++) {
-        const i = e * 10 + l, st = prog.stars[i] || 0, open = i <= prog.unlocked;
-        html += '<button class="lvl' + (i === prog.unlocked ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + levelName(i) + '">' + (l + 1) + '<small>' + (st ? '★'.repeat(st) : '') + '</small></button>';
-      }
-      html += '</div></div>';
-    }
+  const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
+  function showWorlds() {
+    toMenu();
+    let html = '<h2>Worlds</h2><div class="worlds">';
+    WORLDS.forEach((wd, w) => {
+      const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
+      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>★ ' + st + ' / 60</span></button>';
+    });
     html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>';
-    panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showTitle });
+    panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
   }
+  function showWorld(w) {
+    toMenu();
+    let html = '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid">';
+    LEVELS.forEach((x, i) => {
+      if (x.w !== w) return;
+      const st = prog.stars[x.id] || 0, open = isOpen(i);
+      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? '★'.repeat(st) : '') + '</small></button>';
+    });
+    html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Worlds</button></div>';
+    panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
+  }
+  function settingsButtons() {
+    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off');
+    return {
+      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      acts: {
+        sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
+        haptics: (b) => { settings.haptics = !settings.haptics; store.set('ls_settings', settings); b.textContent = lbl('Vibration', settings.haptics); buzz('claim'); }
+      }
+    };
+  }
+  function showSettings() {
+    toMenu(); const sb = settingsButtons();
+    panel('<h2>Settings</h2><div class="btns">' + sb.html + '<button class="btn" type="button" data-act="back">Back</button></div>', Object.assign({ back: showHome }, sb.acts));
+  }
+
+  // ---------- Daily: one level a day, the same for everyone ----------
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const dayKey = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  const todayKey = () => dayKey(new Date());
+  function streak() { // consecutive days played, one missed day a week forgiven
+    let n = 0, gaps = [], d = new Date(); if (!prog.daily[dayKey(d)]) d.setDate(d.getDate() - 1);
+    for (let k = 0; k < 400; k++) {
+      const key = dayKey(d);
+      if (prog.daily[key]) n++;
+      else { if (n === 0 || gaps.some((g) => g - k < 7)) break; gaps.push(k); }
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+  function dailyLevel(key) {
+    let h = 2166136261; for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    const r = seeded(h), w = Math.floor(r() * 3), wd = WORLDS[w], boards = BOARDS[wd.id], lu = LINEUPS[wd.id];
+    const line = lu[6 + Math.floor(r() * 12)].replace('B', 'b');
+    return { id: 'daily-' + key, name: 'Daily', w, l: 0, world: w, mon: line.split('').map((c) => KIND[c]), speed: 3.5 + (5 + w * 2.6) * 0.16, goal: 78, board: boards[Math.floor(r() * boards.length)], powers: BOOSTERS[wd.id].pool, newPower: null, boss: false, seed: h };
+  }
+  function startDaily() {
+    mode = 'daily'; const lv = dailyLevel(todayKey()); rng = seeded(lv.seed ^ 0x5bd1e995);
+    begin(lv); mode = 'daily'; drawHud();
+  }
+  function showDaily() {
+    toMenu();
+    const now = new Date(), y = now.getFullYear(), mo = now.getMonth(), first = new Date(y, mo, 1).getDay(), days = new Date(y, mo + 1, 0).getDate(), today = todayKey(), done = prog.daily[today];
+    let cal = '<div class="cal">' + ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => '<i>' + d + '</i>').join('');
+    for (let k = 0; k < first; k++) cal += '<div class="blank"></div>';
+    for (let d = 1; d <= days; d++) { const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key]; cal += '<div class="' + (e ? 'done' : '') + (key === today ? ' today' : '') + '">' + (e ? '★'.repeat(e.stars) : d) + '</div>'; }
+    cal += '</div>';
+    panel('<div class="kicker">' + now.toLocaleString('en-US', { month: 'long', year: 'numeric' }) + '</div><h2>Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + '</p>' + cal +
+      '<div class="btns"><button class="btn" type="button" data-act="play">' + (done ? 'Play again' : 'Play today') + '</button><button class="btn alt" type="button" data-act="back">Home</button></div>',
+      { play: startDaily, back: showHome });
+  }
+
+  // ---------- Rush: 60 seconds, +5 per claim, a new board every 25% ----------
+  let rushTime = 0, rushBoard = 0, rushTotal = 0;
+  const RUSH_GOAL = 25;
+  function rushLevel(n) {
+    const open = WORLDS.map((_, w) => w).filter(worldOpen), w = open[n % open.length], wd = WORLDS[w], boards = BOARDS[wd.id];
+    const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
+    return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board: boards[n % boards.length], powers: ['slow', 'freeze'], newPower: null, boss: false, lives: 99 };
+  }
+  function startRush() {
+    mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0;
+    begin(rushLevel(0)); mode = 'rush'; drawHud();
+  }
+  const rushLabel = () => Math.ceil(rushTime) + 's · ' + rushTotal.toLocaleString('en-US') + ' pts';
+  function rushClaimed(n) {
+    if (n > 0) { rushTime += 5; popAt(W2(px, py)[0], W2(px, py)[1] + 1, '+5s', '#ffd166'); }
+    rushTotal = score;
+    if (pct >= RUSH_GOAL) { // next board: keep the score and the clock
+      rushBoard++; const keep = score; flash('Board ' + (rushBoard + 1), '+10s', 900); rushTime += 10; arp([523, 784, 1047], 70);
+      setTimeout(() => { if (mode !== 'rush' || state !== 'play') return; build(rushLevel(rushBoard)); score = keep; enter(0.2); drawHud(); }, 500);
+    }
+    drawHud();
+  }
+  function rushHit(why) {
+    rushTime = Math.max(0, rushTime - 5); tone(220, 0.4, 'sawtooth', 0.08, 90); buzz('hit'); shake = 0.3;
+    flash('-5s', why, 900, true);
+    trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; }); trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
+    enter(0.4); drawHud();
+  }
+  function rushEnd() {
+    state = 'over'; rushTotal = score; const best = rushTotal > prog.rush; if (best) { prog.rush = rushTotal; saveProg(); }
+    flash('Time!', null, 1000); arp([784, 659, 523], 110, 0.2); buzz('clear');
+    setTimeout(() => {
+      $('hud').hidden = true;
+      panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + (rushBoard + 1) + (rushBoard ? ' boards' : ' board') + ' · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
+        '<div class="btns"><button class="btn" type="button" data-act="again">Play again</button><button class="btn alt" type="button" data-act="home">Home</button></div>',
+        { again: startRush, home: showHome });
+    }, 1200);
+  }
+
+  // ---------- skins (the hero) ----------
+  function showSkins() { toMenu(); panel('<h2>Boats</h2><p>Coming soon.</p><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>', { back: showHome }); }
+
+  // ---------- tutorial (first level only) ----------
+  const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
+  let tut = null, tutT = 0;
+  function coach(text, finger) { $('coachText').textContent = text; $('coachFinger').hidden = !finger; $('coach').classList.toggle('on', !!text); }
+  function tutorialStart() { tut = tutorialSafe() ? 'swipe' : null; if (tut) setTimeout(() => { if (tut === 'swipe') coach('Swipe up', true); }, 2200); else coach(''); }
+  function tutorialEnd() { tut = null; coach(''); }
+  function tutorialStep(ev) { // called by the game on events; each tip shows once and goes when done
+    if (!tut) return;
+    if (tut === 'swipe' && ev === 'draw') { tut = 'back'; coach('Back to land', false); }
+    else if (tut === 'back' && ev === 'claim') { tut = 'line'; coach(''); setTimeout(() => flash('Yours!', 'claim 75% to win', 1300), 150); }
+    else if (tut === 'line' && ev === 'near') { tut = 'trap'; coach("Don't let it touch your line", false); tutT = 2.6; }
+  }
+
   function showPause() {
     if (state !== 'play') return;
-    paused = true;
-    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off');
-    const toggle = (key, name) => (b) => { settings[key] = !settings[key]; store.set('ls_settings', settings); b.textContent = lbl(name, settings[key]); if (key === 'haptics') buzz('claim'); else tone(660, 0.12, 'triangle'); };
-    panel('<div class="kicker">Level ' + levelName(cur) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart level</button><button class="btn alt" type="button" data-act="levels">Levels</button>' +
-      '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button></div>',
-      { resume: () => { hidePanel(); paused = false; }, retry: () => startLevel(cur), levels: showLevels, sound: toggle('sound', 'Sound'), haptics: toggle('haptics', 'Vibration') });
+    paused = true; const sb = settingsButtons();
+    panel('<div class="kicker">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart</button><button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
+      Object.assign({ resume: () => { hidePanel(); paused = false; }, retry: () => (mode === 'rush' ? startRush() : mode === 'daily' ? startDaily() : startLevel(cur)), home: showHome }, sb.acts));
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
@@ -1040,7 +1323,7 @@ body {
     const i = idx(px, py), c = cells[i];
     if (c === TRAIL) { die('you crossed your own trail'); return; }
     if (c === SEA) {
-      if (!drawing) { trailFrom = from; drawing = true; buzz('soft'); }
+      if (!drawing) { trailFrom = from; drawing = true; buzz('soft'); tutorialStep('draw'); }
       cells[i] = TRAIL; trailIdx[i] = trail.length; trail.push(i); addDashes(trail.length - 1);
       if (inkT[i] > 0.2 && !fuse) lightFuse(0); // ink lights the fuse at the start of your trail: race it to land
     } else if (c === LAND) {
@@ -1060,7 +1343,7 @@ body {
       queue = [dir]; dir = nudge; magCd = 1.4;
       tone(300, 0.25, 'sine', 0.07, 600); buzz('tick');
       const [wx, wz] = W2(px, py); burst(wx, 0.6, wz, 0x7fb3ff, 12, 2, 2);
-      if (!magHinted) { magHinted = true; flash('Pulled!', 'the magnet tugs you toward it', 900); }
+      if (!magHinted) { magHinted = true; flash('Pulled!', 'the whirlpool drags you in', 900); }
       break;
     }
     const [dx, dy] = DIRS[dir], nx = px + dx, ny = py + dy;
@@ -1139,10 +1422,14 @@ body {
       if (invuln > 0) invuln -= dt;
       if (slowT > 0) slowT = Math.max(0, slowT - dt);
       if (frozenT > 0) frozenT = Math.max(0, frozenT - dt);
+      if (lureT > 0) lureT = Math.max(0, lureT - dt);
+      if (tut === 'line' && drawing) for (const m of monsters) { if (m.dead) continue; if (trail.some((c) => Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < 3.5)) { tutorialStep('near'); break; } }
+      if (tutT > 0) { tutT -= dt; if (tutT <= 0) coach(''); }
+      if (mode === 'rush' && hideT <= 0 && enterT <= 0) { rushTime -= dt; if (rushTime <= 0) { rushTime = 0; rushEnd(); } }
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
-      if (L.powers) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 1) spawnPower(); powerTimer = 18; } }
+      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 1) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.newPower ? 12 : 18; } }
       if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
     const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
@@ -1165,7 +1452,9 @@ body {
     beamMat.opacity = hideT > 0 ? 0.5 + 0.2 * Math.sin(t * 20) : enterT > 0 ? 0.6 * (enterT / ENTER) : 0; beam.visible = beamMat.opacity > 0.01;
     padMat.opacity = entering ? 0.6 + 0.35 * Math.sin(t * 14) : 0.4;
     if (shockT > 0) { shockT -= dt; const q = 1 - shockT / 0.6; shock.scale.setScalar(1 + q * 4); shockMat.opacity = Math.max(0, 1 - q); } else shockMat.opacity = 0;
-    drone.position.set(fx + ox, gy + 0.55 + drop + Math.sin(t * 4) * 0.05, fy + oz);
+    const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
+    if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
+    drone.position.set(heroX, gy + 0.55 + drop + Math.sin(t * 4) * 0.05, heroZ);
     const mdx = tx - px, mdy = ty - py;
     if (dir && !entering) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
     body.rotation.x = (stepP < 1 && (mdx || mdy)) ? 0.22 : 0; // lean forward when moving
@@ -1311,6 +1600,7 @@ body {
         if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
       }
       if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y += dt; f.material.opacity = 0.25 + 0.2 * Math.sin(t * 4); }
+      if (fishU && fishU.swirl) { fishU.swirl.rotation.y -= dt * 4; m.mesh.rotation.y = 0; }
       if (m.pop > 0) { m.pop = Math.max(0, m.pop - dt * 3); const q = 1 - m.pop; m.mesh.scale.setScalar(m.mesh.userData.s * (q < 0.7 ? q / 0.7 * 1.25 : 1.25 - (q - 0.7) / 0.3 * 0.25)); }
       if (m.mesh.userData.wheel) { // face the way it rolls, spin the wheel
         if (live && mult > 0) m.mesh.userData.wheel.rotation.y -= dt * mult * 14;
@@ -1322,10 +1612,12 @@ body {
     monsters = monsters.filter((m) => { if (m.dead && m.dead > 0.5) { scene.remove(m.mesh); scene.remove(m.shadow); return false; } return true; });
     // power-ups
     for (const p of powers) {
-      p.t += dt; const [wx, wz] = W2(p.x, p.y);
+      p.t += dt;
+      if (lureT > 0 && !p.taken && live) { const ddx = fx - p.fx, ddy = fy - p.fy, l2 = Math.hypot(ddx, ddy) || 1; p.fx += ddx / l2 * dt * 6; p.fy += ddy / l2 * dt * 6; p.x = Math.round(p.fx); p.y = Math.round(p.fy); }
+      const [wx, wz] = W2(p.fx, p.fy);
       if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
-      if (live && Math.hypot(p.x - fx, p.y - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
-      p.mesh.position.set(wx, Math.max(0, hNow[idx(p.x, p.y)]) + 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5, 0); // faces the camera, gently swaying
+      if (live && Math.hypot(p.fx - fx, p.fy - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
+      p.mesh.position.set(wx, Math.max(0, hNow[idx(clamp(p.x, 0, W - 1), clamp(p.y, 0, Hh - 1))]) + 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5, 0); // faces the camera, gently swaying
       p.mesh.scale.setScalar(1.5 * Math.min(1, p.t * 3));
     }
     powers = powers.filter((p) => { if (p.taken && p.mesh.scale.x < 0.02) { scene.remove(p.mesh); return false; } return true; });
@@ -1339,7 +1631,7 @@ body {
     renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    const asp = w / Math.max(1, h); EL = (asp < 0.62 ? 60 : asp < 0.9 ? 54 : 50) * Math.PI / 180;
+    const asp = w / Math.max(1, h); EL = (asp < 0.62 ? 53 : asp < 0.9 ? 52 : 50) * Math.PI / 180;
     // Distance: the full board width always fits (checked at every visible row); on wide screens we also
     // come closer, showing about 70% of the board's length and following the player.
     const v = new THREE.Vector3(), saveShake = shake; shake = 0;
@@ -1358,24 +1650,24 @@ body {
 
   // ---------- input: swipe anywhere (chained without lifting) or arrow keys ----------
   let sw = null;
-  const pad = $('pad'), knob = pad.querySelector('.knob'), knobIcon = knob.querySelector('svg');
-  const ROT = { up: 0, right: 90, down: 180, left: 270 }, OFF = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
-  function padTo(d) { const [x, y] = OFF[d]; knob.style.transform = 'translate(' + x * 26 + 'px,' + y * 26 + 'px)'; knobIcon.style.transform = 'rotate(' + ROT[d] + 'deg)'; }
+  const pad = $('pad'), knob = pad.querySelector('.knob'), arrows = { up: pad.querySelector('.ar.up'), down: pad.querySelector('.ar.down'), left: pad.querySelector('.ar.left'), right: pad.querySelector('.ar.right') };
+  const OFF = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  function padTo(d) { const [x, y] = d ? OFF[d] : [0, 0]; knob.style.transform = 'translate(' + x * 16 + 'px,' + y * 16 + 'px)'; for (const k in arrows) arrows[k].classList.toggle('lit', k === d); }
   stage.addEventListener('pointerdown', (e) => {
     if (e.target.closest('#panel') || e.target.closest('#pauseBtn')) return;
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
-    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knob.style.transform = ''; knobIcon.style.transform = 'rotate(' + (dir ? ROT[dir] : 0) + 'deg)'; pad.classList.add('on'); }
+    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; padTo(dir); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
     if (e.pointerType === 'mouse' && e.buttons === 0) { release(); return; } // mouse released outside the window
     const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
     const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
     steer(d); padTo(d); touchDir = d;
-    sw = { x: e.clientX, y: e.clientY }; pad.style.left = (e.clientX - OFF[d][0] * 26) + 'px'; pad.style.top = (e.clientY - OFF[d][1] * 26) + 'px';
+    sw = { x: e.clientX, y: e.clientY }; // the pad stays where the finger first touched; only the knob points
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
@@ -1398,7 +1690,8 @@ body {
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
-  resize(); build(Math.min(prog.unlocked, LEVELS.length - 1)); showTitle();
+  resize(); build(nextLevel());
+  if (!prog.done['meadow-01']) startLevel(0); else showHome();
   requestAnimationFrame(loop);
 
   // Test hook (headless checks and store screenshots)
@@ -1418,8 +1711,8 @@ body {
       const [lx, ly] = cellsXY[cellsXY.length - 1]; px = tx = lx; py = ty = ly; stepP = 1; dir = null; queue = [];
       if (close) claim();
     },
-    setLives(n) { lives = n; drawHud(); }, power(kind, x, y) { powers.push({ kind, x, y, mesh: makePower(kind), t: 0 }); },
-    fuseAt(k) { lightFuse(k); }, unlockAll() { prog.unlocked = LEVELS.length - 1; saveProg(); }
+    setLives(n) { lives = n; drawHud(); }, power(kind, x, y) { powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 }); },
+    fuseAt(k) { lightFuse(k); }, unlockAll() { LEVELS.forEach((x) => { prog.done[x.id] = true; }); saveProg(); }, get levels() { return LEVELS.map((x) => x.id); }, get mode() { return mode; }, get rushTime() { return rushTime; }, startDaily, startRush, showHome, get bossHp() { return bossHp; }
   };
 })();
 </script>
