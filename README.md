@@ -31,7 +31,7 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] App icon, splash, Play feature graphic and screenshots (first pass): `python3 design/render.py`, then `npx @capacitor/assets generate`; screenshots with `python3 design/screens-store.py android` after `npm run build`
 - [x] Controls: two-turn swipe queue, corner forgiveness; on land you move only while holding, at sea you are committed; on-screen direction pad
 - [x] Fuse: a monster touching your trail lights a fuse that runs to you at 2.5x your speed
-- [x] Monsters: Puffer, Dart, Chomper, Buzzsaw, Starfish (splits), Shark (hunts), Octopus (ink), Whirlpool (pulls); trap any sea monster in 40 cells or less, with a gold preview
+- [x] Monsters: Puffer, Dart, Chomper, Buzzsaw, Starfish (splits), Shark (hunts), Octopus (ink), Whirlpool (pulls), Jellyfish (zaps a ring), Crab (walks the shore), Eel (long body), Urchin (dives and pops up); trap any sea monster in 40 cells or less, with a gold preview
 - [x] 5 worlds x 20 levels (Meadow, Dunes, Glacier, Coral Reef, Volcano), sawtooth waves of 5, board shapes, boss on level 20
 - [x] Boosters: Life, Slow, Freeze, Shield, Bomb, Lure
 - [x] Home screen (Play / Daily / Rush), world map, settings; Daily calendar with streak; Rush (60s, +5s per claim)

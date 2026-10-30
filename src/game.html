@@ -687,6 +687,52 @@ body {
     g.scale.setScalar(1.15);
     return g;
   }
+  function makeJellyfish() { // a glowing jellyfish: a soft bell and wavy tentacles
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const bell = phong(0xff7ad9, { transparent: true, opacity: 0.88, emissive: 0x4a0f44, shininess: 130, specular: 0xffffff });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.4, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), bell); dome.scale.y = 0.85; body.add(dome);
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), phong(0xffe0f6, { emissive: 0x7a2a6a })); core.position.y = 0.02; body.add(core);
+    const skirt = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.05, 10, 32), bell); skirt.rotation.x = Math.PI / 2; body.add(skirt);
+    eyesOn(body, 0.16, 0.3, 0.1, 0.045);
+    const tent = [], tm = phong(0xffb3ec, { transparent: true, opacity: 0.85 });
+    for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2, segs = []; for (let j = 0; j < 4; j++) { const q = new THREE.Mesh(new THREE.SphereGeometry(0.055 - j * 0.008, 8, 6), tm); q.position.set(Math.cos(a) * 0.26, -0.06 - j * 0.09, Math.sin(a) * 0.26); body.add(q); segs.push(q); } tent.push({ a, segs }); }
+    g.userData.fish = { body, fins: [], tail: null, skin: bell, base: 0xff7ad9, jelly: tent };
+    return g;
+  }
+  function makeUrchin() { // a round spiky urchin
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const skin = phong(0x6a2f8f, { shininess: 60 }), spike = phong(0x2a1240, { shininess: 120, specular: 0xbb99ff }), tip = phong(0xffd166);
+    body.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 16), skin));
+    const cone = new THREE.ConeGeometry(0.045, 0.28, 6); cone.translate(0, 0.42, 0);
+    const n = 34; for (let k = 0; k < n; k++) { const yy = 1 - (k + 0.5) / n * 2, r = Math.sqrt(1 - yy * yy), a = k * 2.39996; const v = new THREE.Vector3(Math.cos(a) * r, yy, Math.sin(a) * r); if (v.y < -0.55) continue; const c = new THREE.Mesh(cone, k % 5 ? spike : tip); c.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v); body.add(c); }
+    eyesOn(body, 0.06, 0.26, 0.1, 0.06);
+    g.userData.fish = { body, fins: [], tail: null, skin, base: 0x6a2f8f, urchin: true };
+    return g;
+  }
+  function makeEel() { // a long eel: the head leads, the body follows its path
+    const g = new THREE.Group(), skin = phong(0x3fbf6a), spot = phong(0x1f7a45), belly = phong(0xd9f27a);
+    const head = new THREE.Group(); g.add(head);
+    head.add(sph(0.27, skin, 1, 0.8, 1.35, 0, 0, 0)); head.add(sph(0.2, belly, 1, 0.45, 1.15, 0, -0.1, 0.1));
+    eyesOn(head, 0.11, 0.24, 0.12, 0.06);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.3), spot); fin.position.set(0, 0.22, -0.12); head.add(fin);
+    const segs = []; for (let k = 0; k < 8; k++) { const r = 0.24 - k * 0.02, q = sph(r, k % 2 ? spot : skin, 1, 0.8, 1.1, 0, 0, -(k + 1) * 0.36); g.add(q); segs.push(q); }
+    g.userData.eel = { head, segs };
+    return g;
+  }
+  function makeCrab() { // a crab that scuttles sideways along the shore
+    const g = new THREE.Group(), shell = phong(0xff5a3c, { shininess: 110 }), light = phong(0xffb08a), dark = phong(0xc8381f);
+    g.add(sph(0.34, shell, 1.25, 0.55, 0.95, 0, 0.05, 0));
+    for (const k of [-1, 1]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 6), dark); st.position.set(k * 0.12, 0.25, 0.18); g.add(st); }
+    eyesOn(g, 0.36, 0.2, 0.12, 0.065);
+    const claws = [], legs = [];
+    for (const k of [-1, 1]) {
+      const c = new THREE.Group(); c.position.set(k * 0.36, 0.08, 0.3); g.add(c);
+      c.add(sph(0.13, shell, 1, 0.8, 1.2, 0, 0, 0.06)); const pin = sph(0.07, light, 0.7, 0.6, 1.4, k * -0.06, 0.02, 0.2); c.add(pin); claws.push(c);
+      for (let j = 0; j < 3; j++) { const l = new THREE.Group(); l.position.set(k * 0.36, 0.0, -0.12 + j * 0.13); const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.32, 6), dark); m.rotation.z = k * 1.1; m.position.x = k * 0.12; m.position.y = -0.06; l.add(m); g.add(l); legs.push({ l, k, j }); }
+    }
+    g.userData.crab = { claws, legs };
+    return g;
+  }
   function makeMagnet() { // the Whirlpool: a spinning vortex on the water that pulls you in
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
@@ -742,8 +788,8 @@ body {
       for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
       g.add(wheel); g.userData.wheel = wheel;
     } else {
-      const f = kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : kind === 'boss' ? makeBoss() : makeFish(kind);
-      g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f;
+      const f = kind === 'jelly' ? makeJellyfish() : kind === 'urchin' ? makeUrchin() : kind === 'eel' ? makeEel() : kind === 'crab' ? makeCrab() : kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : kind === 'boss' ? makeBoss() : makeFish(kind);
+      g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f; g.userData.eel = f.userData.eel; g.userData.crab = f.userData.crab;
     }
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
     scene.add(g); return g;
@@ -758,6 +804,10 @@ body {
     inker: { name: 'Octopus', text: 'Glowing means ink. Avoid ink.' },
     magnet: { name: 'Whirlpool', text: 'Pulls you in when you draw nearby.' },
     mini: { name: 'Baby starfish', text: 'Small and quick.' },
+    jelly: { name: 'Jellyfish', text: 'Glows, then zaps all around it.' },
+    crab: { name: 'Crab', text: 'Walks the shore. Don\'t touch.' },
+    eel: { name: 'Eel', text: 'Long body. All of it bites.' },
+    urchin: { name: 'Urchin', text: 'Dives, then pops up. Spiky!' },
     boss: { name: 'Big Puffer', text: 'Trap it 3 times to win.' }
   };
 
@@ -806,8 +856,8 @@ body {
     meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bbes'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzpess'],
     glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzpiss'],
-    reef: ['bbzi', 'bbzpi', 'bbzpis', 'bbzpiess', 'bbbzpiess', 'bbzw', 'bbzpws', 'bbzhiws', 'bbzpiwess', 'bbzzphiwess', 'bbpi', 'bbzpis', 'bbzhpiss', 'bbzpiwess', 'bbbzphiwess', 'bbzpiss', 'bbzzpiwess', 'bbzhpiwess', 'bbbzzphiwess', 'Bbhhzpiwess'],
-    volcano: ['bbzzi', 'bbzzpi', 'bbzzpis', 'bbzzpiess', 'bbbzzpiess', 'bbzzw', 'bbzzpws', 'bbzzhiws', 'bbzzpiwess', 'bbzzzphiwess', 'bbzpi', 'bbzzpis', 'bbzzhpiss', 'bbzzpiwess', 'bbbzzphiwess', 'bbzzpiss', 'bbzzzpiwess', 'bbzzhpiwess', 'bbbzzzphiwess', 'Bbhhzzpiwesss']
+    reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhhjjzpicc'],
+    volcano: ['bbl', 'bbzl', 'bbzjl', 'bbzpjlc', 'bbbzpijlc', 'bbzlw', 'bbzjlws', 'bbzhjlc', 'bbzpijlcs', 'bbzzphijlcc', 'bbu', 'bbzuu', 'bbzhjuu', 'bbzpiluuc', 'bbbzphijluuc', 'bbzluu', 'bbzzpjluuc', 'bbzhpiluuuc', 'bbbzzphijluuuc', 'Bbhhzpijluuucc']
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
@@ -818,7 +868,7 @@ body {
     volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'lure'], intro: { lure: 6 } }
   };
   const WAVE = [1, 2, 2.5, 3, 4, 3, 3.5, 4.5, 5, 6, 4.5, 5, 6, 6.5, 7.5, 6, 6.5, 7.5, 8, 9]; // the sawtooth
-  const KIND = { b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
+  const KIND = { j: 'jelly', c: 'crab', l: 'eel', u: 'urchin', b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
   const LEVELS = [];
   WORLDS.forEach((wd, w) => {
     const boards = BOARDS[wd.id], lineup = LINEUPS[wd.id], bo = BOOSTERS[wd.id];
@@ -902,8 +952,8 @@ body {
     tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; mask.needsUpdate = true;
     monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = [];
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
-    for (const kind of L.mon) spawnMonster(kind);
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
+    for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
     lives = L.lives || 3; score = 0; shieldOn = false; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
@@ -925,7 +975,7 @@ body {
     }
     const seen = new Int32Array(N).fill(-1); let id = 0, any = false;
     for (const m of monsters) {
-      if (m.kind === 'saw' || m.dead) continue;
+      if (landKind(m) || m.dead) continue;
       const s0 = seaCellOf(m); if (s0 < 0 || wall[s0]) continue;
       if (seen[s0] >= 0) continue;
       const reg = [s0], stack = [s0]; seen[s0] = id;
@@ -938,7 +988,7 @@ body {
       }
       if (reg.length <= TRAP_MAX) {
         reg.forEach((i) => { maskData[i * 4 + 1] = 255; }); any = true;
-        monsters.forEach((o) => { if (o.kind !== 'saw' && !o.dead && seen[seaCellOf(o)] === id) o.ring.visible = true; });
+        monsters.forEach((o) => { if (!landKind(o) && !o.dead && seen[seaCellOf(o)] === id) o.ring.visible = true; });
       }
       id++;
     }
@@ -984,14 +1034,56 @@ body {
     return true;
   }
   function seaCellsFree() { const out = []; for (let y = 3; y < Hh - 3; y++) for (let x = 3; x < W - 3; x++) if (cells[idx(x, y)] === SEA) out.push([x, y]); return out; }
-  const SPEEDS = { zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
-  const SIZES = { zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
+  const SPEEDS = { jelly: 0.5, crab: 0.75, eel: 0.85, urchin: 0.6, zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
+  const SIZES = { jelly: 1.05, crab: 0.95, eel: 0.85, urchin: 0.95, zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
   const MAG_R = 4.5; // cells
+  const JELLY_R = 2.6; // the jellyfish's zap reaches this far (cells)
+  const landKind = (m) => m.kind === 'saw' || m.kind === 'crab';
+  const coastCell = (i) => cells[i] === LAND && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => { const x = (i % W) + dx, y = ((i / W) | 0) + dy; return inside(x, y) && cells[idx(x, y)] !== LAND; });
+  function crabNext(m) { // the next shore cell to walk to: keep going, turn at corners, find the shore again if it moved
+    const cur = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), cx = cur % W, cy = (cur / W) | 0;
+    const opts = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = cx + dx, y = cy + dy; if (!inside(x, y)) continue; const j = idx(x, y); if (j !== m.from && coastCell(j)) opts.push([j, dx, dy]); }
+    if (opts.length) { const same = opts.find((o) => m.dir && o[1] === m.dir[0] && o[2] === m.dir[1]); const o = same && rng() < 0.8 ? same : opts[(rng() * opts.length) | 0]; m.dir = [o[1], o[2]]; m.from = cur; return o[0]; }
+    if (m.from >= 0 && coastCell(m.from)) { const j = m.from; m.from = cur; m.dir = null; return j; }
+    // walk over land toward the nearest shore
+    const prev = new Int32Array(N).fill(-2), q = [cur]; prev[cur] = -1;
+    while (q.length) { const i = q.shift(); if (i !== cur && coastCell(i)) { let j = i; while (prev[j] !== cur && prev[j] >= 0) j = prev[j]; m.from = cur; m.dir = null; return j; }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = (i % W) + dx, y = ((i / W) | 0) + dy; if (!inside(x, y)) continue; const j = idx(x, y); if (prev[j] === -2 && cells[j] === LAND) { prev[j] = i; q.push(j); } } }
+    return cur;
+  }
+  function crabStep(m, step) {
+    if (!m.spd) { m.spd = Math.hypot(m.vx, m.vy) || L.speed; m.from = -1; }
+    if (m.to === undefined || m.to < 0) m.to = crabNext(m);
+    let left = m.spd * step;
+    for (let k = 0; k < 3 && left > 0; k++) {
+      const tx2 = (m.to % W) + 0.5, ty2 = ((m.to / W) | 0) + 0.5, dx = tx2 - m.x, dy = ty2 - m.y, d = Math.hypot(dx, dy);
+      if (d <= left) { m.x = tx2; m.y = ty2; left -= d; m.to = crabNext(m); if (d > 0) { m.vx = dx / d * m.spd; m.vy = dy / d * m.spd; } }
+      else { m.x += dx / d * left; m.y += dy / d * left; m.vx = dx / d * m.spd; m.vy = dy / d * m.spd; left = 0; }
+    }
+  }
+  function jellyZap(m) {
+    let first = Infinity;
+    trail.forEach((c, k) => { if (Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < JELLY_R) first = Math.min(first, k); });
+    if (first < Infinity) lightFuse(first);
+    tone(880, 0.25, 'square', 0.04, 1600); m.zapT = 0.4;
+    const qx = px + (tx - px) * stepP + 0.5, qy = py + (ty - py) * stepP + 0.5;
+    if (cellAt(qx, qy) !== LAND && Math.hypot(qx - m.x, qy - m.y) < JELLY_R) die('a jellyfish zapped you');
+  }
   const inkT = new Float32Array(N); let inkOn = false, magCd = 0, magHinted = false;
   function spawnMonster(kind, at) {
     const sp = L.speed * (SPEEDS[kind] || 1) * (tutorialSafe() ? 0.7 : 1);
     let x, y;
     if (at) { [x, y] = at; }
+    else if (kind === 'crab') {
+      // the shore of your own land (not a little island), so it guards the places you leave from
+      const home = new Uint8Array(N), st = [idx(clamp(px, 0, W - 1), clamp(py, 0, Hh - 1))]; home[st[0]] = 1;
+      while (st.length) { const i = st.pop(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = (i % W) + dx, y = ((i / W) | 0) + dy; if (!inside(x, y)) continue; const j = idx(x, y); if (!home[j] && cells[j] === LAND) { home[j] = 1; st.push(j); } } }
+      let all = []; for (let i = 0; i < N; i++) if (home[i] && coastCell(i)) all.push(i);
+      if (!all.length) for (let i = 0; i < N; i++) if (coastCell(i)) all.push(i);
+      const far = all.filter((i) => Math.hypot((i % W) - px, ((i / W) | 0) - py) > 10), pool = far.length ? far : all, c = pool.length ? pool[(rng() * pool.length) | 0] : idx(1, 1);
+      x = (c % W) + 0.5; y = ((c / W) | 0) + 0.5;
+    }
     else if (kind === 'saw') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'saw').length * 6; }
     else {
       const all = seaCellsFree(), far = all.filter(([cx, cy]) => Math.hypot(cx - px, cy - py) > 8);
@@ -1001,6 +1093,9 @@ body {
     const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(1.1 * (SIZES[kind] || 1)), eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
+    if (kind === 'jelly') { m.zap = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9ff4ff, transparent: true, opacity: 0, depthWrite: false })); m.zap.position.y = 0.04; m.zap.scale.setScalar(JELLY_R / m.shadow.scale.x); m.shadow.add(m.zap); }
+    if (kind === 'eel') m.hist = [];
+    if (kind === 'urchin') { m.uPhase = 'up'; m.uT = rand(1, 2.5); }
     monsters.push(m); return m;
   }
   function drawHud() {
@@ -1032,7 +1127,7 @@ body {
     trail.forEach((i) => { cells[i] = LAND; trailIdx[i] = -1; });
     const region = new Int32Array(N).fill(-1), regions = [];
     for (const m of monsters) {
-      if (m.kind === 'saw' || m.dead) continue;
+      if (landKind(m) || m.dead) continue;
       const s = seaCellOf(m); if (s < 0) continue;
       if (region[s] >= 0) { regions[region[s]].monsters.push(m); continue; }
       const r = { size: 0, monsters: [m], cells: [] }, id = regions.length; regions.push(r);
@@ -1059,7 +1154,7 @@ body {
     // Safety net: a sea monster whose body is now on land (it was on your trail or between two areas
     // when the loop closed) counts as trapped too, so nothing is ever left stranded on land.
     for (const m of monsters) {
-      if (m.kind === 'saw' || m.dead || trapped.includes(m)) continue;
+      if (landKind(m) || m.dead || trapped.includes(m)) continue;
       const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1));
       if (cells[c] === LAND) trapped.push(m);
     }
@@ -1604,8 +1699,25 @@ body {
         continue;
       }
       if (live && !testFrozen && mult > 0) {
-        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (trailIdx[i] >= 0) lightFuse(trailIdx[i]); return true; } return c === LAND; };
+        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (m.under) return false; if (trailIdx[i] >= 0) lightFuse(trailIdx[i]); return true; } return c === LAND; };
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
+        if (m.kind === 'jelly') { // drifts, glows, then zaps a ring around it
+          if (m.jPhase === undefined) { m.jPhase = 'calm'; m.jT = rand(1.5, 3); }
+          m.jT -= step;
+          if (m.jT <= 0) {
+            if (m.jPhase === 'calm') { m.jPhase = 'warn'; m.jT = 1.0; tone(440, 0.8, 'sine', 0.03, 900); }
+            else { m.jPhase = 'calm'; m.jT = rand(2.6, 3.6); jellyZap(m); }
+          }
+        }
+        if (m.kind === 'urchin') { // spiky on top, harmless while it is under water
+          m.uT -= step;
+          if (m.uT <= 0) { const nx2 = { up: ['sink', 0.35], sink: ['down', 1.4], down: ['rise', 0.5], rise: ['up', rand(2, 2.8)] }[m.uPhase]; m.uPhase = nx2[0]; m.uT = nx2[1]; if (m.uPhase === 'up') { m.hopT = 0.5; const [wx, wz] = W2(m.x - 0.5, m.y - 0.5); burst(wx, 0.3, wz, 0xffffff, 10, 2, 3); } }
+          m.under = m.uPhase !== 'up';
+        }
+        if (m.kind === 'crab') {
+          crabStep(m, step);
+          if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8) die('a crab pinched you');
+        } else {
         if (m.kind === 'hunter') {
           // While you draw in its part of the sea it swims around land toward you (following the sea's shortest
           // path), and when it has a clear straight line it stops, glows and dashes. Otherwise it just roams.
@@ -1678,17 +1790,59 @@ body {
         }
         if ((m.vx !== vx0 || m.vy !== vy0) && m.mesh.userData.fish) m.puff = 1; // puffs up on every bounce
         if (m.kind === 'saw') { m.stuckT = (m.stuckT || 0) + dt; if (m.stuckT > 0.6) { m.stuckT = 0; if (landRegionSize(idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), SAW_MIN) < SAW_MIN) resetSaw(m); } }
-        if (m.kind !== 'saw') { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
-        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8) {
+        if (m.kind !== 'saw' && !m.under) { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
+        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 && !m.under) {
           if (m.kind !== 'saw' && !onLand) die('a monster caught you');
           if (m.kind === 'saw' && onLand) die('a buzzsaw caught you on land');
         }
+        if (m.hist) { // the eel's body follows the head's path; every part of it touches your line and bites
+          const h = m.hist; if (!h.length || Math.hypot(h[0][0] - m.x, h[0][1] - m.y) > 0.12) { h.unshift([m.x, m.y]); if (h.length > 40) h.pop(); }
+          m.segs = []; let need = 0.36 * 1.22 * 0.85, acc = 0, lx = m.x, ly = m.y;
+          for (let k = 0; k < h.length && m.segs.length < 8; k++) {
+            if (cellAt(h[k][0], h[k][1]) === LAND) { h.length = k; break; } // never trails over land (after a claim)
+            const d = Math.hypot(h[k][0] - lx, h[k][1] - ly); acc += d; lx = h[k][0]; ly = h[k][1];
+            while (acc >= need && m.segs.length < 8) { m.segs.push([lx, ly]); acc -= need; }
+          }
+          for (const [sx, sy] of m.segs) {
+            const c = idx(clamp(Math.floor(sx), 0, W - 1), clamp(Math.floor(sy), 0, Hh - 1));
+            if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]);
+            if (!onLand && Math.hypot(sx - (fx + 0.5), sy - (fy + 0.5)) < 0.6) die('an eel caught you');
+          }
+        }
+        }
       }
       const r = 0.4 * 1.22 * (SIZES[m.kind] || 1);
-      const baseY = m.kind === 'saw' ? H_LAND + 0.3 : r;
+      const baseY = m.kind === 'saw' ? H_LAND + 0.3 : m.kind === 'crab' ? H_LAND + 0.12 : r;
       const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz;
       m.mesh.position.set(wx, baseY, wz);
-      m.shadow.position.set(wx, (m.kind === 'saw' ? H_LAND : 0) + 0.02, wz);
+      m.shadow.position.set(wx, (landKind(m) ? H_LAND : 0) + 0.02, wz);
+      if (m.kind === 'urchin') { // hop out of the water, sink, wait, rise
+        const ph = m.uPhase, k = ph === 'sink' ? 1 - m.uT / 0.35 : ph === 'rise' ? 1 - m.uT / 0.5 : 0;
+        m.hopT = Math.max(0, (m.hopT || 0) - dt); const y = ph === 'up' ? baseY + Math.sin((1 - m.hopT / 0.5) * Math.PI) * 0.5 * (m.hopT > 0 ? 1 : 0) : ph === 'sink' ? baseY - k * (baseY + 0.45) : ph === 'down' ? -0.45 : -0.45 + k * (baseY + 0.45);
+        m.mesh.position.y = y; m.shadow.visible = ph === 'up';
+        if (ph === 'rise' && live && Math.random() < 0.4) burst(wx + rand(-0.3, 0.3), 0.1, wz + rand(-0.3, 0.3), 0xffffff, 1, 0.5, 1.5); // bubbles: it's coming up
+      }
+      if (m.zap) { // the zap ring: flickers while charging, flashes when it fires
+        m.zapT = Math.max(0, (m.zapT || 0) - dt);
+        m.zap.material.opacity = m.zapT > 0 ? m.zapT / 0.4 : m.jPhase === 'warn' ? 0.25 + 0.25 * Math.sin(t * 30) : 0;
+        m.zap.scale.setScalar(JELLY_R / m.shadow.scale.x * (m.zapT > 0 ? 1 + (0.4 - m.zapT) * 0.25 : 1));
+      }
+      if (m.mesh.userData.crab) { // sideways scuttle
+        const cu = m.mesh.userData.crab; m.mesh.rotation.y = Math.atan2(m.vx, m.vy) + Math.PI / 2;
+        const ws = live && mult > 0 ? m.t * 18 : 0;
+        cu.legs.forEach((g, i) => { g.l.rotation.x = Math.sin(ws + g.j * 2.1 + (g.k > 0 ? Math.PI : 0)) * 0.35; });
+        cu.claws.forEach((c, i) => { c.rotation.x = -0.2 + Math.sin(m.t * 4 + i * 1.7) * 0.2; });
+        m.mesh.position.y = baseY + Math.abs(Math.sin(ws)) * 0.03;
+      }
+      if (m.mesh.userData.eel) { // the head faces where it swims; body parts sit on its path
+        const eu = m.mesh.userData.eel, sc = m.mesh.scale.x || 1;
+        eu.head.rotation.y = Math.atan2(m.vx, m.vy); m.mesh.rotation.set(0, 0, 0);
+        eu.segs.forEach((q, k) => {
+          const sp = m.segs && m.segs[k];
+          if (sp) { q.visible = true; q.position.set((sp[0] - m.x) / sc, Math.sin(m.t * 6 - k * 0.8) * 0.04, (sp[1] - m.y) / sc); }
+          else q.visible = !m.segs; // before it moves it lies straight behind
+        });
+      }
       const fishU = m.mesh.userData.fish;
       if (fishU) { // swim: face the way it moves (a hunter faces you while aiming), wag, puff on bounces
         const face = m.mode === 'aim' ? Math.atan2(fx + 0.5 - m.x, fy + 0.5 - m.y) : Math.atan2(m.vx, m.vy);
@@ -1704,6 +1858,12 @@ body {
           fishU.skin.emissive.setRGB(glowK * 0.6, glowK * 0.25, glowK * 0.9); // glows violet while it inks, flickers just before
           const pump = ph === 'squirt' ? Math.max(0, Math.sin(m.t * 12)) : 0; fishU.head.scale.set(1 - pump * 0.08, 1.1 + pump * 0.12, 1.05 - pump * 0.08);
           fishU.clouds.forEach((cl) => { if (cl.t < 1.2) { cl.t += dt; const q = cl.t / 1.2; cl.c.scale.set(0.6 + q * 1.6, 0.35, 0.6 + q * 1.6); cl.c.material.opacity = 0.75 * (1 - q); } else cl.c.visible = false; });
+        }
+        if (fishU.jelly) { // the bell pulses; tentacles sway; it glows before it zaps
+          const pu = Math.sin(m.t * 3.2); fishU.body.scale.set(1 + pu * 0.06, 1 - pu * 0.08, 1 + pu * 0.06);
+          fishU.jelly.forEach((tn, k) => tn.segs.forEach((q, j) => { q.position.x = Math.cos(tn.a) * 0.26 + Math.sin(m.t * 3 + k + j * 0.9) * 0.025 * j; }));
+          const gk = m.jPhase === 'warn' ? 0.6 + 0.4 * Math.sin(t * 30) : (m.zapT || 0) > 0 ? 1 : 0;
+          fishU.skin.emissive.setRGB(0.29 + gk * 0.3, 0.06 + gk * 0.8, 0.27 + gk * 0.7);
         }
         if (fishU.star) { fishU.star.rotation.z = Math.sin(m.t * 3) * 0.12; fishU.body.scale.set(pf * (1 + Math.sin(m.t * 6) * 0.04), pf, pf * (1 - Math.sin(m.t * 6) * 0.04)); } // a slow crawl-wiggle
         if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
