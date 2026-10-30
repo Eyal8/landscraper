@@ -25,7 +25,7 @@ body {
 #stage:focus { outline: none; }
 #stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--sky1, #7cc8ff) 0%, var(--sky2, #d6efff) 100%); transition: background 0.6s; }
 #stage canvas { position: absolute; inset: 0; display: block; }
-.ts { text-shadow: 0 1px 8px rgba(10, 20, 50, 0.45); }
+.ts { text-shadow: 0 1px 2px rgba(10, 20, 50, 0.55), 0 1px 10px rgba(10, 20, 50, 0.45); }
 
 /* HUD */
 #hud {
@@ -40,6 +40,9 @@ body {
 .mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .mid .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
 .mid .row b { font: 800 15px var(--display); letter-spacing: 0; }
+#pctLabel { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: none; }
+#pctLabel b { font: 800 17px var(--display); }
+#pctLabel span { opacity: 0.85; }
 .bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
@@ -49,9 +52,10 @@ body {
 .endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
 .endbar .track i.goal { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
 .endbar .tk { position: absolute; top: -3px; width: 2px; height: 20px; margin-left: -1px; background: rgba(255,255,255,0.5); border-radius: 2px; }
-.endbar .tk svg { position: absolute; top: 20px; left: -8px; width: 18px; height: 18px; color: rgba(255,255,255,0.22); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
+.endbar .tk span { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); font: 500 10px var(--mono); letter-spacing: 0.04em; color: rgba(255,255,255,0.45); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
 .endbar .tk.hit { background: #fff; }
-.endbar .tk.hit svg { color: var(--gold); transform: scale(1.35); filter: drop-shadow(0 1px 5px rgba(255,209,102,0.7)); }
+.endbar .tk.hit { background: #fff; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
+.endbar .tk.hit span { color: var(--gold); transform: translateX(-50%) scale(1.15); }
 .card .more { transition: opacity 0.4s; }
 .lives { display: flex; gap: 4px; }
 .lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
@@ -1136,7 +1140,7 @@ body {
   }
   function drawHud() {
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
-    $('pctLabel').textContent = mode === 'rush' ? rushLabel() : L.boss ? 'Boss · ' + Math.max(0, bossHp) + ' to go' : pct + '% · goal ' + L.goal + '%';
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(rushTime) + 's</b> <span>· ' + rushTotal.toLocaleString('en-US') + ' pts</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
@@ -1292,7 +1296,7 @@ body {
       const more = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
       const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
       const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
-      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%">' + STAR + '</div>').join('') + '</div>' : '';
+      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
