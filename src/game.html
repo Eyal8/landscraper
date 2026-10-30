@@ -907,7 +907,8 @@ body {
   wearSkin(prog.skin);
   const saveProg = () => store.set('ls_prog', prog);
   // developer mode: tap the Settings title 7 times. Opens every level, mode and skin on this device only; progress is untouched.
-  let dev = false; try { dev = localStorage.getItem('ls_dev') === '1'; } catch (e) {}
+  const DEV_ALLOWED = true; // the store build (real ads) sets this to false, so players can never turn it on
+  let dev = false; try { dev = DEV_ALLOWED && localStorage.getItem('ls_dev') === '1'; } catch (e) {}
   const setDev = (on) => { dev = on; try { localStorage.setItem('ls_dev', on ? '1' : '0'); } catch (e) {} };
   const isOpen = (i) => dev || i === 0 || !!prog.done[LEVELS[i - 1].id];
   const nextLevel = () => { const k = LEVELS.findIndex((x, i) => isOpen(i) && !prog.done[x.id]); return k < 0 ? LEVELS.length - 1 : k; };
@@ -1376,7 +1377,7 @@ body {
     panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.</p>' : '') + '<div class="btns">' + sb.html + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); } }, sb.acts));
     let taps = 0, tapT = 0;
-    $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev) { setDev(true); buzz('clear'); showSettings(); } });
+    $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
 
   // ---------- Daily: one level a day, the same for everyone ----------

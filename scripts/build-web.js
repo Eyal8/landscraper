@@ -26,6 +26,11 @@ if (realAds) {
   if (!game.includes('    testing: true,')) throw new Error('ads testing flag not found');
   game = game.replace('    testing: true,', '    testing: false,');
 }
+// Developer mode exists only in test builds.
+if (realAds) {
+  if (!game.includes('const DEV_ALLOWED = true;')) throw new Error('DEV_ALLOWED flag not found');
+  game = game.replace('const DEV_ALLOWED = true;', 'const DEV_ALLOWED = false;');
+}
 console.log(realAds ? 'Ads: REAL (store build)' : 'Ads: test mode');
 
 const html = `<!doctype html>
