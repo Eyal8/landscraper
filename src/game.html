@@ -1649,7 +1649,7 @@ body {
       // falls fast, then the rotors brake it into a slow, gentle touchdown with a little float at the end
       const e = 1 - Math.pow(1 - k, 4);
       drop = 9 * (1 - e) + Math.sin(k * Math.PI) * 0.25 * (k > 0.7 ? (1 - k) / 0.3 : 1);
-      drone.rotation.y = Math.pow(1 - k, 2) * Math.PI * 4; drone.scale.setScalar(1.45 * (1 + 0.9 * Math.pow(1 - k, 3)));
+      drone.rotation.y = Math.PI + Math.pow(1 - k, 2) * Math.PI * 4; // spins in and lands facing up, toward the open sea drone.scale.setScalar(1.45 * (1 + 0.9 * Math.pow(1 - k, 3)));
       body.rotation.z = Math.sin(k * 18) * 0.12 * (1 - k);
       const q = k > 0.93 ? (k - 0.93) / 0.07 : 0; body.scale.set(1 + Math.sin(q * Math.PI) * 0.08, 1 - Math.sin(q * Math.PI) * 0.1, 1 + Math.sin(q * Math.PI) * 0.08);
       if (!paused && k > 0.55 && Math.random() < 0.5) { const [wx, wz] = W2(SPAWN_X, SPAWN_Y); const a = rand(0, 6.28); burst(wx + Math.cos(a) * 0.5, H_LAND + 0.05, wz + Math.sin(a) * 0.5, 0xfff6e0, 1, 2.2, 0.6); } // rotor wash
