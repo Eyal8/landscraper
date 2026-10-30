@@ -1291,7 +1291,8 @@ body {
       const need = L.goal + (stars === 1 ? 7 : 14) - pct;
       const more = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
       const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
-      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + v + '%">' + STAR + '</div>').join('') + '</div>' : '';
+      const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
+      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%">' + STAR + '</div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
@@ -1301,12 +1302,12 @@ body {
         { next: () => startLevel(cur + 1), retry: () => startLevel(cur), home: showHome, cal: showDaily });
       if (!fill) { [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); }); return; }
       // the bar fills from 0 to what you claimed; each star lights up as the bar passes its mark
-      const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 900 + pct * 6; let lit = 0, lastN = -1;
+      const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 1400; let lit = 0, lastN = -1;
       const card = $('card'), fillEl = $('endFill');
       const step = (now) => {
         if (!fillEl.isConnected) return;
-        const q = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - q, 3), v = pct * e, n = Math.round(v);
-        fillEl.style.width = v + '%'; fillEl.classList.toggle('goal', v >= L.goal);
+        const q = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - q, 3), v0 = Math.min(lo, pct), v = v0 + (pct - v0) * e, n = Math.round(v);
+        fillEl.style.width = pos(v) + '%'; fillEl.classList.toggle('goal', v >= L.goal);
         if (n !== lastN) { $('gotN').textContent = n; if (n % 3 === 0 && q < 1) tone(500 + n * 6, 0.03, 'sine', 0.015); lastN = n; }
         while (lit < stars && v >= th[lit]) {
           const k = lit++; card.querySelector('.tk[data-k="' + k + '"]').classList.add('hit'); card.querySelector('.stars svg[data-k="' + k + '"]').classList.add('on');
