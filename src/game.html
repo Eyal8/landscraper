@@ -44,6 +44,17 @@ body {
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
 .bar em { position: absolute; top: -2px; bottom: -2px; width: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.8); }
+.bar em.st { width: 2px; background: rgba(255,255,255,0.45); box-shadow: none; transition: background 0.3s; }
+.bar em.st.hit { background: #fff6d8; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
+.endbar { position: relative; width: 100%; margin: 4px 0 2px; padding-bottom: 20px; }
+.endbar .track { position: relative; height: 14px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
+.endbar .track i.goal { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
+.endbar .tk { position: absolute; top: -3px; width: 2px; height: 20px; margin-left: -1px; background: rgba(255,255,255,0.5); border-radius: 2px; }
+.endbar .tk svg { position: absolute; top: 20px; left: -8px; width: 18px; height: 18px; color: rgba(255,255,255,0.22); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
+.endbar .tk.hit { background: #fff; }
+.endbar .tk.hit svg { color: var(--gold); transform: scale(1.35); filter: drop-shadow(0 1px 5px rgba(255,209,102,0.7)); }
+.card .more { transition: opacity 0.4s; }
 .lives { display: flex; gap: 4px; }
 .lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
 .lives svg.off { opacity: 0.28; }
@@ -163,7 +174,7 @@ body {
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
       <div class="row"><span><b id="lvlLabel">1-1</b></span><span id="pctLabel">0% · goal 75%</span></div>
-      <div class="bar" id="bar"><i id="barFill"></i><em id="barGoal"></em></div>
+      <div class="bar" id="bar"><i id="barFill"></i><em id="barGoal"></em><em class="st" id="bar2"></em><em class="st" id="bar3"></em></div>
     </div>
     <div class="lives" id="lives"></div>
   </div>
@@ -1129,6 +1140,7 @@ body {
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('pctLabel').textContent = mode === 'rush' ? rushLabel() : L.boss ? 'Boss · ' + Math.max(0, bossHp) + ' to go' : pct + '% · goal ' + L.goal + '%';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
+    const tks = mode !== 'rush' && !L.boss; [[$('bar2'), L.goal + 7], [$('bar3'), L.goal + 14]].forEach(([e, v]) => { e.hidden = !tks; e.style.left = 'calc(' + v + '% - 1px)'; e.classList.toggle('hit', pct >= v); });
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
@@ -1259,7 +1271,7 @@ body {
   }
 
   // ---------- level flow ----------
-  const starsSvg = (n) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg class="' + (k < n ? 'on' : '') + '" style="animation-delay:' + (0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
+  const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
   function levelClear() {
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd();
     const stars = L.boss ? Math.max(1, Math.min(3, lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
@@ -1281,14 +1293,31 @@ body {
       const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
       const need = L.goal + (stars === 1 ? 7 : 14) - pct;
       const more = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
-      const tip = '<b class="got">' + pct + '% claimed</b><br>' + more;
-      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars) +
-        '<div class="big">' + score.toLocaleString('en-US') + '</div><p>' + tip + '</p>' +
+      const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
+      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + v + '%">' + STAR + '</div>').join('') + '</div>' : '';
+      const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
+      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
+        '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
         '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="cal">Calendar</button>' : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: () => startLevel(cur + 1), retry: () => startLevel(cur), home: showHome, cal: showDaily });
-      [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); });
+      if (!fill) { [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); }); return; }
+      // the bar fills from 0 to what you claimed; each star lights up as the bar passes its mark
+      const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 900 + pct * 6; let lit = 0, lastN = -1;
+      const card = $('card'), fillEl = $('endFill');
+      const step = (now) => {
+        if (!fillEl.isConnected) return;
+        const q = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - q, 3), v = pct * e, n = Math.round(v);
+        fillEl.style.width = v + '%'; fillEl.classList.toggle('goal', v >= L.goal);
+        if (n !== lastN) { $('gotN').textContent = n; if (n % 3 === 0 && q < 1) tone(500 + n * 6, 0.03, 'sine', 0.015); lastN = n; }
+        while (lit < stars && v >= th[lit]) {
+          const k = lit++; card.querySelector('.tk[data-k="' + k + '"]').classList.add('hit'); card.querySelector('.stars svg[data-k="' + k + '"]').classList.add('on');
+          tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft');
+        }
+        if (q < 1) requestAnimationFrame(step); else { while (lit < stars) { const k = lit++; card.querySelector('.tk[data-k="' + k + '"]').classList.add('hit'); card.querySelector('.stars svg[data-k="' + k + '"]').classList.add('on'); } $('moreTxt').style.opacity = 1; }
+      };
+      requestAnimationFrame(step);
     }, 2600);
   }
   function die(why) {
