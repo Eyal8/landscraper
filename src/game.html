@@ -103,6 +103,7 @@ body {
 .card p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
 .card .kicker { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
 .card .big { font: 800 44px/1 var(--display); font-variant-numeric: tabular-nums; }
+.card .got { font: 800 17px var(--display); color: var(--gold); letter-spacing: 0; }
 .btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 .btn {
   cursor: pointer; width: 100%; padding: 15px 18px; border-radius: 999px; border: 0;
@@ -1150,7 +1151,14 @@ body {
 
   // ---------- claiming ----------
   function claim() {
-    trail.forEach((i) => { cells[i] = LAND; trailIdx[i] = -1; });
+    // the part the fuse already burnt turns back to sea; only the rest of the line becomes land
+    const burntN = fuse ? Math.min(trail.length, Math.floor(fuse.pos)) : 0;
+    trail.forEach((i, k) => {
+      trailIdx[i] = -1;
+      if (k < burntN) { cells[i] = SEA; const [wx, wz] = W2(i % W, (i / W) | 0); burst(wx, 0.25, wz, 0xff5a3a, 3, 1.5, 2.5); }
+      else cells[i] = LAND;
+    });
+    if (burntN) { flash('Burnt!', 'the red part is lost', 900, true); buzz('warn'); }
     const region = new Int32Array(N).fill(-1), regions = [];
     for (const m of monsters) {
       if (landKind(m) || m.dead) continue;
@@ -1271,7 +1279,9 @@ body {
     setTimeout(() => {
       $('hud').hidden = true;
       const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
-      const tip = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + '.' : L.boss || stars === 3 ? 'Perfect clear.' : 'Claim ' + (L.goal + (stars === 1 ? 7 : 14)) + '% for ' + (stars + 1) + ' stars.';
+      const need = L.goal + (stars === 1 ? 7 : 14) - pct;
+      const more = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
+      const tip = '<b class="got">' + pct + '% claimed</b><br>' + more;
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + todayKey() : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div><p>' + tip + '</p>' +
         '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' : '') +
