@@ -471,7 +471,7 @@ body {
   const boxM = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
   const eyesOn = (g, y, z, sx, r) => { const wm = M(0xffffff), bm = M(0x111526, { shininess: 140, specular: 0xffffff }); for (const k of [-1, 1]) { g.add(sph(r, wm, 1, 1, 0.6, k * sx, y, z)); g.add(sph(r * 0.55, bm, 1, 1, 0.6, k * sx, y, z + r * 0.45)); } };
   function makeBoat() { // a little motorboat with its captain
-    const g = new THREE.Group(), hullM = M(0xffffff), red = M(0xff2e55), wood = M(0xc98a52), skinM = M(0xffc9a0, { shininess: 30 }), navy = M(0x1c2a63);
+    const g = new THREE.Group(), hullM = M(0xff2e55, { shininess: 120, specular: 0xffffff, emissive: 0x3a0010 }), red = M(0xffffff), capM = M(0xffffff), wood = M(0xc98a52), skinM = M(0xffc9a0, { shininess: 30 }), navy = M(0x1c2a63);
     const shape = new THREE.Shape(); shape.moveTo(-0.3, -0.42); shape.lineTo(0.3, -0.42); shape.lineTo(0.32, 0.18); shape.quadraticCurveTo(0.28, 0.42, 0, 0.6); shape.quadraticCurveTo(-0.28, 0.42, -0.32, 0.18); shape.lineTo(-0.3, -0.42);
     const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 3 }), hullM); hull.rotation.x = Math.PI / 2; hull.position.y = 0.06; g.add(hull);
     const stripe = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.06, bevelSegments: 2 }), red); stripe.rotation.x = Math.PI / 2; stripe.position.y = -0.1; stripe.scale.set(1.02, 1.02, 1); g.add(stripe);
@@ -479,7 +479,7 @@ body {
     const shield = boxM(0.42, 0.16, 0.03, M(0x9fe6ff, { transparent: true, opacity: 0.7, shininess: 150, specular: 0xffffff }), 0, 0.17, 0.14); shield.rotation.x = -0.4; g.add(shield);
     g.add(sph(0.12, navy, 1, 1.1, 0.9, 0, 0.2, -0.1)); // captain's body
     g.add(sph(0.1, skinM, 1, 1, 1, 0, 0.36, -0.1)); // head
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.07, 18), hullM); cap.position.set(0, 0.45, -0.1); g.add(cap);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.07, 18), capM); cap.position.set(0, 0.45, -0.1); g.add(cap);
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.015, 16, 1, false, -Math.PI / 2, Math.PI), navy); brim.position.set(0, 0.42, -0.03); g.add(brim);
     const motor = boxM(0.14, 0.2, 0.12, M(0x2a2f45), 0, 0.12, -0.5); g.add(motor);
     const prop = new THREE.Group(); prop.position.set(0, -0.06, -0.58); for (let k = 0; k < 3; k++) { const b = boxM(0.03, 0.14, 0.01, M(0xffd166), 0, 0.05, 0); const h = new THREE.Group(); h.add(b); h.rotation.z = k * 2.09; prop.add(h); } g.add(prop);
@@ -545,9 +545,12 @@ body {
   const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, depthWrite: false }));
   halo.renderOrder = 2; scene.add(halo);
   // the shield: a soap-bubble around the hero while it is active
-  const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.95, 32, 20), new THREE.MeshPhongMaterial({ color: 0x9fe6ff, emissive: 0x1f5a78, specular: 0xffffff, shininess: 160, transparent: true, opacity: 0.3, depthWrite: false }));
+  const bubbleMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uT: { value: 0 } },
+    vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'varying vec3 vN; varying vec3 vV; uniform float uT; void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 1.8); vec3 c = mix(vec3(0.45, 0.95, 1.0), vec3(1.0, 0.82, 0.35), 0.5 + 0.5 * sin(uT * 2.0 + vN.y * 4.0 + vN.x * 3.0)); gl_FragColor = vec4(c, 0.16 + f * 0.9); }' });
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1.0, 36, 24), bubbleMat);
   bubble.renderOrder = 3; bubble.visible = false; scene.add(bubble);
-  const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.035, 8, 48), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.85, depthWrite: false }));
+  const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.07, 10, 56), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 1, depthWrite: false }));
   bubbleRim.rotation.x = Math.PI / 2; bubble.add(bubbleRim);
   let bubbleK = 0;
   // ---------- the landing pad: every level start and every respawn drops the drone in here ----------
@@ -810,7 +813,7 @@ body {
     inker: { name: 'Octopus', text: 'Glowing means ink. Avoid ink.' },
     magnet: { name: 'Whirlpool', text: 'Pulls you in when you draw nearby.' },
     mini: { name: 'Baby starfish', text: 'Small and quick.' },
-    jelly: { name: 'Jellyfish', text: 'Glows, then zaps all around it.' },
+    jelly: { name: 'Jellyfish', text: 'Glows, then fires a bolt. Land blocks it.' },
     crab: { name: 'Crab', text: 'Walks the shore. Don\'t touch.' },
     eel: { name: 'Eel', text: 'Long body. All of it bites.' },
     urchin: { name: 'Urchin', text: 'Dives, then pops up. Spiky!' },
@@ -1047,7 +1050,6 @@ body {
   const SPEEDS = { jelly: 0.5, crab: 0.75, eel: 0.85, urchin: 0.6, zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
   const SIZES = { jelly: 1.05, crab: 0.95, eel: 0.85, urchin: 0.95, zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
   const MAG_R = 4.5; // cells
-  const JELLY_R = 2.6; // the jellyfish's zap reaches this far (cells)
   const landKind = (m) => m.kind === 'saw' || m.kind === 'crab';
   const coastCell = (i) => cells[i] === LAND && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => { const x = (i % W) + dx, y = ((i / W) | 0) + dy; return inside(x, y) && cells[idx(x, y)] !== LAND; });
   function crabNext(m) { // the next shore cell to walk to: keep going, turn at corners, find the shore again if it moved
@@ -1072,13 +1074,24 @@ body {
       else { m.x += dx / d * left; m.y += dy / d * left; m.vx = dx / d * m.spd; m.vy = dy / d * m.spd; left = 0; }
     }
   }
-  function jellyZap(m) {
-    let first = Infinity;
-    trail.forEach((c, k) => { if (Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < JELLY_R) first = Math.min(first, k); });
+  function jellyBeam(m) { // the cells a bolt covers: its row or column, both ways, until land stops it
+    const cx = clamp(Math.floor(m.x), 0, W - 1), cy = clamp(Math.floor(m.y), 0, Hh - 1), out = [idx(cx, cy)];
+    const [dx, dy] = m.axis === 'h' ? [1, 0] : [0, 1];
+    for (const sg of [1, -1]) { let x = cx + dx * sg, y = cy + dy * sg; while (inside(x, y) && cells[idx(x, y)] !== LAND) { out.push(idx(x, y)); x += dx * sg; y += dy * sg; } }
+    return out;
+  }
+  function jellyAim(m) { // aims along your line if it crosses the jellyfish's row or column, otherwise picks a way at random
+    const hit = (ax) => { m.axis = ax; return jellyBeam(m).some((c) => cells[c] === TRAIL); };
+    if (hit('h')) return; if (hit('v')) return;
+    m.axis = rng() < 0.5 ? 'h' : 'v';
+  }
+  function jellyFire(m) { // while the bolt is on: it lights your line and hits you at sea
+    const b = jellyBeam(m); let first = Infinity;
+    for (const c of b) if (cells[c] === TRAIL && trailIdx[c] >= 0) first = Math.min(first, trailIdx[c]);
     if (first < Infinity) lightFuse(first);
-    tone(880, 0.25, 'square', 0.04, 1600); m.zapT = 0.4;
-    const qx = px + (tx - px) * stepP + 0.5, qy = py + (ty - py) * stepP + 0.5;
-    if (cellAt(qx, qy) !== LAND && Math.hypot(qx - m.x, qy - m.y) < JELLY_R) die('a jellyfish zapped you');
+    const qx = Math.floor(px + (tx - px) * stepP + 0.5), qy = Math.floor(py + (ty - py) * stepP + 0.5);
+    if (inside(qx, qy) && cells[idx(qx, qy)] !== LAND && b.includes(idx(qx, qy))) die('a jellyfish bolt hit you');
+    return b;
   }
   const inkT = new Float32Array(N); let inkOn = false, magCd = 0, magHinted = false;
   function spawnMonster(kind, at) {
@@ -1103,7 +1116,10 @@ body {
     const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(1.1 * (SIZES[kind] || 1)), eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
-    if (kind === 'jelly') { m.zap = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9ff4ff, transparent: true, opacity: 0, depthWrite: false })); m.zap.position.y = 0.04; m.zap.scale.setScalar(JELLY_R / m.shadow.scale.x); m.shadow.add(m.zap); }
+    if (kind === 'jelly') { // the bolt: a child of the shadow, so it goes away with the jellyfish
+      m.zap = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbff8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+      m.zap.renderOrder = 4; m.zap.visible = false; m.shadow.add(m.zap);
+    }
     if (kind === 'eel') m.hist = [];
     if (kind === 'urchin') { m.uPhase = 'up'; m.uT = rand(1, 2.5); }
     monsters.push(m); return m;
@@ -1687,7 +1703,7 @@ body {
     drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
     droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
     bubble.visible = shieldOn && hideT <= 0 && state !== 'over';
-    if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubble.material.opacity = 0.22 + Math.sin(t * 2.5) * 0.06; }
+    if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubbleMat.uniforms.uT.value = t; if (Math.random() < dt * 6) { const a = rand(0, 6.28); burst(bubble.position.x + Math.cos(a) * 0.9, bubble.position.y + rand(-0.3, 0.5), bubble.position.z + Math.sin(a) * 0.9, 0xffe9a8, 1, 0.4, 1); } }
     halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !(hideT > 0); const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
     // fuse
@@ -1724,13 +1740,15 @@ body {
       if (live && !testFrozen && mult > 0) {
         const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (m.under) return false; if (trailIdx[i] >= 0) lightFuse(trailIdx[i]); return true; } return c === LAND; };
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
-        if (m.kind === 'jelly') { // drifts, glows, then zaps a ring around it
+        if (m.kind === 'jelly') { // drifts; stops, glows and shows where the bolt will go; fires along its row or column
           if (m.jPhase === undefined) { m.jPhase = 'calm'; m.jT = rand(1.5, 3); }
           m.jT -= step;
           if (m.jT <= 0) {
-            if (m.jPhase === 'calm') { m.jPhase = 'warn'; m.jT = 1.0; tone(440, 0.8, 'sine', 0.03, 900); }
-            else { m.jPhase = 'calm'; m.jT = rand(2.6, 3.6); jellyZap(m); }
+            if (m.jPhase === 'calm') { m.jPhase = 'warn'; m.jT = 1.0; m.sv = [m.vx, m.vy]; m.vx = m.vy = 0; m.x = Math.floor(m.x) + 0.5; m.y = Math.floor(m.y) + 0.5; jellyAim(m); tone(440, 0.8, 'sine', 0.03, 900); }
+            else if (m.jPhase === 'warn') { m.jPhase = 'fire'; m.jT = 0.5; tone(1400, 0.35, 'sawtooth', 0.05, 200); buzz('warn'); }
+            else { m.jPhase = 'calm'; m.jT = rand(2.6, 3.6); if (m.sv) { m.vx = m.sv[0]; m.vy = m.sv[1]; } }
           }
+          if (m.jPhase === 'fire') m.beam = jellyFire(m); else if (m.jPhase === 'warn') m.beam = jellyBeam(m);
         }
         if (m.kind === 'urchin') { // spiky on top, harmless while it is under water
           m.uT -= step;
@@ -1845,10 +1863,20 @@ body {
         m.mesh.position.y = y; m.shadow.visible = ph === 'up';
         if (ph === 'rise' && live && Math.random() < 0.4) burst(wx + rand(-0.3, 0.3), 0.1, wz + rand(-0.3, 0.3), 0xffffff, 1, 0.5, 1.5); // bubbles: it's coming up
       }
-      if (m.zap) { // the zap ring: flickers while charging, flashes when it fires
-        m.zapT = Math.max(0, (m.zapT || 0) - dt);
-        m.zap.material.opacity = m.zapT > 0 ? m.zapT / 0.4 : m.jPhase === 'warn' ? 0.25 + 0.25 * Math.sin(t * 30) : 0;
-        m.zap.scale.setScalar(JELLY_R / m.shadow.scale.x * (m.zapT > 0 ? 1 + (0.4 - m.zapT) * 0.25 : 1));
+      if (m.zap) { // the bolt: a thin flickering guide while it charges, a bright crackling beam when it fires
+        const on = (m.jPhase === 'warn' || m.jPhase === 'fire') && m.beam && m.beam.length && !m.dead;
+        m.zap.visible = !!on;
+        if (on) {
+          let a = Infinity, b2 = -Infinity; for (const c of m.beam) { const v = m.axis === 'h' ? c % W : (c / W) | 0; a = Math.min(a, v); b2 = Math.max(b2, v); }
+          const cx = Math.floor(m.x), cy = Math.floor(m.y), len = b2 - a + 1, mid = (a + b2) / 2, s2 = m.shadow.scale.x, fire = m.jPhase === 'fire';
+          const thick = fire ? 0.42 + Math.random() * 0.18 : 0.22, hgt = fire ? 0.35 : 0.04;
+          const lx = m.axis === 'h' ? mid - cx : 0, lz = m.axis === 'h' ? 0 : mid - cy;
+          m.zap.position.set(lx / s2, (fire ? 0.25 : 0.05), lz / s2);
+          m.zap.scale.set((m.axis === 'h' ? len : thick) / s2, hgt, (m.axis === 'h' ? thick : len) / s2);
+          m.zap.material.opacity = fire ? 0.75 + Math.random() * 0.25 : 0.45 + 0.35 * Math.sin(t * 24);
+          m.zap.material.color.setHex(fire ? 0xe8ffff : 0x7fe8ff);
+          if (fire && live && Math.random() < 0.9) { const k = m.beam[(Math.random() * m.beam.length) | 0], [bx, bz] = W2(k % W, (k / W) | 0); burst(bx, 0.3, bz, 0xbff8ff, 1, 1.5, 2.5); }
+        }
       }
       if (m.mesh.userData.crab) { // sideways scuttle
         const cu = m.mesh.userData.crab; m.mesh.rotation.y = Math.atan2(m.vx, m.vy) + Math.PI / 2;
@@ -1885,7 +1913,7 @@ body {
         if (fishU.jelly) { // the bell pulses; tentacles sway; it glows before it zaps
           const pu = Math.sin(m.t * 3.2); fishU.body.scale.set(1 + pu * 0.06, 1 - pu * 0.08, 1 + pu * 0.06);
           fishU.jelly.forEach((tn, k) => tn.segs.forEach((q, j) => { q.position.x = Math.cos(tn.a) * 0.26 + Math.sin(m.t * 3 + k + j * 0.9) * 0.025 * j; }));
-          const gk = m.jPhase === 'warn' ? 0.6 + 0.4 * Math.sin(t * 30) : (m.zapT || 0) > 0 ? 1 : 0;
+          const gk = m.jPhase === 'warn' ? 0.6 + 0.4 * Math.sin(t * 30) : m.jPhase === 'fire' ? 1 : 0;
           fishU.skin.emissive.setRGB(0.29 + gk * 0.3, 0.06 + gk * 0.8, 0.27 + gk * 0.7);
         }
         if (fishU.star) { fishU.star.rotation.z = Math.sin(m.t * 3) * 0.12; fishU.body.scale.set(pf * (1 + Math.sin(m.t * 6) * 0.04), pf, pf * (1 - Math.sin(m.t * 6) * 0.04)); } // a slow crawl-wiggle
