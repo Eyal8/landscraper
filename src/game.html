@@ -1156,7 +1156,7 @@ body {
   }
   function drawHud() {
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(rushTime) + 's</b> <span>· ' + rushTotal.toLocaleString('en-US') + ' pts</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(rushTime) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
@@ -1509,9 +1509,9 @@ body {
       { play: startDaily, back: showHome });
   }
 
-  // ---------- Rush: 60 seconds, +5 per claim, a new board every 25% ----------
+  // ---------- Rush: race the clock through as many boards as you can. 60s to start; each board you finish (50%) gives +10s; each board has one more monster ----------
   let rushTime = 0, rushBoard = 0, rushTotal = 0;
-  const RUSH_GOAL = 25;
+  const RUSH_GOAL = 50;
   function rushLevel(n) {
     const open = WORLDS.map((_, w) => w).filter(worldOpen), w = open[n % open.length], wd = WORLDS[w], boards = BOARDS[wd.id];
     const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
@@ -1520,13 +1520,17 @@ body {
   function startRush() {
     mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0;
     begin(rushLevel(0)); mode = 'rush'; drawHud();
+    if (!prog.seen.includes('rush') && state === 'play') { // explain it once
+      state = 'intro'; prog.seen.push('rush'); saveProg();
+      panel('<div class="kicker">Rush</div><h2>Beat the clock</h2><p>Claim 50% to clear a board: +10s.<br>How many boards can you clear?</p><div class="btns"><button class="btn" type="button" data-act="go">Go</button></div>',
+        { go: () => { hidePanel(); state = 'play'; } });
+    }
   }
   const rushLabel = () => Math.ceil(rushTime) + 's · ' + rushTotal.toLocaleString('en-US') + ' pts';
   function rushClaimed(n) {
-    if (n > 0) { rushTime += 5; popAt(W2(px, py)[0], W2(px, py)[1] + 1, '+5s', '#ffd166'); }
     rushTotal = score;
     if (pct >= RUSH_GOAL) { // next board: keep the score and the clock
-      rushBoard++; const keep = score; flash('Board ' + (rushBoard + 1), '+10s', 900); rushTime += 10; arp([523, 784, 1047], 70);
+      rushBoard++; score += 1000 * rushBoard; const keep = score; flash('Board ' + (rushBoard + 1), '+10s', 900); rushTime += 10; arp([523, 784, 1047], 70);
       setTimeout(() => { if (mode !== 'rush' || state !== 'play') return; build(rushLevel(rushBoard)); score = keep; enter(0.2); drawHud(); }, 500);
     }
     drawHud();
@@ -1542,7 +1546,7 @@ body {
     flash('Time!', null, 1000); arp([784, 659, 523], 110, 0.2); buzz('clear');
     setTimeout(() => {
       $('hud').hidden = true;
-      panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + (rushBoard + 1) + (rushBoard ? ' boards' : ' board') + ' · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
+      panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
         '<div class="btns"><button class="btn" type="button" data-act="again">Play again</button><button class="btn alt" type="button" data-act="home">Home</button></div>',
         { again: startRush, home: showHome });
     }, 1200);
@@ -1750,7 +1754,7 @@ body {
       if (!paused) { enterT -= dt; if (enterT <= 0) { body.scale.set(1, 1, 1); body.rotation.z = 0; drone.scale.setScalar(1.45); landed(); } }
     }
     beamMat.opacity = hideT > 0 ? 0.5 + 0.2 * Math.sin(t * 20) : enterT > 0 ? 0.6 * (enterT / ENTER) : 0; beam.visible = beamMat.opacity > 0.01;
-    padMat.opacity = entering ? 0.6 + 0.35 * Math.sin(t * 14) : 0.4;
+    padMat.opacity = entering ? 0.6 + 0.35 * Math.sin(t * 14) : Math.max(0, padMat.opacity - dt * 2); // the pad fades once you have landed
     if (shockT > 0) { shockT -= dt; const q = 1 - shockT / 0.6; shock.scale.setScalar(1 + q * 4); shockMat.opacity = Math.max(0, 1 - q); } else shockMat.opacity = 0;
     const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
     if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
@@ -2069,7 +2073,7 @@ body {
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
-  window.addEventListener('blur', () => { release(); keysHeld.clear(); if (state === 'play' && !isApp && matchMedia('(pointer: fine)').matches) $('hint').textContent = 'Click the game to use the arrow keys'; });
+  window.addEventListener('blur', () => { release(); keysHeld.clear(); if (state === 'play' && !isApp && matchMedia('(hover: hover) and (pointer: fine)').matches) $('hint').textContent = 'Click the game to use the arrow keys'; });
   window.addEventListener('focus', () => { if ($('hint').textContent.startsWith('Click the game')) $('hint').textContent = ''; });
   // clicks on buttons and cards also bring the keyboard back to the game
   document.addEventListener('click', () => { try { window.focus(); } catch (err) {} }, true);
