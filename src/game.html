@@ -77,6 +77,18 @@ body {
 #vignette.on { opacity: 1; transition: none; }
 
 /* direction pad: appears where the finger lands and stays there; the active arrow lights up */
+/* fixed buttons: a cross at the bottom; slide between arrows without lifting */
+#dpad { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: 162px; height: 162px; margin-left: -81px; touch-action: none; }
+#dpad[hidden] { display: none; }
+#dpad b { position: absolute; width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center; color: rgba(255,255,255,0.92);
+  background: radial-gradient(circle at 50% 30%, rgba(60,80,150,0.55), rgba(16,24,56,0.6) 75%); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), 0 6px 16px rgba(10,20,50,0.3);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: transform 0.08s, color 0.08s, background 0.08s; }
+#dpad b svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 2px rgba(10,20,50,0.4)); }
+#dpad .up { left: 54px; top: 0; } #dpad .down { left: 54px; bottom: 0; } #dpad .left { left: 0; top: 54px; } #dpad .right { right: 0; top: 54px; }
+#dpad .down svg { transform: rotate(180deg); } #dpad .left svg { transform: rotate(-90deg); } #dpad .right svg { transform: rotate(90deg); }
+#dpad b.lit { color: #ffd166; background: radial-gradient(circle at 50% 30%, rgba(90,110,190,0.75), rgba(26,36,80,0.75) 75%); box-shadow: inset 0 0 0 2px #ffd166, 0 4px 12px rgba(10,20,50,0.3); transform: scale(0.94); }
+#dpad b.hint { animation: dhint 1s ease-in-out infinite; }
+@keyframes dhint { 50% { color: #ffd166; transform: scale(1.12); } }
 #pad { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; pointer-events: none; opacity: 0; transform: scale(0.85); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
 #pad.on { opacity: 1; transform: scale(1); }
 #pad .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.32), rgba(255,255,255,0.1) 60%, rgba(255,255,255,0.05)); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 6px 18px rgba(10,20,50,0.25); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
@@ -92,6 +104,7 @@ body {
 /* coach: short tips with a moving finger, first level only */
 #coach { position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
 #coach.on { opacity: 1; }
+#coach.high { bottom: calc(200px + env(safe-area-inset-bottom, 0px)); }
 #coach b { padding: 10px 18px; border-radius: 999px; background: rgba(16, 24, 56, 0.72); font: 800 18px var(--display); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #coach .finger { width: 46px; height: 46px; filter: drop-shadow(0 3px 6px rgba(10,20,50,0.4)); animation: swipeUp 1.3s ease-in-out infinite; }
 #coach .finger[hidden] { display: none; }
@@ -183,6 +196,7 @@ body {
   <div id="power"></div>
   <div id="vignette"></div>
   <div id="flash"></div>
+  <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
   <div id="pad"><div class="ring"></div><div class="ar up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="knob"></div></div>
   <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
@@ -208,7 +222,7 @@ body {
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // ---------- sound and haptics ----------
-  const settings = Object.assign({ sound: true, haptics: true }, store.get('ls_settings', {}));
+  const settings = Object.assign({ sound: true, haptics: true, controls: 'buttons' }, store.get('ls_settings', {}));
   let ac = null;
   function tone(f, d, type, v, slide) {
     try {
@@ -226,6 +240,8 @@ body {
   const capx = window.Capacitor && window.capacitorExports;
   const isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const Haptics = isApp && capx ? window.capacitorExports.registerPlugin('Haptics') : null;
+  const AppPlugin = isApp && capx ? window.capacitorExports.registerPlugin('App') : null;
+  let onHome = false;
   // Haptics: light taps for steering and small events, heavier for claims and traps, a warning buzz for danger.
   const VIBE = { tick: 5, select: 4, soft: 6, claim: 12, big: [15, 30, 15], trap: [20, 40, 30], clear: [20, 40, 20, 40, 40], hit: [30, 40, 60], eat: 8, warn: [12, 50, 12], pickup: [10, 30, 18], split: 14 };
   let lastBuzz = 0;
@@ -1398,9 +1414,14 @@ body {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
+    if (state === 'play' && !paused) showPause();
+    else if (onHome && state === 'menu') AppPlugin.exitApp();
+    else showHome();
+  }); } catch (e) {}
   function showHome() {
-    toMenu();
+    toMenu(); onHome = true;
     const nx = nextLevel(), lv = LEVELS[nx], done = prog.daily[todayKey()];
     panel('<h1>Landscraper</h1>' +
       '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
@@ -1434,10 +1455,11 @@ body {
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
   }
   function settingsButtons() {
-    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off');
+    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.controls === 'buttons' ? 'Buttons' : 'Swipe');
     return {
-      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      html: '<button class="btn alt" type="button" data-act="controls">' + ctl() + '</button><button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
       acts: {
+        controls: (b) => { settings.controls = settings.controls === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
         sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
         haptics: (b) => { settings.haptics = !settings.haptics; store.set('ls_settings', settings); b.textContent = lbl('Vibration', settings.haptics); buzz('claim'); }
       }
@@ -1553,12 +1575,12 @@ body {
   // ---------- tutorial (first level only) ----------
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
   let tut = null, tutT = 0;
-  function coach(text, finger) { $('coachText').textContent = text; $('coachFinger').hidden = !finger; $('coach').classList.toggle('on', !!text); }
-  function tutorialStart() { tut = tutorialSafe() ? 'swipe' : null; if (tut) setTimeout(() => { if (tut === 'swipe') coach('Swipe up', true); }, 2200); else coach(''); }
-  function tutorialEnd() { tut = null; coach(''); }
+  function coach(text, finger) { $('coachText').textContent = text; $('coachFinger').toggleAttribute('hidden', !finger); $('coach').classList.toggle('high', useButtons()); $('coach').classList.toggle('on', !!text); }
+  function tutorialStart() { tut = tutorialSafe() ? 'swipe' : null; if (tut) setTimeout(() => { if (tut === 'swipe') { coach(useButtons() ? 'Press up' : 'Swipe up', !useButtons()); dbtn.up.classList.toggle('hint', useButtons()); } }, 2200); else coach(''); }
+  function tutorialEnd() { tut = null; coach(''); dbtn.up.classList.remove('hint'); }
   function tutorialStep(ev) { // called by the game on events; each tip shows once and goes when done
     if (!tut) return;
-    if (tut === 'swipe' && ev === 'draw') { tut = 'back'; coach('Back to land', false); }
+    if (tut === 'swipe' && ev === 'draw') { dbtn.up.classList.remove('hint'); tut = 'back'; coach('Back to land', false); }
     else if (tut === 'back' && ev === 'claim') { tut = 'line'; coach(''); setTimeout(() => flash('Yours!', 'claim 75% to win', 1300), 150); }
     else if (tut === 'line' && ev === 'near') { tut = 'trap'; coach("Don't let it touch your line", false); tutT = 2.6; }
   }
@@ -1651,7 +1673,8 @@ body {
   function camGeom(d) { // ground z (relative to the target) seen at the top and bottom of the usable screen
     const vf2 = camera.fov / 2 * Math.PI / 180, hgt = d * Math.sin(EL), back = d * Math.cos(EL);
     const hudFrac = Math.min(0.3, (($('hud').offsetHeight || 64) + 10) / Math.max(1, stage.clientHeight));
-    const tTop = EL - Math.atan((1 - 2 * hudFrac) * Math.tan(vf2)), tBot = EL + Math.atan(0.97 * Math.tan(vf2));
+    const botFrac = settings.controls === 'buttons' ? Math.min(0.3, (162 + 30) / Math.max(1, stage.clientHeight)) : 0.015;
+    const tTop = EL - Math.atan((1 - 2 * hudFrac) * Math.tan(vf2)), tBot = EL + Math.atan((1 - 2 * botFrac) * Math.tan(vf2));
     return { top: back - hgt / Math.tan(tTop), bot: back - hgt / Math.tan(tBot) };
   }
   function camRange() { // the target z range that keeps as much board in view as possible
@@ -2015,12 +2038,25 @@ body {
   const pad = $('pad'), knob = pad.querySelector('.knob'), arrows = { up: pad.querySelector('.ar.up'), down: pad.querySelector('.ar.down'), left: pad.querySelector('.ar.left'), right: pad.querySelector('.ar.right') };
   const OFF = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   function padTo(d) { const [x, y] = d ? OFF[d] : [0, 0]; knob.style.transform = 'translate(' + x * 16 + 'px,' + y * 16 + 'px)'; for (const k in arrows) arrows[k].classList.toggle('lit', k === d); }
+  // fixed buttons
+  const dpad = $('dpad'), dbtn = { up: dpad.querySelector('.up'), down: dpad.querySelector('.down'), left: dpad.querySelector('.left'), right: dpad.querySelector('.right') };
+  const useButtons = () => settings.controls === 'buttons';
+  let dpId = null;
+  const dLight = (d) => { for (const k in dbtn) dbtn[k].classList.toggle('lit', k === d); };
+  function dFrom(e) { const r = dpad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); if (Math.max(Math.abs(x), Math.abs(y)) < 14) return null; return Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up'); }
+  function dPress(d) { if (!d || d === touchDir) return; touchHeld = true; touchDir = d; steer(d); dLight(d); }
+  dpad.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); dpId = e.pointerId; try { dpad.setPointerCapture(e.pointerId); } catch (err) {} dPress(dFrom(e)); });
+  dpad.addEventListener('pointermove', (e) => { if (e.pointerId !== dpId) return; dPress(dFrom(e)); }); // slide to another arrow without lifting
+  const dUp = (e) => { if (e.pointerId !== dpId) return; dpId = null; touchHeld = false; touchDir = null; dLight(null); };
+  dpad.addEventListener('pointerup', dUp); dpad.addEventListener('pointercancel', dUp); dpad.addEventListener('lostpointercapture', dUp);
+  let dShown = null;
+  function dpadVisible() { const v = useButtons() && (state === 'play' || state === 'intro') && !paused; if (v !== dShown) { dpad.hidden = !v; dShown = v; } if (dpId !== null && touchDir && dir !== touchDir) steer(touchDir); }
   stage.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('#panel') || e.target.closest('#pauseBtn')) return;
+    if (e.target.closest('#panel') || e.target.closest('#pauseBtn') || e.target.closest('#dpad')) return;
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
-    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; padTo(dir); pad.classList.add('on'); }
+    if (state === 'play' && !useButtons()) { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; padTo(dir); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
@@ -2048,7 +2084,7 @@ body {
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(dt, now / 1000);
+    update(dt, now / 1000); dpadVisible();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
