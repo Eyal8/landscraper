@@ -71,6 +71,12 @@ body {
 #flash.show { opacity: 1; transform: translate(-50%, -6px) scale(1); }
 #flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(10,20,50,0.5); }
 #flash.bad { color: #ffe0e6; }
+.tplus { position: absolute; z-index: 5; pointer-events: none; font: 800 22px var(--display); color: #ffd166; text-shadow: 0 2px 0 rgba(20,30,80,0.45), 0 0 12px rgba(255,209,102,0.6); transform: translate(-50%, -50%) scale(0.4); opacity: 0;
+  transition: left 0.6s cubic-bezier(.5,0,.75,0), top 0.6s cubic-bezier(.5,0,.75,0), transform 0.25s cubic-bezier(.2,.9,.3,1.6), opacity 0.2s; }
+.tplus.on { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+.tplus.go { transform: translate(-50%, -50%) scale(0.6); }
+#pctLabel b { display: inline-block; transition: transform 0.15s, color 0.15s; }
+#pctLabel.bump b { transform: scale(1.35); color: #ffd166; }
 .pop { position: absolute; pointer-events: none; font: 800 18px var(--display); color: #fff; text-shadow: 0 2px 0 rgba(20,30,80,0.35); transform: translate(-50%, -50%); animation: pop 1s ease-out forwards; }
 @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); } 15% { opacity: 1; transform: translate(-50%, -60%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
 #vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px 30px rgba(255, 40, 80, 0.55); opacity: 0; transition: opacity 0.35s; }
@@ -1156,7 +1162,7 @@ body {
   }
   function drawHud() {
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(rushTime) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(Math.max(0, rushTime - rushPending)) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
@@ -1231,6 +1237,7 @@ body {
     score += pts;
     const [wx, wz] = W2(px, py); if (fresh.length) popAt(wx, wz, '+' + pts);
     if (trapped.length) {
+      if (mode === 'rush') trapped.forEach((m, k) => { const [sx, sy] = toScreen(m.x - 0.5 + ox, 0.8, m.y - 0.5 + oz); setTimeout(() => { if (mode === 'rush' && state === 'play') rushBonus(3, sx, sy); }, 250 + k * 160); });
       const splits = trapped.filter((m) => m.kind === 'splitter').length;
       if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); buzz('split'); }, 450);
       const bossT = trapped.find((m) => m.kind === 'boss');
@@ -1512,13 +1519,23 @@ body {
   // ---------- Rush: race the clock through as many boards as you can. 60s to start; each board you finish (50%) gives +10s; each board has one more monster ----------
   let rushTime = 0, rushBoard = 0, rushTotal = 0;
   const RUSH_GOAL = 50;
+  let rushPending = 0, rushOrder = []; // seconds already won but still flying to the timer
+  function rushBonus(secs, sx, sy) { // a "+3s" pops where you earned it and flies into the timer
+    rushTime += secs; rushPending += secs;
+    const d = document.createElement('div'); d.className = 'tplus'; d.textContent = '+' + secs + 's';
+    d.style.left = sx + 'px'; d.style.top = sy + 'px'; stage.append(d);
+    requestAnimationFrame(() => d.classList.add('on'));
+    setTimeout(() => { const r = $('pctLabel').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
+    setTimeout(() => { d.remove(); rushPending = Math.max(0, rushPending - secs); drawHud(); const l = $('pctLabel'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
+  }
+  const toScreen = (wx, wy, wz) => { const v = new THREE.Vector3(wx, wy, wz).project(camera); return [(v.x + 1) / 2 * stage.clientWidth, (1 - v.y) / 2 * stage.clientHeight]; };
   function rushLevel(n) {
-    const open = WORLDS.map((_, w) => w).filter(worldOpen), w = open[n % open.length], wd = WORLDS[w], boards = BOARDS[wd.id];
+    const [w, board] = rushOrder.length ? rushOrder[n % rushOrder.length] : [0, BOARDS.meadow[0]];
     const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
-    return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board: boards[n % boards.length], powers: ['slow', 'freeze'], newPower: null, boss: false, lives: 99 };
+    return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board, powers: ['slow', 'freeze'], newPower: null, boss: false, lives: 99 };
   }
   function startRush() {
-    mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0;
+    mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0; rushPending = 0; rushOrder = WORLDS.map((_, w) => w).filter(worldOpen).flatMap((w) => BOARDS[WORLDS[w].id].map((b) => [w, b])).sort(() => Math.random() - 0.5);
     begin(rushLevel(0)); mode = 'rush'; drawHud();
     if (!prog.seen.includes('rush') && state === 'play') { // explain it once
       state = 'intro'; prog.seen.push('rush'); saveProg();
@@ -1530,7 +1547,7 @@ body {
   function rushClaimed(n) {
     rushTotal = score;
     if (pct >= RUSH_GOAL) { // next board: keep the score and the clock
-      rushBoard++; score += 1000 * rushBoard; const keep = score; flash('Board ' + (rushBoard + 1), '+10s', 900); rushTime += 10; arp([523, 784, 1047], 70);
+      rushBoard++; score += 1000 * rushBoard; const keep = score; flash('Board ' + (rushBoard + 1), null, 900); rushBonus(10, stage.clientWidth / 2, stage.clientHeight * 0.45); arp([523, 784, 1047], 70);
       setTimeout(() => { if (mode !== 'rush' || state !== 'play') return; build(rushLevel(rushBoard)); score = keep; enter(0.2); drawHud(); }, 500);
     }
     drawHud();
@@ -1729,7 +1746,7 @@ body {
       if (lureT > 0) lureT = Math.max(0, lureT - dt);
       if (tut === 'line' && drawing) for (const m of monsters) { if (m.dead) continue; if (trail.some((c) => Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < 3.5)) { tutorialStep('near'); break; } }
       if (tutT > 0) { tutT -= dt; if (tutT <= 0) coach(''); }
-      if (mode === 'rush' && hideT <= 0 && enterT <= 0) { rushTime -= dt; if (rushTime <= 0) { rushTime = 0; rushEnd(); } }
+      if (mode === 'rush' && hideT <= 0 && enterT <= 0) { const s0 = Math.ceil(rushTime - rushPending); rushTime -= dt; if (Math.ceil(rushTime - rushPending) !== s0) drawHud(); if (rushTime <= 0) { rushTime = 0; rushEnd(); } }
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
