@@ -40,6 +40,10 @@ body {
 .mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .mid .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
 .mid .row b { font: 800 15px var(--display); letter-spacing: 0; }
+#clock { font: 800 15px var(--display); font-style: normal; margin-left: 8px; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
+#clock.low { color: #ff6b7d; animation: lowt 1s ease-in-out infinite; }
+#clock.bump { transform: scale(1.3); color: #ffd166; }
+@keyframes lowt { 50% { transform: scale(1.15); } }
 #pctLabel { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: none; }
 #pctLabel b { font: 800 17px var(--display); }
 #pctLabel span { opacity: 0.85; }
@@ -194,7 +198,7 @@ body {
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <div class="row"><span><b id="lvlLabel">1-1</b></span><span id="pctLabel">0% · goal 75%</span></div>
+      <div class="row"><span><b id="lvlLabel">1-1</b> <i id="clock"></i></span><span id="pctLabel">0% · goal 75%</span></div>
       <div class="bar" id="bar"><i id="barFill"></i><em id="barGoal"></em></div>
     </div>
     <div class="lives" id="lives"></div>
@@ -865,7 +869,8 @@ body {
     life: { label: '+1 Life', color: 0xff5a7a, secs: 0, text: 'One more life.' },
     shield: { label: 'Shield', color: 0xffd166, secs: 0, text: 'Blocks the next hit.' },
     bomb: { label: 'Bomb', color: 0xff8a3d, secs: 0, text: 'Claims the area around it.' },
-    lure: { label: 'Lure', color: 0xc59bff, secs: 10, text: 'Boosters come to you.' }
+    lure: { label: 'Lure', color: 0xc59bff, secs: 10, text: 'Boosters come to you.' },
+    time: { label: '+8 Seconds', color: 0x7cf3c4, secs: 0, text: 'More time on the clock.' }
   };
   function makePower(kind) {
     const g = new THREE.Group();
@@ -876,6 +881,9 @@ body {
     else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff }); const face = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), m); face.rotation.x = Math.PI / 2; const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshBasicMaterial({ color: 0x1d2a63 })); h.position.set(0, 0.06, 0.04); const h2 = h.clone(); h2.rotation.z = -1.2; h2.position.set(0.05, 0, 0.04); icon.add(face, h, h2); }
     else if (kind === 'shield') { const sh = new THREE.Shape(); sh.moveTo(0, 0.2); sh.lineTo(0.16, 0.13); sh.lineTo(0.13, -0.06); sh.quadraticCurveTo(0.06, -0.17, 0, -0.21); sh.quadraticCurveTo(-0.06, -0.17, -0.13, -0.06); sh.lineTo(-0.16, 0.13); sh.closePath(); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xffd166, shininess: 120 })); icon.position.z = -0.03; }
     else if (kind === 'bomb') { icon = new THREE.Group(); const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 12), new THREE.MeshPhongMaterial({ color: 0x2a2a3a, shininess: 120 })); const fu = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6), new THREE.MeshPhongMaterial({ color: 0xc9a27a })); fu.position.set(0.06, 0.16, 0); fu.rotation.z = -0.5; const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb340 })); sp.position.set(0.1, 0.21, 0); icon.add(b, fu, sp); }
+    else if (kind === 'time') { icon = new THREE.Group(); const gm = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 120 }), sand = new THREE.MeshPhongMaterial({ color: 0xffd166 }); // an hourglass
+      const top = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); top.rotation.x = Math.PI; top.position.y = 0.08; const bot = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); bot.position.y = -0.08;
+      const sd = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.07, 12), sand); sd.position.y = -0.11; for (const y of [0.17, -0.17]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.03, 14), sand); cap.position.y = y; icon.add(cap); } icon.add(top, bot, sd); icon.rotation.x = 0.5; }
     else if (kind === 'lure') { icon = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.04, 8, 18, Math.PI * 1.4), new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 100 })); icon.rotation.z = 0.8; }
     else { icon = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x88ddff, emissiveIntensity: 0.4, shininess: 100 })); }
     g.add(icon); scene.add(g); return g;
@@ -906,11 +914,11 @@ body {
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
-    meadow: { pool: ['life', 'slow'], intro: { life: 3, slow: 16 } },
-    dunes: { pool: ['life', 'slow', 'freeze'], intro: { freeze: 16 } },
-    glacier: { pool: ['life', 'slow', 'freeze', 'shield'], intro: { shield: 6 } },
-    reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb'], intro: { bomb: 6 } },
-    volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'lure'], intro: { lure: 6 } }
+    meadow: { pool: ['life', 'slow', 'time'], intro: { life: 3, time: 6, slow: 16 } },
+    dunes: { pool: ['life', 'slow', 'freeze', 'time'], intro: { freeze: 16 } },
+    glacier: { pool: ['life', 'slow', 'freeze', 'shield', 'time'], intro: { shield: 6 } },
+    reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'time'], intro: { bomb: 6 } },
+    volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'lure', 'time'], intro: { lure: 6 } }
   };
   const WAVE = [1, 2, 2.5, 3, 4, 3, 3.5, 4.5, 5, 6, 4.5, 5, 6, 6.5, 7.5, 6, 6.5, 7.5, 8, 9]; // the sawtooth
   const KIND = { j: 'jelly', c: 'crab', l: 'eel', u: 'urchin', b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
@@ -925,6 +933,7 @@ body {
         id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
         mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
         board: firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
+        time: Math.min(150, 70 + 5 * mon.length + (lineup[l].includes('B') ? 30 : 0)),
         powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
         boss: lineup[l].includes('B')
       });
@@ -964,6 +973,9 @@ body {
   // ---------- game state ----------
   let state = 'menu', paused = false, frozenT = 0, slowT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
   let px = 0, py = 0, tx = 0, ty = 0, stepP = 1, dir = null, queue = [], drawing = false, trail = [], trailFrom = 0, monsters = [], powers = [], invuln = 0, lastLand = [0, 0];
+  let clockT = 0, timePending = 0;
+  const fmtClock = (t, tenths) => { t = Math.max(0, t); const m = Math.floor(t / 60), sec = t - m * 60; return m + ':' + (tenths ? sec.toFixed(1).padStart(4, '0') : String(Math.ceil(sec - 1e-9) === 60 ? 59 : Math.floor(sec)).padStart(2, '0')); };
+  const clockOn = () => (mode === 'campaign' && L.time && !tutorialSafe()) || mode === 'daily';
   let powersSeen = false, fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false, shieldOn = false, lureT = 0, bossHp = 0, mode = 'campaign';
   const trailIdx = new Int32Array(N).fill(-1);
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -1004,7 +1016,7 @@ body {
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
-    lives = L.lives || 3; score = 0; shieldOn = false; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
+    clockT = L.time || 0; timePending = 0; lives = L.lives || 3; score = 0; shieldOn = false; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
@@ -1162,7 +1174,8 @@ body {
   }
   function drawHud() {
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(Math.max(0, rushTime - rushPending)) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    const ck = $('clock'); ck.hidden = !clockOn(); if (clockOn()) { const shown = mode === 'daily' ? clockT : Math.ceil(Math.max(0, clockT - timePending)); ck.textContent = mode === 'daily' ? fmtClock(shown, true) : fmtClock(shown); ck.classList.toggle('low', mode === 'campaign' && shown <= 10); }
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(Math.max(0, rushTime - timePending)) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>' + Math.max(0, bossHp) + '</b> <span>to trap</span>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
@@ -1237,7 +1250,7 @@ body {
     score += pts;
     const [wx, wz] = W2(px, py); if (fresh.length) popAt(wx, wz, '+' + pts);
     if (trapped.length) {
-      if (mode === 'rush') trapped.forEach((m, k) => { const [sx, sy] = toScreen(m.x - 0.5 + ox, 0.8, m.y - 0.5 + oz); setTimeout(() => { if (mode === 'rush' && state === 'play') rushBonus(3, sx, sy); }, 250 + k * 160); });
+      if (mode === 'rush') trapped.forEach((m, k) => { const [sx, sy] = toScreen(m.x - 0.5 + ox, 0.8, m.y - 0.5 + oz); setTimeout(() => { if (mode === 'rush' && state === 'play') timeBonus(3, sx, sy); }, 250 + k * 160); });
       const splits = trapped.filter((m) => m.kind === 'splitter').length;
       if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); buzz('split'); }, 450);
       const bossT = trapped.find((m) => m.kind === 'boss');
@@ -1265,6 +1278,7 @@ body {
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
     if (p.kind === 'shield') { shieldOn = true; bubbleK = 0; }
     if (p.kind === 'lure') lureT = POWERS.lure.secs;
+    if (p.kind === 'time') { const [sx, sy] = toScreen(wx, 1, wz); timeBonus(8, sx, sy); }
     if (p.kind === 'bomb') { // claim everything within 3 squares, then settle the board like a normal claim
       const bx = Math.round(p.fx), by = Math.round(p.fy);
       for (let y = by - 3; y <= by + 3; y++) for (let x = bx - 3; x <= bx + 3; x++) if (inside(x, y) && Math.hypot(x - bx, y - by) <= 3.2 && cells[idx(x, y)] === SEA) cells[idx(x, y)] = LAND;
@@ -1296,15 +1310,16 @@ body {
 
   // ---------- level flow ----------
   const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
+  let dailyBest = false;
   function levelClear() {
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd();
     const stars = L.boss ? Math.max(1, Math.min(3, lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
-    flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? 'Daily done' : pct + '% claimed', 1600);
+    flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? fmtClock(clockT, true) : pct + '% claimed', 1600);
     arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
     let newWorld = false;
-    if (mode === 'daily') { const d = todayKey(), was = prog.daily[d]; if (!was || was.stars < stars) prog.daily[d] = { stars, score }; }
+    if (mode === 'daily') { const d = todayKey(), was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time }; }
     else {
       if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
       if ((prog.best[L.id] || 0) < score) prog.best[L.id] = score;
@@ -1316,7 +1331,7 @@ body {
       $('hud').hidden = true;
       const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
       const need = L.goal + (stars === 1 ? 7 : 14) - pct;
-      const more = mode === 'daily' ? 'Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
+      const more = mode === 'daily' ? (dailyBest ? 'New best time: ' : 'Time ' + fmtClock(clockT, true) + ' · best ') + fmtClock(prog.daily[todayKey()].time, true) : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
       const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
       const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
       const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><span>' + v + '%</span></div>').join('') + '</div>' : '';
@@ -1345,9 +1360,13 @@ body {
       requestAnimationFrame(step);
     }, 2600);
   }
-  function die(why) {
-    if (invuln > 0 || state !== 'play') return;
-    if (shieldOn) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
+  function timeUp() {
+    if (state !== 'play') return;
+    clockT = 15; invuln = 0; die('+15 seconds', true);
+  }
+  function die(why, timeout) {
+    if ((invuln > 0 && !timeout) || state !== 'play') return;
+    if (shieldOn && !timeout) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
       shieldOn = false; bubbleK = 0; invuln = 1.2; fuse = null; spark.visible = false; burnt.count = 0;
       const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
       burst(wx, 1, wz, 0x9fe6ff, 30, 4, 4); burst(wx, 1, wz, 0xffffff, 16, 3, 4);
@@ -1359,7 +1378,7 @@ body {
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
-    flash(lives > 0 ? 'Ouch!' : 'Out of lives', why, 1100, true);
+    flash(lives > 0 ? (timeout ? 'Time\'s up!' : 'Ouch!') : 'Out of lives', lives > 0 ? why : timeout ? 'time ran out' : why, 1100, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
     enter(0.65);
@@ -1498,7 +1517,7 @@ body {
     let h = 2166136261; for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
     const r = seeded(h), w = Math.floor(r() * 3), wd = WORLDS[w], boards = BOARDS[wd.id], lu = LINEUPS[wd.id];
     const line = lu[6 + Math.floor(r() * 12)].replace('B', 'b');
-    return { id: 'daily-' + key, name: 'Daily', w, l: 0, world: w, mon: line.split('').map((c) => KIND[c]), speed: 3.5 + (5 + w * 2.6) * 0.16, goal: 78, board: boards[Math.floor(r() * boards.length)], powers: BOOSTERS[wd.id].pool, newPower: null, boss: false, seed: h };
+    return { id: 'daily-' + key, name: 'Daily', w, l: 0, world: w, mon: line.split('').map((c) => KIND[c]), speed: 3.5 + (5 + w * 2.6) * 0.16, goal: 78, board: boards[Math.floor(r() * boards.length)], powers: BOOSTERS[wd.id].pool.filter((k) => k !== 'time'), newPower: null, boss: false, seed: h, time: 0 };
   }
   function startDaily() {
     mode = 'daily'; const lv = dailyLevel(todayKey()); rng = seeded(lv.seed ^ 0x5bd1e995);
@@ -1519,23 +1538,23 @@ body {
   // ---------- Rush: race the clock through as many boards as you can. 60s to start; each board you finish (50%) gives +10s; each board has one more monster ----------
   let rushTime = 0, rushBoard = 0, rushTotal = 0;
   const RUSH_GOAL = 50;
-  let rushPending = 0, rushOrder = []; // seconds already won but still flying to the timer
-  function rushBonus(secs, sx, sy) { // a "+3s" pops where you earned it and flies into the timer
-    rushTime += secs; rushPending += secs;
+  let rushOrder = [];
+  function timeBonus(secs, sx, sy) { // a "+3s" pops where you earned it and flies into the clock
+    if (mode === 'rush') rushTime += secs; else clockT += secs; timePending += secs;
     const d = document.createElement('div'); d.className = 'tplus'; d.textContent = '+' + secs + 's';
     d.style.left = sx + 'px'; d.style.top = sy + 'px'; stage.append(d);
     requestAnimationFrame(() => d.classList.add('on'));
-    setTimeout(() => { const r = $('pctLabel').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
-    setTimeout(() => { d.remove(); rushPending = Math.max(0, rushPending - secs); drawHud(); const l = $('pctLabel'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
+    setTimeout(() => { const r = $(mode === 'rush' ? 'pctLabel' : 'clock').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
+    setTimeout(() => { d.remove(); timePending = Math.max(0, timePending - secs); drawHud(); const l = $(mode === 'rush' ? 'pctLabel' : 'clock'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
   }
   const toScreen = (wx, wy, wz) => { const v = new THREE.Vector3(wx, wy, wz).project(camera); return [(v.x + 1) / 2 * stage.clientWidth, (1 - v.y) / 2 * stage.clientHeight]; };
   function rushLevel(n) {
     const [w, board] = rushOrder.length ? rushOrder[n % rushOrder.length] : [0, BOARDS.meadow[0]];
     const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
-    return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board, powers: ['slow', 'freeze'], newPower: null, boss: false, lives: 99 };
+    return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board, time: 0, powers: ['slow', 'freeze', 'time'], newPower: null, boss: false, lives: 99 };
   }
   function startRush() {
-    mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0; rushPending = 0; rushOrder = WORLDS.map((_, w) => w).filter(worldOpen).flatMap((w) => BOARDS[WORLDS[w].id].map((b) => [w, b])).sort(() => Math.random() - 0.5);
+    mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0; timePending = 0; rushOrder = WORLDS.map((_, w) => w).filter(worldOpen).flatMap((w) => BOARDS[WORLDS[w].id].map((b) => [w, b])).sort(() => Math.random() - 0.5);
     begin(rushLevel(0)); mode = 'rush'; drawHud();
     if (!prog.seen.includes('rush') && state === 'play') { // explain it once
       state = 'intro'; prog.seen.push('rush'); saveProg();
@@ -1547,7 +1566,7 @@ body {
   function rushClaimed(n) {
     rushTotal = score;
     if (pct >= RUSH_GOAL) { // next board: keep the score and the clock
-      rushBoard++; score += 1000 * rushBoard; const keep = score; flash('Board ' + (rushBoard + 1), null, 900); rushBonus(10, stage.clientWidth / 2, stage.clientHeight * 0.45); arp([523, 784, 1047], 70);
+      rushBoard++; score += 1000 * rushBoard; const keep = score; flash('Board ' + (rushBoard + 1), null, 900); timeBonus(10, stage.clientWidth / 2, stage.clientHeight * 0.45); arp([523, 784, 1047], 70);
       setTimeout(() => { if (mode !== 'rush' || state !== 'play') return; build(rushLevel(rushBoard)); score = keep; enter(0.2); drawHud(); }, 500);
     }
     drawHud();
@@ -1746,7 +1765,14 @@ body {
       if (lureT > 0) lureT = Math.max(0, lureT - dt);
       if (tut === 'line' && drawing) for (const m of monsters) { if (m.dead) continue; if (trail.some((c) => Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < 3.5)) { tutorialStep('near'); break; } }
       if (tutT > 0) { tutT -= dt; if (tutT <= 0) coach(''); }
-      if (mode === 'rush' && hideT <= 0 && enterT <= 0) { const s0 = Math.ceil(rushTime - rushPending); rushTime -= dt; if (Math.ceil(rushTime - rushPending) !== s0) drawHud(); if (rushTime <= 0) { rushTime = 0; rushEnd(); } }
+      if (clockOn() && hideT <= 0 && enterT <= 0) {
+        const s0 = mode === 'daily' ? Math.floor(clockT * 10) : Math.ceil(clockT - timePending);
+        clockT += mode === 'daily' ? dt : -dt;
+        const s1 = mode === 'daily' ? Math.floor(clockT * 10) : Math.ceil(clockT - timePending);
+        if (s1 !== s0) { drawHud(); if (mode === 'campaign' && s1 <= 5 && s1 > 0) tone(880, 0.05, 'square', 0.03); }
+        if (mode === 'campaign' && clockT <= 0) timeUp();
+      }
+      if (mode === 'rush' && hideT <= 0 && enterT <= 0) { const s0 = Math.ceil(rushTime - timePending); rushTime -= dt; if (Math.ceil(rushTime - timePending) !== s0) drawHud(); if (rushTime <= 0) { rushTime = 0; rushEnd(); } }
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
@@ -2123,6 +2149,7 @@ body {
     freeze(v) { testFrozen = !!v; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
+    setClock(v) { clockT = v; }, get clock() { return clockT; },
     giveShield() { shieldOn = true; bubbleK = 0; },
     get shield() { return shieldOn; },
     setPlayer(x, y) { px = tx = x; py = ty = y; stepP = 1; dir = null; queue = []; lastLand = [x, y]; invuln = 0; hideT = enterT = 0; },
