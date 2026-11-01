@@ -7,7 +7,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <!-- AdMob app ID (Android). Google sample ID until the Landscraper AdMob app exists -->
+        <!-- Play Games Services project -->
+        <meta-data android:name="com.google.android.gms.games.APP_ID" android:value="@string/game_services_project_id" />
+        <!-- AdMob app ID (Android) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-5535097818156227~7349738831"

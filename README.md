@@ -39,4 +39,4 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] Graphics: textured land per world, animated water with shoreline foam, hover drone, springy claim wave, particles
 - [x] Hero skins (Motorboat, Raft, Duck, Drone, Turtle), unlocked by stars
 - [x] Ads: interstitial between levels (from 1-5, every 2nd end, 90s apart), rewarded Continue, Daily retry and past days, Rush +15s; Remove Ads (landscraper_no_ads) makes all free
-- [ ] Leaderboards (Game Center, Play Games): Daily fastest time, Rush best
+- [x] Leaderboards via local native plugins (ios/App/App/GamesPlugin.swift, android GamesPlugin.java): Daily fastest time (recurring daily on Apple), Rush best

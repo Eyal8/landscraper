@@ -4,4 +4,5 @@
     <string name="title_activity_main">Landscraper</string>
     <string name="package_name">com.beno74.landscraper</string>
     <string name="custom_url_scheme">com.beno74.landscraper</string>
+    <string name="game_services_project_id" translatable="false">65380556457</string>
 </resources>

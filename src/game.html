@@ -465,6 +465,37 @@ window.Ads = (function () {
     isOpen: () => !document.getElementById('adSim').hidden
   };
 })();
+
+// ---------- Leaderboards: Game Center on iOS, Google Play Games on Android ----------
+window.Board = (function () {
+  const IDS = {
+    ios: { daily: 'com.beno74.landscraper.daily', rush: 'com.beno74.landscraper.rush' },
+    android: { daily: 'CgkIqb3wx_MBEAIQAQ', rush: 'CgkIqb3wx_MBEAIQAg' }
+  };
+  const cap = window.Capacitor, platform = cap && cap.getPlatform ? cap.getPlatform() : 'web';
+  const G = (platform === 'ios' || platform === 'android') && window.capacitorExports ? window.capacitorExports.registerPlugin('Games') : null;
+  let authed = false;
+  async function signIn(interactive) {
+    if (!G) return false;
+    try { const r = await G.signIn({ interactive: !!interactive }); authed = !!(r && r.authenticated); } catch (e) { authed = false; }
+    return authed;
+  }
+  // daily: seconds (lower is better); rush: points
+  async function submit(kind, value) {
+    if (!G) return;
+    if (!authed) await signIn(false);
+    if (!authed) return;
+    const score = kind === 'daily' ? Math.round(value * (platform === 'ios' ? 100 : 1000)) : Math.round(value); // Apple: hundredths, Google: milliseconds
+    try { await G.submitScore({ id: IDS[platform][kind], score }); } catch (e) {}
+  }
+  async function show(kind) {
+    if (!G) return;
+    if (!authed) await signIn(true);
+    try { await G.showLeaderboard({ id: IDS[platform][kind] }); } catch (e) {}
+  }
+  if (G) setTimeout(() => signIn(false), 1500);
+  return { available: !!G, submit, show };
+})();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -1576,6 +1607,7 @@ window.Ads = (function () {
     flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? fmtClock(clockT, true) : pct + '% claimed', 1600);
     arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
     let newWorld = false;
+    if (mode === 'daily' && dailyKey === todayKey()) window.Board.submit('daily', clockT);
     if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && (!was.stars || was.late) }; }
     else {
       if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
@@ -1596,9 +1628,9 @@ window.Ads = (function () {
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
         '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' : '') +
-        (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
+        (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
-        { next: adBreak(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey) });
+        { next: adBreak(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
       if (!fill) { [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); }); return; }
       // the bar fills from 0 to what you claimed; each star lights up as the bar passes its mark
       const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 1400; let lit = 0, lastN = -1;
@@ -1817,8 +1849,8 @@ window.Ads = (function () {
     cal += '</div>';
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
     panel('<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><h2>Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
-      '<div class="btns"><button class="btn" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button><button class="btn alt" type="button" data-act="back">Home</button></div>',
-      { play: () => playDaily(today), back: showHome, prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
+      '<div class="btns"><button class="btn" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+      { play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
     document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); playDaily(b.dataset.day); }));
   }
 
@@ -1882,10 +1914,11 @@ window.Ads = (function () {
   }
   function rushFinal() {
     levelEnds++; const best = rushTotal > prog.rush; if (best) { prog.rush = rushTotal; saveProg(); }
+    window.Board.submit('rush', rushTotal);
     {
       panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
-        '<div class="btns"><button class="btn" type="button" data-act="again">Play again</button><button class="btn alt" type="button" data-act="home">Home</button></div>',
-        { again: adBreak(startRush), home: adBreak(showHome) });
+        '<div class="btns"><button class="btn" type="button" data-act="again">Play again</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="home">Home</button></div>',
+        { again: adBreak(startRush), home: adBreak(showHome), lb: () => window.Board.show('rush') });
     }
   }
 
