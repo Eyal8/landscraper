@@ -10,7 +10,7 @@
         <!-- AdMob app ID (Android). Google sample ID until the Landscraper AdMob app exists -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"
+            android:value="ca-app-pub-5535097818156227~7349738831"
         />
 
         <activity
