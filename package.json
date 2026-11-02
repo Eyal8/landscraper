@@ -4,6 +4,7 @@
   "description": "Landscraper: Draw & Conquer mobile game (Capacitor + AdMob)",
   "main": "index.js",
   "scripts": {
+    "test": "node --test tests/game-center.test.cjs",
     "build": "node scripts/build-web.js",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",

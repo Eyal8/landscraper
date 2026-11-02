@@ -10,6 +10,13 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: landscraper-ios-testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   testflight:
     runs-on: macos-latest
@@ -17,6 +24,7 @@ jobs:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      RELEASE_BUILD: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -26,19 +34,19 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npm test
       - run: ADS_TEST=${{ inputs.real_ads && 'false' || 'true' }} npm run build && npx cap sync ios
+      - name: Verify source revision
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --exit-code
+          echo "Release source: $GITHUB_SHA; version: 1.0; build: $RELEASE_BUILD"
       - name: Install API key
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
           printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey.p8"
-      - name: Remove stale cloud-build signing certificates
-        env:
-          ASC_KEY_PATH: ${{ runner.temp }}/keys/AuthKey.p8
-        run: |
-          python3 -m pip install --quiet --break-system-packages pyjwt cryptography || python3 -m pip install --quiet pyjwt cryptography
-          python3 scripts/clean-dev-certs.py || echo "::warning::certificate cleanup failed; continuing"
       - name: Archive
         run: |
           set -o pipefail
@@ -59,16 +67,17 @@ jobs:
             tail -n 40 "$RUNNER_TEMP/archive.log"
             exit 1
           fi
-      - name: Upload to TestFlight
+      - name: Export App Store distribution IPA
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
             <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
+            <key>destination</key><string>export</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
             <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
           </dict></plist>
           PLIST
           xcodebuild -exportArchive \
@@ -79,3 +88,29 @@ jobs:
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Verify the signed distribution IPA
+        run: |
+          python3 scripts/verify-ios-release.py \
+            --export-dir "$RUNNER_TEMP/export" \
+            --build "$RELEASE_BUILD" \
+            --team "$APPLE_TEAM_ID" \
+            --source-sha "$GITHUB_SHA" \
+            --output "$RUNNER_TEMP/verification.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-verification-${{ env.RELEASE_BUILD }}
+          path: ${{ runner.temp }}/verification.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Validate and upload the verified IPA to TestFlight
+        run: |
+          set -euo pipefail
+          ipa=$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"] + "/verification.json"))["ipa_path"])')
+          expected=$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"] + "/verification.json"))["ipa_sha256"])')
+          test "$(shasum -a 256 "$ipa" | cut -d ' ' -f 1)" = "$expected"
+          xcrun altool --validate-app --file "$ipa" --type ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
+            --p8-file-path "$RUNNER_TEMP/keys/AuthKey.p8"
+          xcrun altool --upload-app --file "$ipa" --type ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
+            --p8-file-path "$RUNNER_TEMP/keys/AuthKey.p8"

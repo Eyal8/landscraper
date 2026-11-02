@@ -473,27 +473,46 @@ window.Board = (function () {
     android: { daily: 'CgkIqb3wx_MBEAIQAQ', rush: 'CgkIqb3wx_MBEAIQAg' }
   };
   const cap = window.Capacitor, platform = cap && cap.getPlatform ? cap.getPlatform() : 'web';
-  const G = (platform === 'ios' || platform === 'android') && window.capacitorExports ? window.capacitorExports.registerPlugin('Games') : null;
-  let authed = false, status = G ? 'starting' : 'not in app';
-  async function signIn(interactive) {
-    if (!G) return false;
-    try { const r = await G.signIn({ interactive: !!interactive }); authed = !!(r && r.authenticated); status = authed ? 'signed in' : 'not signed in'; } catch (e) { authed = false; status = 'error: ' + ((e && (e.message || e.code)) || e); }
-    return authed;
+  const pluginAvailable = platform !== 'ios' || (cap.isPluginAvailable && cap.isPluginAvailable('Games'));
+  const G = (platform === 'ios' || platform === 'android') && window.capacitorExports && pluginAvailable ? window.capacitorExports.registerPlugin('Games') : null;
+  let authed = false, status = G ? 'starting' : platform === 'ios' ? 'Game Center bridge unavailable' : 'not in app';
+  if (!G && platform === 'ios') console.warn('[GameCenter] bridge unavailable');
+  let signingIn = null;
+  function failure(operation, error) {
+    const code = String((error && error.code) || 'UNAVAILABLE').replace(/[^a-zA-Z0-9_.:-]/g, '').slice(0, 100);
+    status = operation + ' error: ' + code;
+    console.warn('[GameCenter] ' + status);
+  }
+  function signIn(interactive) {
+    if (!G) return Promise.resolve(false);
+    if (signingIn) return signingIn;
+    signingIn = (async () => {
+      try { const r = await G.signIn({ interactive: !!interactive }); authed = !!(r && r.authenticated); status = authed ? 'signed in' : 'not signed in'; }
+      catch (e) { authed = false; failure('authentication', e); }
+      return authed;
+    })().finally(() => { signingIn = null; });
+    return signingIn;
   }
   // daily: seconds (lower is better); rush: points
   async function submit(kind, value) {
     if (!G) return;
-    if (!authed) await signIn(false);
+    if (platform === 'ios' || !authed) await signIn(false);
     if (!authed) return;
     const score = kind === 'daily' ? Math.round(value * (platform === 'ios' ? 100 : 1000)) : Math.round(value); // Apple: hundredths, Google: milliseconds
-    try { await G.submitScore({ id: IDS[platform][kind], score }); status = 'sent ' + kind + ' ' + score; } catch (e) { status = 'submit error: ' + ((e && e.message) || e); }
+    try { await G.submitScore({ id: IDS[platform][kind], score }); status = 'sent ' + kind + ' ' + score; } catch (e) { failure('submit', e); }
   }
   async function show(kind) {
     if (!G) return;
-    if (!authed) await signIn(true);
-    try { await G.showLeaderboard({ id: IDS[platform][kind] }); } catch (e) { status = 'show error: ' + ((e && e.message) || e); }
+    if (platform === 'ios' || !authed) await signIn(true);
+    if (platform === 'ios' && !authed) { document.dispatchEvent(new Event('leaderboard:unavailable')); return; }
+    try { await G.showLeaderboard({ id: IDS[platform][kind] }); }
+    catch (e) { failure('show', e); if (platform === 'ios') document.dispatchEvent(new Event('leaderboard:unavailable')); }
   }
-  if (G) setTimeout(() => signIn(false), 1500);
+  if (G && platform === 'ios') {
+    G.addListener('authenticationChanged', (state) => { authed = !!state.authenticated; status = authed ? 'signed in' : status.includes('error:') ? status : 'not signed in'; })
+      .catch((e) => failure('state listener', e));
+    signIn(false);
+  } else if (G) setTimeout(() => signIn(false), 1500);
   return { available: !!G, submit, show, signIn, status: () => status };
 })();
 </script>
@@ -563,6 +582,14 @@ window.Board = (function () {
     f.classList.remove('show'); void f.offsetWidth; f.classList.add('show');
     clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), ms || 1000);
   }
+  document.addEventListener('leaderboard:unavailable', () => {
+    let notice = $('leaderboardError');
+    if (!notice) {
+      notice = document.createElement('p'); notice.id = 'leaderboardError'; notice.setAttribute('role', 'status');
+      $('card').prepend(notice);
+    }
+    notice.textContent = 'Leaderboard unavailable. Check Game Center and your connection.';
+  });
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   const STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>';
   function panel(html, actions) {

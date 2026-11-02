@@ -8,7 +8,7 @@ fs.mkdirSync(www, { recursive: true });
 let game = fs.readFileSync(path.join(root, 'src/game.html'), 'utf8');
 const cdn = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
 if (!game.includes(cdn)) throw new Error('three.js CDN tag not found in src/game.html');
-game = game.replace(`<script src="${cdn}"></script>`, '<script src="capacitor.js"></script>\n<script src="three.min.js"></script>');
+game = game.replace(`<script src="${cdn}"></script>`, '<script src="three.min.js"></script>');
 
 // Use bundled fonts so the app works offline
 game = game.replace(/<link rel="preconnect"[^>]*>\n?/, '').replace(/<link rel="stylesheet" href="https:\/\/fonts.googleapis.com[^>]*>/,
@@ -38,6 +38,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<script src="capacitor.js"></script>
 </head>
 <body>
 ${game}
