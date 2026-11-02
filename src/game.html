@@ -474,10 +474,10 @@ window.Board = (function () {
   };
   const cap = window.Capacitor, platform = cap && cap.getPlatform ? cap.getPlatform() : 'web';
   const G = (platform === 'ios' || platform === 'android') && window.capacitorExports ? window.capacitorExports.registerPlugin('Games') : null;
-  let authed = false;
+  let authed = false, status = G ? 'starting' : 'not in app';
   async function signIn(interactive) {
     if (!G) return false;
-    try { const r = await G.signIn({ interactive: !!interactive }); authed = !!(r && r.authenticated); } catch (e) { authed = false; }
+    try { const r = await G.signIn({ interactive: !!interactive }); authed = !!(r && r.authenticated); status = authed ? 'signed in' : 'not signed in'; } catch (e) { authed = false; status = 'error: ' + ((e && (e.message || e.code)) || e); }
     return authed;
   }
   // daily: seconds (lower is better); rush: points
@@ -486,15 +486,15 @@ window.Board = (function () {
     if (!authed) await signIn(false);
     if (!authed) return;
     const score = kind === 'daily' ? Math.round(value * (platform === 'ios' ? 100 : 1000)) : Math.round(value); // Apple: hundredths, Google: milliseconds
-    try { await G.submitScore({ id: IDS[platform][kind], score }); } catch (e) {}
+    try { await G.submitScore({ id: IDS[platform][kind], score }); status = 'sent ' + kind + ' ' + score; } catch (e) { status = 'submit error: ' + ((e && e.message) || e); }
   }
   async function show(kind) {
     if (!G) return;
     if (!authed) await signIn(true);
-    try { await G.showLeaderboard({ id: IDS[platform][kind] }); } catch (e) {}
+    try { await G.showLeaderboard({ id: IDS[platform][kind] }); } catch (e) { status = 'show error: ' + ((e && e.message) || e); }
   }
   if (G) setTimeout(() => signIn(false), 1500);
-  return { available: !!G, submit, show };
+  return { available: !!G, submit, show, signIn, status: () => status };
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1793,7 +1793,7 @@ window.Board = (function () {
     toMenu(); const sb = settingsButtons();
     const st = window.Store, noAds = st && st.noAds();
     const shop = (noAds ? '<p>Ads removed. Thank you!</p>' : '<button class="btn" type="button" data-act="buy">Remove Ads · ' + st.price() + '</button>') + '<button class="btn alt" type="button" data-act="restore">Restore purchases</button>' + (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '');
-    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.</p>' : '') + '<div class="btns">' + sb.html + shop + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
+    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html + shop + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); },
         buy: async () => { const r = await window.Store.buy('noAds'); if (r === 'bought') { flash('Ads removed', 'thank you!', 1400); buzz('clear'); } else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true); showSettings(); },
         restore: async () => { const got = await window.Store.restore(); flash(got.includes('noAds') ? 'Restored' : 'Nothing to restore', null, 1200); showSettings(); },
