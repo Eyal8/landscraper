@@ -1042,13 +1042,13 @@ window.Board = (function () {
     g.userData.fish = { body, fins: [], tail: null, skin, base: 0x6a2f8f, urchin: true };
     return g;
   }
-  function makeEel() { // a long eel: the head leads, the body follows its path
+  function makeEel(n) { // a long eel: the head leads, the body follows its path
     const g = new THREE.Group(), skin = phong(0x3fbf6a), spot = phong(0x1f7a45), belly = phong(0xd9f27a);
     const head = new THREE.Group(); g.add(head);
     head.add(sph(0.27, skin, 1, 0.8, 1.35, 0, 0, 0)); head.add(sph(0.2, belly, 1, 0.45, 1.15, 0, -0.1, 0.1));
     eyesOn(head, 0.11, 0.24, 0.12, 0.06);
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.3), spot); fin.position.set(0, 0.22, -0.12); head.add(fin);
-    const segs = []; for (let k = 0; k < 8; k++) { const r = 0.24 - k * 0.02, q = sph(r, k % 2 ? spot : skin, 1, 0.8, 1.1, 0, 0, -(k + 1) * 0.36); g.add(q); segs.push(q); }
+    const segs = []; for (let k = 0; k < n; k++) { const r = 0.24 - k * (n > 8 ? 0.011 : 0.02), q = sph(r, k % 2 ? spot : skin, 1, 0.8, 1.1, 0, 0, -(k + 1) * 0.36); g.add(q); segs.push(q); }
     g.userData.eel = { head, segs };
     return g;
   }
@@ -1084,15 +1084,30 @@ window.Board = (function () {
     g.userData.field = field;
     return g;
   }
-  function makeBoss() { // a big Puffer with a crown; each trap shrinks it until it is gone
-    const f = makeFish('bouncer'), crown = new THREE.Group(), gold = phong(0xffd23f, { shininess: 140, specular: 0xffffff });
+  // Each world ends with a big, crowned version of one of its monsters. Trap it 3 times to win.
+  const BOSSES = {
+    boss: { base: 'bouncer', name: 'King Puffer', text: 'Trap it 3 times to win.', size: 1.9, color: 0xff8c2a },
+    bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it, it splits. Trap all 3.', size: 1.8 },
+    boct: { base: 'inker', name: 'Giant Octopus', text: 'Big ink clouds. Trap it 3 times.', size: 1.7 },
+    bjelly: { base: 'jelly', name: 'Jellyfish Queen', text: 'Bolts both ways. Trap it 3 times.', size: 1.6 },
+    beel: { base: 'eel', name: 'Giant Eel', text: 'Very long. Trap it 3 times.', size: 1.45 }
+  };
+  const BOSS_OF = { meadow: 'boss', dunes: 'bstar', glacier: 'boct', reef: 'bjelly', volcano: 'beel' };
+  function makeCrown() {
+    const crown = new THREE.Group(), gold = phong(0xffd23f, { shininess: 140, specular: 0xffffff, emissive: 0x3a2a00 });
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.1, 20, 1, true), gold); ring.material.side = THREE.DoubleSide; crown.add(ring);
     for (let k = 0; k < 5; k++) { const a = k * Math.PI * 2 / 5, sp = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 6), gold); sp.position.set(Math.cos(a) * 0.2, 0.11, Math.sin(a) * 0.2); crown.add(sp); }
-    crown.position.y = 0.47; f.userData.fish.body.add(crown);
-    f.userData.fish.skin.color.setHex(0xff8c2a);
-    return f;
+    return crown;
   }
-  function makeBall(kind) {
+  function makeBall(kind, bossOf) {
+    if (BOSSES[kind]) { // the base monster, bigger, with a crown
+      const b = BOSSES[kind], g = makeBall(b.base, kind), crown = makeCrown();
+      if (b.base === 'eel') { crown.position.set(0, 0.24, 0); g.userData.eel.head.add(crown); }
+      else if (g.userData.fish) { crown.position.y = b.base === 'jelly' ? 0.36 : b.base === 'splitter' ? 0.22 : b.base === 'inker' ? 0.52 : 0.47; g.userData.fish.body.add(crown); }
+      if (b.color && g.userData.fish) g.userData.fish.skin.color.setHex(b.color);
+      g.scale.multiplyScalar(b.size); g.userData.s = g.scale.x;
+      return g;
+    }
     const g = new THREE.Group();
     if (kind === 'eater') { // a chomper: two jaws that open and close
       const mat = new THREE.MeshPhongMaterial({ color: 0x8a3cff, shininess: 90, specular: 0xffffff });
@@ -1121,7 +1136,7 @@ window.Board = (function () {
       for (let k = 0; k < 14; k++) { const t = new THREE.Mesh(tooth, edge); t.rotation.y = k / 14 * Math.PI * 2; wheel.add(t); }
       g.add(wheel); g.userData.wheel = wheel;
     } else {
-      const f = kind === 'jelly' ? makeJellyfish() : kind === 'urchin' ? makeUrchin() : kind === 'eel' ? makeEel() : kind === 'crab' ? makeCrab() : kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : kind === 'boss' ? makeBoss() : makeFish(kind);
+      const f = kind === 'jelly' ? makeJellyfish() : kind === 'urchin' ? makeUrchin() : kind === 'eel' ? makeEel(bossOf ? 14 : 8) : kind === 'crab' ? makeCrab() : kind === 'inker' ? makeInker() : kind === 'magnet' ? makeMagnet() : kind === 'hunter' ? makeShark() : kind === 'splitter' ? makeJelly(false) : kind === 'mini' ? makeJelly(true) : makeFish(kind);
       g.add(f); g.userData.fish = f.userData.fish; g.userData.field = f.userData.field; g.userData.inner = f; g.userData.eel = f.userData.eel; g.userData.crab = f.userData.crab;
     }
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
@@ -1141,8 +1156,8 @@ window.Board = (function () {
     crab: { name: 'Crab', text: 'Walks the shore. Don\'t touch.' },
     eel: { name: 'Eel', text: 'Long body. All of it bites.' },
     urchin: { name: 'Urchin', text: 'Dives, then pops up. Spiky!' },
-    boss: { name: 'Big Puffer', text: 'Trap it 3 times to win.' }
   };
+  for (const k in BOSSES) MONSTER_INFO[k] = { name: BOSSES[k].name, text: BOSSES[k].text };
 
 
 
@@ -1210,7 +1225,7 @@ window.Board = (function () {
   WORLDS.forEach((wd, w) => {
     const boards = BOARDS[wd.id], lineup = LINEUPS[wd.id], bo = BOOSTERS[wd.id];
     for (let l = 0; l < 20; l++) {
-      const d = WAVE[l] + w * 2.6, mon = lineup[l].split('').map((c) => KIND[c]);
+      const d = WAVE[l] + w * 2.6, mon = lineup[l].split('').map((c) => (c === 'B' ? BOSS_OF[wd.id] : KIND[c]));
       const firstOfWave = l % 5 === 0, introAt = Object.entries(bo.intro).filter(([, at]) => at - 1 <= l);
       const pool = bo.pool.filter((k) => !bo.intro[k] || bo.intro[k] - 1 <= l);
       LEVELS.push({
@@ -1406,13 +1421,16 @@ window.Board = (function () {
       else { m.x += dx / d * left; m.y += dy / d * left; m.vx = dx / d * m.spd; m.vy = dy / d * m.spd; left = 0; }
     }
   }
-  function jellyBeam(m) { // the cells a bolt covers: its row or column, both ways, until land stops it
+  function jellyBeam(m, axis) { // the cells a bolt covers: its row or column, both ways, until land stops it
+    axis = axis || m.axis;
+    if (axis === 'both') { const h = jellyBeam(m, 'h'); return h.concat(jellyBeam(m, 'v').slice(1)); }
     const cx = clamp(Math.floor(m.x), 0, W - 1), cy = clamp(Math.floor(m.y), 0, Hh - 1), out = [idx(cx, cy)];
-    const [dx, dy] = m.axis === 'h' ? [1, 0] : [0, 1];
+    const [dx, dy] = axis === 'h' ? [1, 0] : [0, 1];
     for (const sg of [1, -1]) { let x = cx + dx * sg, y = cy + dy * sg; while (inside(x, y) && cells[idx(x, y)] !== LAND) { out.push(idx(x, y)); x += dx * sg; y += dy * sg; } }
     return out;
   }
   function jellyAim(m) { // aims along your line if it crosses the jellyfish's row or column, otherwise picks a way at random
+    if (m.boss) { m.axis = 'both'; return; }
     const hit = (ax) => { m.axis = ax; return jellyBeam(m).some((c) => cells[c] === TRAIL); };
     if (hit('h')) return; if (hit('v')) return;
     m.axis = rng() < 0.5 ? 'h' : 'v';
@@ -1427,7 +1445,8 @@ window.Board = (function () {
   }
   const inkT = new Float32Array(N); let inkOn = false, magCd = 0, magHinted = false;
   function spawnMonster(kind, at) {
-    const sp = L.speed * (SPEEDS[kind] || 1) * (tutorialSafe() ? 0.7 : 1);
+    const bk = BOSSES[kind] ? kind : null; if (bk) kind = BOSSES[bk].base;
+    const sp = L.speed * (SPEEDS[kind] || 1) * (bk ? 0.8 : 1) * (tutorialSafe() ? 0.7 : 1), sz = bk ? BOSSES[bk].size * (SIZES[kind] || 1) : SIZES[kind] || 1;
     let x, y;
     if (at) { [x, y] = at; }
     else if (kind === 'crab') {
@@ -1445,12 +1464,13 @@ window.Board = (function () {
       const pool = far.length ? far : all, c = pool.length ? pool[(rng() * pool.length) | 0] : [W / 2, Hh / 2];
       x = c[0] + 0.5; y = c[1] + 0.5;
     }
-    const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(kind), shadow: blob(1.1 * (SIZES[kind] || 1)), eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
+    const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(bk || kind), shadow: blob(1.1 * sz), boss: bk, sz, eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
     if (kind === 'jelly') { // the bolt: a child of the shadow, so it goes away with the jellyfish
       m.zap = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbff8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
       m.zap.renderOrder = 4; m.zap.visible = false; m.shadow.add(m.zap);
+      if (bk) { m.zap2 = m.zap.clone(); m.zap2.material = m.zap.material.clone(); m.shadow.add(m.zap2); } // the queen fires both ways
     }
     if (kind === 'eel') m.hist = [];
     if (kind === 'urchin') { m.uPhase = 'up'; m.uT = rand(1, 2.5); }
@@ -1507,7 +1527,7 @@ window.Board = (function () {
       }
     }
     const trapped = [];
-    for (const r of regions) if (r.size <= (r.monsters.some((m) => m.kind === 'boss') ? TRAP_MAX * 2 : TRAP_MAX)) { r.cells.forEach((i) => { region[i] = -1; }); trapped.push(...r.monsters); }
+    for (const r of regions) if (r.size <= (r.monsters.some((m) => m.boss) ? TRAP_MAX * 2 : TRAP_MAX)) { r.cells.forEach((i) => { region[i] = -1; }); trapped.push(...r.monsters); }
     const fresh = [];
     for (let i = 0; i < N; i++) {
       if (cells[i] === SEA && region[i] < 0) cells[i] = LAND;
@@ -1535,13 +1555,17 @@ window.Board = (function () {
     const [wx, wz] = W2(px, py); if (fresh.length) popAt(wx, wz, '+' + pts);
     if (trapped.length) {
       if (mode === 'rush') trapped.forEach((m, k) => { const [sx, sy] = toScreen(m.x - 0.5 + ox, 0.8, m.y - 0.5 + oz); setTimeout(() => { if (mode === 'rush' && state === 'play') timeBonus(3, sx, sy); }, 250 + k * 160); });
-      const splits = trapped.filter((m) => m.kind === 'splitter').length;
+      const splits = trapped.filter((m) => m.kind === 'splitter' && !m.boss).length;
       if (splits) setTimeout(() => { if (state !== 'play') return; for (let k = 0; k < splits * 2; k++) { const mm = spawnMonster('mini'); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } flash('It split!', 'trap the little ones too', 1000); tone(700, 0.15, 'triangle'); buzz('split'); }, 450);
-      const bossT = trapped.find((m) => m.kind === 'boss');
-      if (bossT) {
-        bossHp--;
-        if (bossHp > 0) setTimeout(() => { if (state !== 'play') return; const nb = spawnMonster('boss'); nb.pop = 1; const k = 0.8 + bossHp * 0.1; nb.mesh.userData.s *= k; nb.mesh.scale.setScalar(nb.mesh.userData.s); const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 40, 4, 6); }, 700);
-        setTimeout(() => flash(bossHp > 0 ? 'Boss hit!' : 'Boss down!', bossHp > 0 ? bossHp + ' to go' : null, 1300), 200);
+      const bossT = trapped.filter((m) => m.boss);
+      if (bossT.length) {
+        bossHp -= bossT.length;
+        const spawn = [];
+        for (const b of bossT) if (b.boss === 'bstar' && !b.gen) spawn.push({ kind: 'bstar', gen: 1, k: 0.62 }, { kind: 'bstar', gen: 1, k: 0.62 }); // splits into two small ones
+        const alive = monsters.filter((m) => m.boss && !m.dead && !trapped.includes(m)).length;
+        if (bossHp > 0 && alive === 0 && !spawn.length) spawn.push({ kind: bossT[0].boss, k: 0.8 + bossHp * 0.1 });
+        if (spawn.length) setTimeout(() => { if (state !== 'play') return; for (const o of spawn) { const nb = spawnMonster(o.kind); nb.pop = 1; nb.gen = o.gen || 0; nb.mesh.userData.s *= o.k; nb.mesh.scale.setScalar(nb.mesh.userData.s); nb.sz *= o.k; nb.shadow.scale.multiplyScalar(o.k); const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 40, 4, 6); } }, 700);
+        setTimeout(() => flash(bossHp > 0 ? (spawn.length > 1 ? 'It split!' : 'Boss hit!') : 'Boss down!', bossHp > 0 ? bossHp + ' to go' : null, 1300), 200);
       }
       trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
       const bonus = 250 * trapped.length * trapped.length; score += bonus;
@@ -1731,7 +1755,7 @@ window.Board = (function () {
     const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x6a7ab0, 1)); const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(-2, 4, 5); s.add(d);
     if (power) { const pm = makePower(power); scene.remove(pm); pm.scale.setScalar(2.2); s.add(pm); const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.2, 3.2); c.lookAt(0, 0, 0); r.clear(); r.render(s, c); return '<img alt="" src="' + r.domElement.toDataURL() + '">'; }
     const m = makeBall(k); scene.remove(m); m.scale.setScalar(1); s.add(m); m.rotation.y = 0.5; if (k === 'saw') m.rotation.x = 0.7; if (k === 'splitter' || k === 'mini') { m.rotation.set(0.95, 0, 0); } if (m.userData.jaws) { m.userData.jaws[0].rotation.x = -0.45; m.userData.jaws[1].rotation.x = 0.25; }
-    if (k === 'magnet') m.rotation.x = 0.6; if (k === 'boss') m.scale.setScalar(0.7);
+    if (k === 'magnet') m.rotation.x = 0.6; if (BOSSES[k]) m.scale.setScalar(BOSSES[k].base === 'eel' ? 0.8 : 1.15);
     const c = new THREE.PerspectiveCamera(30, 1, 0.1, 20); c.position.set(0, 0.6, 2.4); c.lookAt(0, 0, 0); r.clear(); r.render(s, c);
     return '<img alt="" src="' + r.domElement.toDataURL() + '">';
   }
@@ -2243,7 +2267,7 @@ window.Board = (function () {
             else { m.inkPhase = 'calm'; m.inkT = rand(2.5, 3.5); }
           }
         }
-        if (m.kind === 'inker' && m.inkPhase === 'squirt') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } m.squirt = (m.squirt || 0) + 1; if (m.squirt % 2 === 0) { const f = m.mesh.userData.fish, cl = f && f.clouds.find((q) => q.t >= 1.2); if (cl) { cl.t = 0; cl.c.visible = true; cl.c.position.set(0, -0.2, -0.55); } } } }
+        if (m.kind === 'inker' && m.inkPhase === 'squirt') { m.inkCd -= step; if (m.inkCd <= 0) { m.inkCd = 0.25; const c = idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); if (m.boss) { const cx = c % W, cy = (c / W) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!inside(cx + dx, cy + dy)) continue; const j = idx(cx + dx, cy + dy); if (cells[j] === SEA) { inkT[j] = 4.5; inkOn = true; } } } else if (cells[c] === SEA) { inkT[c] = 4.5; inkOn = true; } m.squirt = (m.squirt || 0) + 1; if (m.squirt % 2 === 0) { const f = m.mesh.userData.fish, cl = f && f.clouds.find((q) => q.t >= 1.2); if (cl) { cl.t = 0; cl.c.visible = true; cl.c.position.set(0, -0.2, -0.55); } } } }
         const vx0 = m.vx, vy0 = m.vy;
         if (m.kind === 'saw' && solid(m.x, m.y)) settleOnLand(m);
         let nx = m.x + m.vx * step;
@@ -2277,27 +2301,27 @@ window.Board = (function () {
         if ((m.vx !== vx0 || m.vy !== vy0) && m.mesh.userData.fish) m.puff = 1; // puffs up on every bounce
         if (m.kind === 'saw') { m.stuckT = (m.stuckT || 0) + dt; if (m.stuckT > 0.6) { m.stuckT = 0; if (landRegionSize(idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), SAW_MIN) < SAW_MIN) resetSaw(m); } }
         if (m.kind !== 'saw' && !m.under) { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
-        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 && !m.under) {
+        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 * Math.max(1, m.sz * 0.7) && !m.under) {
           if (m.kind !== 'saw' && !onLand) die('a monster caught you');
           if (m.kind === 'saw' && onLand) die('a buzzsaw caught you on land');
         }
         if (m.hist) { // the eel's body follows the head's path; every part of it touches your line and bites
-          const h = m.hist; if (!h.length || Math.hypot(h[0][0] - m.x, h[0][1] - m.y) > 0.12) { h.unshift([m.x, m.y]); if (h.length > 40) h.pop(); }
-          m.segs = []; let need = 0.36 * 1.22 * 0.85, acc = 0, lx = m.x, ly = m.y;
-          for (let k = 0; k < h.length && m.segs.length < 8; k++) {
+          const h = m.hist; if (!h.length || Math.hypot(h[0][0] - m.x, h[0][1] - m.y) > 0.12) { h.unshift([m.x, m.y]); if (h.length > (m.boss ? 160 : 40)) h.pop(); }
+          m.segs = []; const nSeg = m.mesh.userData.eel.segs.length; let need = 0.36 * 1.22 * m.sz, acc = 0, lx = m.x, ly = m.y;
+          for (let k = 0; k < h.length && m.segs.length < nSeg; k++) {
             if (cellAt(h[k][0], h[k][1]) === LAND) { h.length = k; break; } // never trails over land (after a claim)
             const d = Math.hypot(h[k][0] - lx, h[k][1] - ly); acc += d; lx = h[k][0]; ly = h[k][1];
-            while (acc >= need && m.segs.length < 8) { m.segs.push([lx, ly]); acc -= need; }
+            while (acc >= need && m.segs.length < nSeg) { m.segs.push([lx, ly]); acc -= need; }
           }
           for (const [sx, sy] of m.segs) {
             const c = idx(clamp(Math.floor(sx), 0, W - 1), clamp(Math.floor(sy), 0, Hh - 1));
             if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]);
-            if (!onLand && Math.hypot(sx - (fx + 0.5), sy - (fy + 0.5)) < 0.6) die('an eel caught you');
+            if (!onLand && Math.hypot(sx - (fx + 0.5), sy - (fy + 0.5)) < 0.6 * m.sz / 0.85) die('an eel caught you');
           }
         }
         }
       }
-      const r = 0.4 * 1.22 * (SIZES[m.kind] || 1);
+      const r = 0.4 * 1.22 * m.sz;
       const baseY = m.kind === 'saw' ? H_LAND + 0.3 : m.kind === 'crab' ? H_LAND + 0.12 : r;
       const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz;
       m.mesh.position.set(wx, baseY, wz);
@@ -2309,19 +2333,21 @@ window.Board = (function () {
         if (ph === 'rise' && live && Math.random() < 0.4) burst(wx + rand(-0.3, 0.3), 0.1, wz + rand(-0.3, 0.3), 0xffffff, 1, 0.5, 1.5); // bubbles: it's coming up
       }
       if (m.zap) { // the bolt: a thin flickering guide while it charges, a bright crackling beam when it fires
-        const on = (m.jPhase === 'warn' || m.jPhase === 'fire') && m.beam && m.beam.length && !m.dead;
-        m.zap.visible = !!on;
-        if (on) {
-          let a = Infinity, b2 = -Infinity; for (const c of m.beam) { const v = m.axis === 'h' ? c % W : (c / W) | 0; a = Math.min(a, v); b2 = Math.max(b2, v); }
-          const cx = Math.floor(m.x), cy = Math.floor(m.y), len = b2 - a + 1, mid = (a + b2) / 2, s2 = m.shadow.scale.x, fire = m.jPhase === 'fire';
+        const on = (m.jPhase === 'warn' || m.jPhase === 'fire') && m.beam && m.beam.length && !m.dead, fire = m.jPhase === 'fire';
+        const drawBolt = (mesh, axis) => {
+          mesh.visible = !!on; if (!on) return;
+          const cellsA = jellyBeam(m, axis);
+          let a = Infinity, b2 = -Infinity; for (const c of cellsA) { const v = axis === 'h' ? c % W : (c / W) | 0; a = Math.min(a, v); b2 = Math.max(b2, v); }
+          const cx = Math.floor(m.x), cy = Math.floor(m.y), len = b2 - a + 1, mid = (a + b2) / 2, s2 = m.shadow.scale.x;
           const thick = fire ? 0.42 + Math.random() * 0.18 : 0.22, hgt = fire ? 0.35 : 0.04;
-          const lx = m.axis === 'h' ? mid - cx : 0, lz = m.axis === 'h' ? 0 : mid - cy;
-          m.zap.position.set(lx / s2, (fire ? 0.25 : 0.05), lz / s2);
-          m.zap.scale.set((m.axis === 'h' ? len : thick) / s2, hgt, (m.axis === 'h' ? thick : len) / s2);
-          m.zap.material.opacity = fire ? 0.75 + Math.random() * 0.25 : 0.45 + 0.35 * Math.sin(t * 24);
-          m.zap.material.color.setHex(fire ? 0xe8ffff : 0x7fe8ff);
-          if (fire && live && Math.random() < 0.9) { const k = m.beam[(Math.random() * m.beam.length) | 0], [bx, bz] = W2(k % W, (k / W) | 0); burst(bx, 0.3, bz, 0xbff8ff, 1, 1.5, 2.5); }
-        }
+          const lx = axis === 'h' ? mid - cx : 0, lz = axis === 'h' ? 0 : mid - cy;
+          mesh.position.set(lx / s2, (fire ? 0.25 : 0.05), lz / s2);
+          mesh.scale.set((axis === 'h' ? len : thick) / s2, hgt, (axis === 'h' ? thick : len) / s2);
+          mesh.material.opacity = fire ? 0.75 + Math.random() * 0.25 : 0.45 + 0.35 * Math.sin(t * 24);
+          mesh.material.color.setHex(fire ? 0xe8ffff : 0x7fe8ff);
+        };
+        if (m.axis === 'both') { drawBolt(m.zap, 'h'); drawBolt(m.zap2, 'v'); } else { drawBolt(m.zap, m.axis); if (m.zap2) m.zap2.visible = false; }
+        if (on && fire && live && Math.random() < 0.9) { const k = m.beam[(Math.random() * m.beam.length) | 0], [bx, bz] = W2(k % W, (k / W) | 0); burst(bx, 0.3, bz, 0xbff8ff, 1, 1.5, 2.5); }
       }
       if (m.mesh.userData.crab) { // sideways scuttle
         const cu = m.mesh.userData.crab; m.mesh.rotation.y = Math.atan2(m.vx, m.vy) + Math.PI / 2;
@@ -2477,7 +2503,7 @@ window.Board = (function () {
   window.__game = {
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
-    get monsters() { return monsters.map((m) => ({ kind: m.kind, x: m.x, y: m.y, dead: !!m.dead })); },
+    get monsters() { return monsters.map((m) => ({ kind: m.kind, boss: m.boss || null, gen: m.gen || 0, x: m.x, y: m.y, dead: !!m.dead })); },
     get trailLen() { return trail.length; }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
