@@ -48,10 +48,13 @@ with sync_playwright() as p:
     T(pg, [[12, y] for y in range(2, 9)] + [[x, 8] for x in range(11, 1, -1)], True); pg.wait_for_timeout(1300)
     T(pg, [[15, y] for y in range(35, 26, -1)] + [[x, 27] for x in range(16, 20)], False); pg.evaluate("__game.setLives(2)")
     pg.wait_for_timeout(900); save(pg, '1-draw')
-    # 2: a boss: the Jellyfish Queen in the coral reef
-    pg = level(80, [('bjelly', 12.5, 14.5), ('jelly', 6.5, 8.5), ('bouncer', 17.5, 22.5), ('crab', 1.5, 20.5)], 'duck')
-    T(pg, rect_up(2, 27, 8), True); pg.wait_for_timeout(1300)
-    T(pg, [[16, y] for y in range(35, 28, -1)] + [[x, 29] for x in range(17, 21)], False)
+    # 2: a boss: the King Puffer in the meadow, the camera a little closer
+    pg = level(20, [('boss', 12.5, 13.5), ('bouncer', 6.5, 7.5), ('bouncer', 17.5, 21.5)])
+    T(pg, rect_up(2, 26, 7), True); pg.wait_for_timeout(1300)
+    T(pg, [[x, 2] for x in range(14, 22)] + [[21, y] for y in range(3, 9)] + [[x, 8] for x in range(20, 13, -1)] + [[14, y] for y in range(7, 1, -1)], True); pg.wait_for_timeout(1300)
+    T(pg, [[15, y] for y in range(35, 24, -1)] + [[x, 24] for x in range(14, 10, -1)], False)
+    cx, cz = pg.evaluate("__game.world(12, 17)")
+    pg.evaluate(f"__game.cam([{cx}, 30, {cz + 19}, {cx}, 0, {cz + 1}, 50])")
     pg.wait_for_timeout(900); save(pg, '2-boss')
     # 3: the volcano: eel, urchins and a huge claim rising
     pg = level(92, [('eel', 9.5, 10.5), ('urchin', 16.5, 8.5), ('bouncer', 6.5, 6.5), ('urchin', 5.5, 14.5)], 'turtle')
