@@ -2308,6 +2308,7 @@ window.Board = (function () {
     camLo = Math.min(a, b); camHi = Math.max(a, b); camFits = b < a;
   }
   function placeCamera(t, dt) {
+    if (camFix) { camera.fov = camFix[6]; camera.updateProjectionMatrix(); camera.position.set(camFix[0], camFix[1], camFix[2]); camera.lookAt(camFix[3], camFix[4], camFix[5]); return; } // art renders only
     const win = state === 'clear' && !reduceMotion ? Math.min(1, clearT * 0.7) : 0;
     const mid = (camLo + camHi) / 2;
     const follow = camFits ? mid : clamp(camWantZ, camLo, camHi); // whole board in view (tall phones): keep it centered
@@ -2724,7 +2725,7 @@ window.Board = (function () {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
 
   // ---------- loop ----------
-  let last = performance.now(), simT = 0;
+  let last = performance.now(), simT = 0, camFix = null;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!window.__halt) update(dt, now / 1000); dpadVisible();
@@ -2745,6 +2746,7 @@ window.Board = (function () {
     sim(sec) { const step = 1 / 30; for (let k = 0; k < Math.round(sec / step); k++) { simT += step; update(step, simT); if (state !== 'play' && state !== 'intro') break; } },
     snap() { return { W, Hh, cells: Array.from(cells), px, py, tx, ty, stepP, dir, drawing, state, lives, pct, goal: L.goal, boss: L.boss, bossHp, clock: clockT, entering: hideT > 0 || enterT > 0, speed: L.speed, fuse: !!fuse,
       monsters: monsters.filter((m) => !m.dead).map((m) => ({ x: m.x, y: m.y, kind: m.kind, boss: !!m.boss, land: landKind(m), sp: Math.hypot(m.vx, m.vy) || L.speed, under: !!m.under })) }; },
+    cam(v) { camFix = v; }, world(x, y) { return W2(x, y); }, wear(id) { wearSkin(id); },
     skipIntro() { if (state === 'intro') { hidePanel(); state = 'play'; } }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
