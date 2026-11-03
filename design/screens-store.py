@@ -8,7 +8,9 @@ DEVICES = {'android': (360, 640, 'android'), 'iphone': (402, 874, 'ios'), 'iphon
 name = sys.argv[1] if len(sys.argv) > 1 else 'android'
 w, h, store = DEVICES[name]
 out = root / 'store' / store / 'screenshots'; out.mkdir(parents=True, exist_ok=True)
+for old in out.glob(f'{name}-*.png'): old.unlink()
 url = f'file://{root}/www/index.html'
+SEEN = "['rush','bouncer','eater','saw','zipper','splitter','hunter','inker','magnet','jelly','crab','eel','urchin','boss','bstar','boct','bjelly','beel','p-life','p-slow','p-freeze','p-shield','p-bomb','p-lure','p-time','trap']"
 
 def rect_up(x0, y0, x1, bottom=35):
     """Trail from the bottom border up column x0, across row y0, down column x1."""
@@ -16,15 +18,24 @@ def rect_up(x0, y0, x1, bottom=35):
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'])
-    def page(level, monsters):
+    def fresh(stars=3, extra=''):
         pg = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=3)
         pg.on('pageerror', lambda e: print('JS error:', e))
-        pg.goto(url); pg.wait_for_function('window.__game'); pg.wait_for_timeout(300); pg.evaluate('__game.unlockAll()')
+        pg.goto(url); pg.wait_for_function('window.__game'); pg.wait_for_timeout(300)
+        pg.evaluate(f"""const p={{v:2,done:{{}},stars:{{}},best:{{}},seen:{SEEN},skin:'boat',daily:{{}},rush:12400}};
+          __game.levels.slice(0,47).forEach(id=>{{p.done[id]=true;p.stars[id]={stars}}});
+          const now=new Date(); for (let d=1; d<=now.getUTCDate(); d++) p.daily[now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')]={{stars:1+d%3}};
+          const pm=new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()-1, 1)); for (let d=1; d<=new Date(Date.UTC(pm.getUTCFullYear(), pm.getUTCMonth()+1, 0)).getUTCDate(); d++) p.daily[pm.toISOString().slice(0,8)+String(d).padStart(2,'0')]={{stars:3}};
+          {extra} localStorage.setItem('ls_prog', JSON.stringify(p))""")
+        pg.reload(); pg.wait_for_function('window.__game'); pg.wait_for_timeout(900)
         pg.add_style_tag(content='#hint{display:none!important}')
-        pg.evaluate(f"__game.startLevel({level - 1})"); pg.wait_for_timeout(200)
-        if pg.locator('#panel:not([hidden]) [data-act=go]').count(): pg.click('#panel:not([hidden]) [data-act=go]')
+        return pg
+    def level(lv, monsters, skin=None):
+        pg = fresh(extra=f"p.skin='{skin}';" if skin else '')
+        pg.evaluate(f"__game.startLevel({lv - 1})"); pg.wait_for_timeout(200)
+        pg.evaluate("__game.skipIntro()"); pg.wait_for_function('!__game.snap().entering', timeout=60000); pg.wait_for_timeout(1500)
         pg.evaluate("__game.freeze(true); __game.clearMonsters()")
-        for x, y in monsters: pg.evaluate(f"__game.addMonster('bouncer', {x}, {y})")
+        for k, x, y in monsters: pg.evaluate(f"__game.addMonster('{k}', {x}, {y})")
         return pg
     def save(pg, shot):
         d = out / f'{name}-{shot}.png'; pg.screenshot(path=str(d)); Image.open(d).convert('RGB').save(d)
@@ -32,20 +43,23 @@ with sync_playwright() as p:
     T = lambda pg, cells, close: pg.evaluate('([c, k]) => __game.trail(c, k)', [cells, close])
 
     # 1: a level in progress, two areas claimed and a trail being drawn
-    pg = page(3, [(15.5, 10.5), (8.5, 15.5), (18.5, 19.5)])
+    pg = level(3, [('bouncer', 15.5, 10.5), ('bouncer', 8.5, 15.5), ('bouncer', 18.5, 19.5)])
     T(pg, rect_up(2, 23, 7), True); pg.wait_for_timeout(1300)
     T(pg, [[12, y] for y in range(2, 9)] + [[x, 8] for x in range(11, 1, -1)], True); pg.wait_for_timeout(1300)
     T(pg, [[15, y] for y in range(35, 26, -1)] + [[x, 27] for x in range(16, 20)], False); pg.evaluate("__game.setLives(2)")
     pg.wait_for_timeout(900); save(pg, '1-draw')
-    # 2: a huge claim rising in a wave
-    pg = page(1, [(15.5, 8.5), (6.5, 6.5)])
-    T(pg, [[x, 22] for x in range(2, 22)], True); pg.wait_for_timeout(380); save(pg, '2-claim')
-    # 3: trapping a monster
-    pg = page(4, [(18.5, 31.5), (8.5, 10.5), (14.5, 15.5)])
-    T(pg, rect_up(2, 26, 6), True); pg.wait_for_timeout(1300)
-    T(pg, rect_up(15, 29, 21), True); pg.wait_for_timeout(330); save(pg, '3-trap')
-    # 4: level clear, the world you built
-    pg = page(2, [(12.5, 5.5)])
-    T(pg, rect_up(4, 20, 10), True); pg.wait_for_timeout(1200)
-    T(pg, [[x, 9] for x in range(2, 22)], True); pg.wait_for_timeout(2300); save(pg, '4-world')
+    # 2: a boss: the Jellyfish Queen in the coral reef
+    pg = level(80, [('bjelly', 12.5, 14.5), ('jelly', 6.5, 8.5), ('bouncer', 17.5, 22.5), ('crab', 1.5, 20.5)], 'duck')
+    T(pg, rect_up(2, 27, 8), True); pg.wait_for_timeout(1300)
+    T(pg, [[16, y] for y in range(35, 28, -1)] + [[x, 29] for x in range(17, 21)], False)
+    pg.wait_for_timeout(900); save(pg, '2-boss')
+    # 3: the volcano: eel, urchins and a huge claim rising
+    pg = level(92, [('eel', 9.5, 10.5), ('urchin', 16.5, 8.5), ('bouncer', 6.5, 6.5), ('urchin', 5.5, 14.5)], 'turtle')
+    T(pg, [[x, 22] for x in range(2, 22)], True); pg.wait_for_timeout(420); save(pg, '3-claim')
+    # 4: home: levels, Daily and Rush
+    pg = fresh(); save(pg, '4-home')
+    # 5: skins
+    pg = fresh(); pg.evaluate("document.querySelector('[data-act=skins]').click()"); pg.wait_for_timeout(900); save(pg, '5-skins')
+    # 6: Daily calendar and trophies
+    pg = fresh(); pg.evaluate("document.querySelector('[data-act=trophies]').click()"); pg.wait_for_timeout(1500); save(pg, '6-trophies')
     b.close()

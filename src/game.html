@@ -1292,7 +1292,7 @@ window.Board = (function () {
         id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
         mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
         board: firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
-        time: Math.min(150, 70 + 5 * mon.length + (lineup[l].includes('B') ? 30 : 0)),
+        time: Math.min(200, 100 + 6 * mon.length + (lineup[l].includes('B') ? 40 : 0)), // tuned with the test bot: the clock should push, not decide
         powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
         boss: lineup[l].includes('B')
       });
@@ -1744,6 +1744,7 @@ window.Board = (function () {
     clockT = 15; invuln = 0; die('+15 seconds', true);
   }
   function die(why, timeout) {
+    window.__lastWhy = why;
     if ((invuln > 0 && !timeout) || state !== 'play') return;
     if (shieldOn && !timeout) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
       shieldOn = false; bubbleK = 0; invuln = 1.2; fuse = null; spark.visible = false; burnt.count = 0;
@@ -2142,7 +2143,7 @@ window.Board = (function () {
   // a finger still down after a swipe in that direction, or that arrow key still pressed.
   const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
   let touchHeld = false, touchDir = null; const keysHeld = new Set();
-  const held = () => (touchHeld && (touchDir === dir || touchDir === 'any')) || [...keysHeld].some((k) => KEYS[k] === dir);
+  const held = () => !!window.__botHold || (touchHeld && (touchDir === dir || touchDir === 'any')) || [...keysHeld].some((k) => KEYS[k] === dir);
   function steer(d) {
     if (state !== 'play' || paused || hideT > 0 || enterT > 0) return;
     $('hint').textContent = '';
@@ -2172,6 +2173,7 @@ window.Board = (function () {
       if (drawing) { claim(); if (state !== 'play') return; if (!held()) { dir = null; queue = []; return; } } // still holding: keep moving
       else if (!held() && !queue.length) { dir = null; return; } // let go on land: stop here
     }
+    if (window.__botNext) { const d = window.__botNext(px, py); if (d === 'stop') { dir = null; queue = []; return; } if (d) { queue = []; dir = d; } } // test bot only
     while (queue.length) { const q = queue.shift(); if (!(drawing && opposite(q, dir))) { dir = q; break; } }
     if (!dir) return;
     if (drawing && magCd <= 0) for (const m of monsters) {
@@ -2633,10 +2635,10 @@ window.Board = (function () {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
 
   // ---------- loop ----------
-  let last = performance.now();
+  let last = performance.now(), simT = 0;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(dt, now / 1000); dpadVisible();
+    if (!window.__halt) update(dt, now / 1000); dpadVisible();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
@@ -2649,7 +2651,12 @@ window.Board = (function () {
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, boss: m.boss || null, gen: m.gen || 0, x: m.x, y: m.y, dead: !!m.dead })); },
-    get trailLen() { return trail.length; }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
+    get trailLen() { return trail.length; },
+    // test bot: run the game without drawing, and read the board
+    sim(sec) { const step = 1 / 30; for (let k = 0; k < Math.round(sec / step); k++) { simT += step; update(step, simT); if (state !== 'play' && state !== 'intro') break; } },
+    snap() { return { W, Hh, cells: Array.from(cells), px, py, tx, ty, stepP, dir, drawing, state, lives, pct, goal: L.goal, boss: L.boss, bossHp, clock: clockT, entering: hideT > 0 || enterT > 0, speed: L.speed, fuse: !!fuse,
+      monsters: monsters.filter((m) => !m.dead).map((m) => ({ x: m.x, y: m.y, kind: m.kind, boss: !!m.boss, land: landKind(m), sp: Math.hypot(m.vx, m.vy) || L.speed, under: !!m.under })) }; },
+    skipIntro() { if (state === 'intro') { hidePanel(); state = 'play'; } }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
