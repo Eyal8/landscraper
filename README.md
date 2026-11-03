@@ -37,6 +37,10 @@ The AdMob app IDs in the Android manifest and iOS `Info.plist` are Google's samp
 - [x] Home screen (Play / Daily / Rush), world map, settings; Daily calendar with streak; Rush (60s, +5s per claim)
 - [x] Tutorial inside 1-1; fixed direction pad
 - [x] Graphics: textured land per world, animated water with shoreline foam, hover drone, springy claim wave, particles
-- [x] Hero skins (Motorboat, Raft, Duck, Drone, Turtle), unlocked by stars
+- [x] Hero skins (Motorboat, Raft, Duck, Drone, Turtle) unlocked by stars; premium Submarine, Pirate Ship, UFO (IAP `landscraper_skins`, bundle `landscraper_bundle`)
+- [x] A boss per world (King Puffer, Giant Starfish, Giant Octopus, Jellyfish Queen, Giant Eel)
+- [x] Trophies: monthly Daily medals, world medals
+- [x] Rewarded extras: start with a Shield, Skip level after 3 fails, save a Daily streak, try a skin
+- [x] Test bot: `python3 scripts/bot/runbot.py`
 - [x] Ads: interstitial between levels (from 1-5, every 2nd end, 90s apart), rewarded Continue, Daily retry and past days, Rush +15s; Remove Ads (landscraper_no_ads) makes all free
 - [x] Leaderboards via local native plugins (ios/App/App/GamesPlugin.swift, android GamesPlugin.java): Daily fastest time (recurring daily on Apple), Rush best
