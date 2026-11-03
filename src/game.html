@@ -113,17 +113,14 @@ body {
 #dpad b.lit { color: #ffd166; background: radial-gradient(circle at 50% 30%, rgba(90,110,190,0.75), rgba(26,36,80,0.75) 75%); box-shadow: inset 0 0 0 2px #ffd166, 0 4px 12px rgba(10,20,50,0.3); transform: scale(0.94); }
 #dpad b.hint { animation: dhint 1s ease-in-out infinite; }
 @keyframes dhint { 50% { color: #ffd166; transform: scale(1.12); } }
-#pad { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; pointer-events: none; opacity: 0; transform: scale(0.85); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
+#pad { position: absolute; width: 160px; height: 160px; margin: -80px 0 0 -80px; pointer-events: none; opacity: 0; transform: scale(0.8); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
 #pad.on { opacity: 1; transform: scale(1); }
-#pad .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.32), rgba(255,255,255,0.1) 60%, rgba(255,255,255,0.05)); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 6px 18px rgba(10,20,50,0.25); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
-#pad .ar { position: absolute; width: 26px; height: 26px; left: 43px; top: 43px; color: rgba(255,255,255,0.75); transition: color 0.1s, transform 0.12s; filter: drop-shadow(0 1px 2px rgba(10,20,50,0.4)); }
-#pad .ar svg { width: 100%; height: 100%; }
-#pad .ar.up { transform: translateY(-34px); } #pad .ar.down { transform: translateY(34px) rotate(180deg); }
-#pad .ar.left { transform: translateX(-34px) rotate(-90deg); } #pad .ar.right { transform: translateX(34px) rotate(90deg); }
-#pad .ar.lit { color: #ffd166; }
-#pad .ar.up.lit { transform: translateY(-38px) scale(1.2); } #pad .ar.down.lit { transform: translateY(38px) rotate(180deg) scale(1.2); }
-#pad .ar.left.lit { transform: translateX(-38px) rotate(-90deg) scale(1.2); } #pad .ar.right.lit { transform: translateX(38px) rotate(90deg) scale(1.2); }
-#pad .knob { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(10,20,50,0.35); transition: transform 0.1s; }
+#pad svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 10px rgba(10,20,50,0.3)); }
+#pad .wf { fill: rgba(16,24,56,0.38); stroke: rgba(255,255,255,0.55); stroke-width: 1.5; transition: fill 0.1s, stroke 0.1s; }
+#pad .wc { fill: none; stroke: rgba(255,255,255,0.85); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.1s; }
+#pad .w.lit .wf { fill: rgba(255,209,102,0.85); stroke: #fff6d8; }
+#pad .w.lit .wc { stroke: #3a2a00; }
+#pad .knob { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffffff, #dfe6ff); box-shadow: 0 3px 10px rgba(10,20,50,0.4), inset 0 -2px 0 rgba(0,0,0,0.1); }
 
 /* coach: short tips with a moving finger, first level only */
 #coach { position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
@@ -240,7 +237,7 @@ body {
   <div id="vignette"></div>
   <div id="flash"></div>
   <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
-  <div id="pad"><div class="ring"></div><div class="ar up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="ar right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></div><div class="knob"></div></div>
+  <div id="pad"><svg viewBox="0 0 160 160"><g class="w up"><path class="wf" d="M32.4 23.3 A74 74 0 0 1 127.6 23.3 L99.3 57.0 A30 30 0 0 0 60.7 57.0 Z"/><path class="wc" d="M88.0 32.0 L80.0 21.0 L72.0 32.0"/></g><g class="w right"><path class="wf" d="M136.7 32.4 A74 74 0 0 1 136.7 127.6 L103.0 99.3 A30 30 0 0 0 103.0 60.7 Z"/><path class="wc" d="M128.0 88.0 L139.0 80.0 L128.0 72.0"/></g><g class="w down"><path class="wf" d="M127.6 136.7 A74 74 0 0 1 32.4 136.7 L60.7 103.0 A30 30 0 0 0 99.3 103.0 Z"/><path class="wc" d="M72.0 128.0 L80.0 139.0 L88.0 128.0"/></g><g class="w left"><path class="wf" d="M23.3 127.6 A74 74 0 0 1 23.3 32.4 L57.0 60.7 A30 30 0 0 0 57.0 99.3 Z"/><path class="wc" d="M32.0 72.0 L21.0 80.0 L32.0 88.0"/></g></svg><div class="knob"></div></div>
   <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
   <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here.</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
@@ -1314,7 +1311,7 @@ window.Board = (function () {
       }
       pr = next; store.set('ls_prog', pr);
     }
-    pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
+    pr.skipped = pr.skipped || {}; pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
     return pr;
   })();
   { const sk0 = SKINS.find((k) => k.id === prog.skin); if (sk0 && sk0.premium && !(window.Store && window.Store.skins())) prog.skin = 'boat'; }
@@ -1699,6 +1696,7 @@ window.Board = (function () {
     if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && (!was.stars || was.late) }; }
     else {
       if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
+      delete prog.skipped[L.id];
       if ((prog.best[L.id] || 0) < score) prog.best[L.id] = score;
       newWorld = !prog.done[L.id] && L.l === 19 && cur + 1 < LEVELS.length;
       prog.done[L.id] = true;
@@ -1770,14 +1768,14 @@ window.Board = (function () {
     $('hud').hidden = true;
     const canGo = !continued;
     if (mode === 'campaign') fails[L.id] = (fails[L.id] || 0) + 1;
-    const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id], canShield = !canGo && shieldOffer();
+    const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
     panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
       '<div class="btns">' + (canGo ? '<button class="btn" type="button" data-act="cont">Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt" type="button" data-act="retryS">Try again with a Shield' + adTag() + '</button>' : '') +
-      (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level' + adTag() + '</button>' : '') +
+      (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
       { cont: keepGoing, retryS: withShield(() => startLevel(cur)),
-        skip: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.done[L.id] = true; saveProg(); if (cur + 1 < LEVELS.length) startLevel(cur + 1); else showHome(); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => startLevel(cur)), home: adBreak(showHome) });
+        skip: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.done[L.id] = true; prog.skipped[L.id] = true; saveProg(); if (cur + 1 < LEVELS.length) startLevel(cur + 1); else showHome(); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => startLevel(cur)), home: adBreak(showHome) });
   }
   async function keepGoing() { // the rewarded Continue: one more life (and 15 seconds on the clock), once per level
     const ok = await window.Ads.showRewarded('continue');
@@ -1918,7 +1916,7 @@ window.Board = (function () {
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, open = isOpen(i);
-      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? '★'.repeat(st) : '') + '</small></button>';
+      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? '★'.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
     html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Worlds</button></div>';
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
@@ -1926,7 +1924,7 @@ window.Board = (function () {
   function settingsButtons() {
     const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.controls === 'buttons' ? 'Buttons' : 'Swipe');
     return {
-      html: '<button class="btn alt" type="button" data-act="controls">' + ctl() + '</button><button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
       acts: {
         controls: (b) => { settings.controls = settings.controls === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
         sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
@@ -2218,7 +2216,7 @@ window.Board = (function () {
   function camGeom(d) { // ground z (relative to the target) seen at the top and bottom of the usable screen
     const vf2 = camera.fov / 2 * Math.PI / 180, hgt = d * Math.sin(EL), back = d * Math.cos(EL);
     const hudFrac = Math.min(0.3, (($('hud').offsetHeight || 64) + 10) / Math.max(1, stage.clientHeight));
-    const botFrac = settings.controls === 'buttons' ? Math.min(0.3, (162 + 30) / Math.max(1, stage.clientHeight)) : 0.015;
+    const botFrac = 0.015;
     const tTop = EL - Math.atan((1 - 2 * hudFrac) * Math.tan(vf2)), tBot = EL + Math.atan((1 - 2 * botFrac) * Math.tan(vf2));
     return { top: back - hgt / Math.tan(tTop), bot: back - hgt / Math.tan(tBot) };
   }
@@ -2589,12 +2587,22 @@ window.Board = (function () {
 
   // ---------- input: swipe anywhere (chained without lifting) or arrow keys ----------
   let sw = null;
-  const pad = $('pad'), knob = pad.querySelector('.knob'), arrows = { up: pad.querySelector('.ar.up'), down: pad.querySelector('.ar.down'), left: pad.querySelector('.ar.left'), right: pad.querySelector('.ar.right') };
-  const OFF = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
-  function padTo(d) { const [x, y] = d ? OFF[d] : [0, 0]; knob.style.transform = 'translate(' + x * 16 + 'px,' + y * 16 + 'px)'; for (const k in arrows) arrows[k].classList.toggle('lit', k === d); }
+  // The pad appears where the finger lands and stays there. The knob follows the finger; the wedge it points into lights up.
+  // Turning needs a clear move into another wedge (hysteresis), so a small wobble never changes direction.
+  const pad = $('pad'), knob = pad.querySelector('.knob'), wedges = {}; for (const k of ['up', 'down', 'left', 'right']) wedges[k] = pad.querySelector('.w.' + k);
+  const ANG = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }, DEAD = 18, KEEP = Math.PI / 6, KNOB_R = 48;
+  function padTo(d) { for (const k in wedges) wedges[k].classList.toggle('lit', k === d); }
+  function knobAt(dx, dy) { const r = Math.hypot(dx, dy), k = r > KNOB_R ? KNOB_R / r : 1; knob.style.transform = 'translate(' + dx * k + 'px,' + dy * k + 'px)'; }
+  function pickDir(dx, dy, cur) {
+    if (Math.hypot(dx, dy) < DEAD) return cur;
+    const a = Math.atan2(dy, dx); let best = null, bd = 9;
+    for (const k in ANG) { let d = Math.abs(a - ANG[k]); if (d > Math.PI) d = 2 * Math.PI - d; if (d < bd) { bd = d; best = k; } }
+    if (cur && best !== cur && bd > KEEP) return cur; // between wedges: keep the current direction
+    return best;
+  }
   // fixed buttons
   const dpad = $('dpad'), dbtn = { up: dpad.querySelector('.up'), down: dpad.querySelector('.down'), left: dpad.querySelector('.left'), right: dpad.querySelector('.right') };
-  const useButtons = () => settings.controls === 'buttons';
+  const useButtons = () => false; // the fixed buttons were replaced by the touch pad
   let dpId = null;
   const dLight = (d) => { for (const k in dbtn) dbtn[k].classList.toggle('lit', k === d); };
   function dFrom(e) { const r = dpad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); if (Math.max(Math.abs(x), Math.abs(y)) < 14) return null; return Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up'); }
@@ -2610,16 +2618,15 @@ window.Board = (function () {
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
-    if (state === 'play' && !useButtons()) { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; padTo(dir); pad.classList.add('on'); }
+    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knobAt(0, 0); padTo(null); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
     if (e.pointerType === 'mouse' && e.buttons === 0) { release(); return; } // mouse released outside the window
-    const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
-    const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-    steer(d); padTo(d); touchDir = d;
-    sw = { x: e.clientX, y: e.clientY }; // the pad stays where the finger first touched; only the knob points
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y; // measured from where the finger first touched
+    knobAt(dx, dy);
+    const d = pickDir(dx, dy, touchDir);
+    if (d && d !== touchDir) { steer(d); touchDir = d; padTo(d); }
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
