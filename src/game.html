@@ -196,7 +196,9 @@ body {
 .skin b { font: 800 13px var(--display); }
 .skin small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); text-transform: uppercase; }
 .skin.on { background: rgba(255,255,255,0.3); box-shadow: inset 0 0 0 2px #fff; }
-.skin[disabled] { cursor: default; } .skin[disabled] img { filter: brightness(0) opacity(0.35); }
+.skin.locked img { filter: brightness(0) opacity(0.35); }
+.skin.prem small { color: #c59bff; }
+.skin.prem.locked img { filter: none; }
 .cal { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font: 500 11px var(--mono); }
 .cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 10px; }
 .cal div { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
@@ -235,7 +237,9 @@ body {
 // localStorage only caches the answer so the game knows instantly at launch, even offline.
 window.Store = (function () {
   const PRODUCTS = {
-    noAds: { id: 'landscraper_no_ads', price: '$4.99', cache: 'ls_noads' }
+    noAds: { id: 'landscraper_no_ads', price: '$4.99', cache: 'ls_noads' },
+    skins: { id: 'landscraper_skins', price: '$1.99', cache: 'ls_skins' },
+    bundle: { id: 'landscraper_bundle', price: '$6.99', cache: 'ls_bundle' }
   };
   const cap = window.Capacitor;
   const platform = cap && cap.getPlatform ? cap.getPlatform() : 'web';
@@ -314,7 +318,8 @@ window.Store = (function () {
 
   return {
     owns: (k) => !!owns[k],
-    noAds: () => !!owns.noAds,
+    noAds: () => !!(owns.noAds || owns.bundle),
+    skins: () => !!(owns.skins || owns.bundle),
     price: (k) => PRODUCTS[k || 'noAds'].price,
     buy: (k) => buy(k || 'noAds'),
     restore, refresh, isNative: native
@@ -849,6 +854,41 @@ window.Board = (function () {
     g.userData.anim = (t, dt, mv) => { const sp = mv ? 9 : 2.5; fl.forEach((f, k) => { f.rotation.y = Math.sin(t * sp + (k % 2) * Math.PI + (k > 1 ? 1.2 : 0)) * 0.45 * (f.position.x > 0 ? 1 : -1); }); head.rotation.y = Math.sin(t * 1.3) * 0.15; };
     return g;
   }
+  function makeSub() { // a yellow submarine with a periscope
+    const g = new THREE.Group(), yel = M(0xffc928, { shininess: 120, specular: 0xffffff }), dark = M(0x2a3550), glass = M(0x9fe6ff, { shininess: 160, specular: 0xffffff, emissive: 0x1b4a66 });
+    g.add(sph(0.3, yel, 1, 0.85, 1.75, 0, 0.1, 0));
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.22, 16), yel); tower.position.set(0, 0.36, -0.04); g.add(tower);
+    const peri = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.22, 8), dark); peri.position.set(0, 0.55, -0.04); g.add(peri);
+    g.add(boxM(0.05, 0.05, 0.1, dark, 0, 0.65, 0.01));
+    for (const z of [0.18, -0.02, -0.22]) for (const x of [-0.27, 0.27]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 16), glass); w.rotation.z = Math.PI / 2; w.position.set(x, 0.14, z); g.add(w); }
+    const prop = new THREE.Group(); prop.position.set(0, 0.1, -0.55); for (let k = 0; k < 3; k++) { const h = new THREE.Group(); h.add(boxM(0.03, 0.16, 0.012, dark, 0, 0.07, 0)); h.rotation.z = k * 2.09; prop.add(h); } g.add(prop);
+    g.add(boxM(0.5, 0.03, 0.12, yel, 0, 0.12, -0.42));
+    g.userData.anim = (t, dt, mv) => { prop.rotation.z += dt * (mv ? 30 : 6); peri.rotation.y = Math.sin(t) * 0.4; };
+    return g;
+  }
+  function makePirate() { // a little pirate ship with a black sail
+    const g = new THREE.Group(), wood = M(0x8a5530, { shininess: 30 }), dark = M(0x4a2c18), sailM = M(0x1d1f2a, { side: THREE.DoubleSide }), white = M(0xffffff, { side: THREE.DoubleSide }), gold = M(0xffd23f, { shininess: 140 });
+    const shape = new THREE.Shape(); shape.moveTo(-0.28, -0.45); shape.lineTo(0.28, -0.45); shape.lineTo(0.3, 0.2); shape.quadraticCurveTo(0.24, 0.48, 0, 0.62); shape.quadraticCurveTo(-0.24, 0.48, -0.3, 0.2); shape.lineTo(-0.28, -0.45);
+    const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 2 }), wood); hull.rotation.x = Math.PI / 2; hull.position.y = 0.06; g.add(hull);
+    const stripe = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.05, bevelEnabled: false }), gold); stripe.rotation.x = Math.PI / 2; stripe.position.y = -0.03; stripe.scale.set(1.04, 1.04, 1); g.add(stripe);
+    g.add(boxM(0.5, 0.03, 0.62, dark, 0, 0.09, 0));
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.85, 8), dark); mast.position.set(0, 0.5, 0); g.add(mast);
+    const sail = new THREE.Group(); sail.position.set(0, 0.52, 0.02);
+    const sg = new THREE.PlaneGeometry(0.56, 0.5, 6, 6); const pos = sg.attributes.position; for (let i = 0; i < pos.count; i++) pos.setZ(i, 0.1 * (1 - Math.pow(pos.getX(i) / 0.28, 2))); sg.computeVertexNormals();
+    sail.add(new THREE.Mesh(sg, sailM)); const st = new THREE.Mesh(new THREE.PlaneGeometry(0.57, 0.07), white); st.position.z = 0.105; sail.add(st); g.add(sail);
+    const flag = boxM(0.14, 0.08, 0.01, M(0xff2e55), 0.07, 0.95, 0); g.add(flag);
+    g.userData.anim = (t, dt, mv) => { sail.rotation.y = Math.sin(t * 1.4) * 0.1; flag.rotation.y = Math.sin(t * 9) * 0.3; g.rotation.z = Math.sin(t * 2) * 0.04; };
+    return g;
+  }
+  function makeUfo() { // a flying saucer with a little alien
+    const g = new THREE.Group(), steel = M(0xc9d3e6, { shininess: 160, specular: 0xffffff }), glass = M(0x9fffd9, { transparent: true, opacity: 0.45, shininess: 160, specular: 0xffffff }), alien = M(0x7be36b), dark = M(0x111526);
+    g.add(sph(0.5, steel, 1, 0.22, 1, 0, 0.05, 0));
+    g.add(sph(0.22, glass, 1, 0.9, 1, 0, 0.16, 0));
+    g.add(sph(0.1, alien, 1, 1.1, 1, 0, 0.2, 0)); for (const x of [-0.04, 0.04]) g.add(sph(0.025, dark, 1, 1.4, 1, x, 0.23, 0.08));
+    const lights = []; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, l = sph(0.04, M(0xffd166, { emissive: 0xffaa00 }), 1, 1, 1, Math.cos(a) * 0.42, 0.04, Math.sin(a) * 0.42); g.add(l); lights.push(l); }
+    g.userData.anim = (t, dt) => { lights.forEach((l, k) => { l.material.emissiveIntensity = 0.5 + 0.5 * Math.sin(t * 8 - k); }); g.rotation.y += dt * 0; };
+    return g;
+  }
   droneG.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
   const SKINS = [
     { id: 'boat', name: 'Motorboat', stars: 0, make: makeBoat, lift: 0.3 },
@@ -856,6 +896,9 @@ window.Board = (function () {
     { id: 'duck', name: 'Duck', stars: 30, make: makeDuck, lift: 0.26 },
     { id: 'drone', name: 'Drone', stars: 60, make: null, lift: 0.55 },
     { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26 },
+    { id: 'sub', name: 'Submarine', premium: true, make: makeSub, lift: 0.28 },
+    { id: 'pirate', name: 'Pirate Ship', premium: true, make: makePirate, lift: 0.3 },
+    { id: 'ufo', name: 'UFO', premium: true, make: makeUfo, lift: 0.6 },
   ];
   const skinGroups = { drone: droneG };
   for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); body.add(skinGroups[sk.id]); }
@@ -1257,6 +1300,7 @@ window.Board = (function () {
     pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
     return pr;
   })();
+  { const sk0 = SKINS.find((k) => k.id === prog.skin); if (sk0 && sk0.premium && !(window.Store && window.Store.skins())) prog.skin = 'boat'; }
   wearSkin(prog.skin);
   const saveProg = () => store.set('ls_prog', prog);
   // developer mode: tap the Settings title 7 times. Opens every level, mode and skin on this device only; progress is untouched.
@@ -1315,7 +1359,7 @@ window.Board = (function () {
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
-    clockT = L.time || 0; timePending = 0; continued = false; lives = L.lives || 3; score = 0; shieldOn = false; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
+    clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = L.lives || 3; score = 0; shieldOn = sStart; bubbleK = 0; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
@@ -1618,7 +1662,10 @@ window.Board = (function () {
 
   // ---------- level flow ----------
   const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
-  let dailyBest = false, levelEnds = 0, continued = false;
+  let dailyBest = false, levelEnds = 0, continued = false, startShield = false;
+  const fails = {}; // failed tries per level this session (Skip appears after 3)
+  const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
+  const withShield = (fn) => async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
   const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small>Watch ad</small>');
   // an interstitial between levels: never in the first 5 levels, every second level end, at most once per 90 seconds
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
@@ -1651,10 +1698,10 @@ window.Board = (function () {
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
-        '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' : '') +
+        '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
-        { next: adBreak(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
+        { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
       if (!fill) { [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); }); return; }
       // the bar fills from 0 to what you claimed; each star lights up as the bar passes its mark
       const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 1400; let lit = 0, lastN = -1;
@@ -1702,9 +1749,15 @@ window.Board = (function () {
     levelEnds++;
     $('hud').hidden = true;
     const canGo = !continued;
+    if (mode === 'campaign') fails[L.id] = (fails[L.id] || 0) + 1;
+    const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id], canShield = !canGo && shieldOffer();
     panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
-      '<div class="btns">' + (canGo ? '<button class="btn" type="button" data-act="cont">Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button><button class="btn alt" type="button" data-act="home">Home</button></div>',
-      { cont: keepGoing, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => startLevel(cur)), home: adBreak(showHome) });
+      '<div class="btns">' + (canGo ? '<button class="btn" type="button" data-act="cont">Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      (canShield ? '<button class="btn alt" type="button" data-act="retryS">Try again with a Shield' + adTag() + '</button>' : '') +
+      (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level' + adTag() + '</button>' : '') +
+      '<button class="btn alt" type="button" data-act="home">Home</button></div>',
+      { cont: keepGoing, retryS: withShield(() => startLevel(cur)),
+        skip: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.done[L.id] = true; saveProg(); if (cur + 1 < LEVELS.length) startLevel(cur + 1); else showHome(); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => startLevel(cur)), home: adBreak(showHome) });
   }
   async function keepGoing() { // the rewarded Continue: one more life (and 15 seconds on the clock), once per level
     const ok = await window.Ads.showRewarded('continue');
@@ -1718,6 +1771,8 @@ window.Board = (function () {
     begin(typeof i === 'number' ? i : levelIndex(i));
   }
   function begin(lv) {
+    if (trialPending) { wearSkin(trialPending); trialActive = true; trialPending = null; flash('Trying ' + skinNow.name, null, 1100); }
+    else if (trialActive) { trialActive = false; wearSkin(prog.skin); }
     hidePanel(); build(lv); state = 'play'; paused = false; $('hud').hidden = false;
     const fresh = L.mon.filter((k, j) => L.mon.indexOf(k) === j && k !== 'mini' && !prog.seen.includes(k));
     if (fresh.length) { // introduce a new monster before the level starts
@@ -1762,7 +1817,7 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if (state === 'play' && !paused) showPause();
     else if (onHome && state === 'menu') AppPlugin.exitApp();
@@ -1816,11 +1871,17 @@ window.Board = (function () {
   function showSettings() {
     toMenu(); const sb = settingsButtons();
     const st = window.Store, noAds = st && st.noAds();
-    const shop = (noAds ? '<p>Ads removed. Thank you!</p>' : '<button class="btn" type="button" data-act="buy">Remove Ads · ' + st.price() + '</button>') + '<button class="btn alt" type="button" data-act="restore">Restore purchases</button>' + (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '');
+    const skinsOwned = st.skins();
+    const shop = (noAds && skinsOwned ? '<p>Thank you for your support!</p>' : '') +
+      (!noAds && !skinsOwned ? '<button class="btn" type="button" data-act="buyAll">Everything · ' + st.price('bundle') + '<small>No ads + 3 premium skins</small></button>' : '') +
+      (noAds ? '' : '<button class="btn' + (skinsOwned ? '' : ' alt') + '" type="button" data-act="buy">Remove Ads · ' + st.price() + '</button>') +
+      (skinsOwned ? '' : '<button class="btn alt" type="button" data-act="buySkins">Premium skins · ' + st.price('skins') + '</button>') + '<button class="btn alt" type="button" data-act="restore">Restore purchases</button>' + (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '');
     panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html + shop + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); },
         buy: async () => { const r = await window.Store.buy('noAds'); if (r === 'bought') { flash('Ads removed', 'thank you!', 1400); buzz('clear'); } else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true); showSettings(); },
-        restore: async () => { const got = await window.Store.restore(); flash(got.includes('noAds') ? 'Restored' : 'Nothing to restore', null, 1200); showSettings(); },
+        buySkins: async () => { const r = await window.Store.buy('skins'); if (r === 'bought') { flash('Skins unlocked', 'thank you!', 1400); buzz('clear'); } else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true); showSettings(); },
+        buyAll: async () => { const r = await window.Store.buy('bundle'); if (r === 'bought') { flash('Thank you!', 'no ads + premium skins', 1400); buzz('clear'); } else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true); showSettings(); },
+        restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showSettings(); },
         privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
@@ -1868,13 +1929,17 @@ window.Board = (function () {
     for (let k = 0; k < first; k++) cal += '<div class="blank"></div>';
     for (let d = 1; d <= days; d++) { // past days can be played (after an ad); future days are dim
       const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key], cls = (e ? (e.late ? 'late' : 'done') : '') + (key === today ? ' today' : '');
-      cal += key > today ? '<div class="future">' + d + '</div>' : key === today ? '<div class="' + cls + '">' + (e ? '★'.repeat(e.stars) : d) + '</div>' : '<button type="button" class="' + cls + '" data-day="' + key + '">' + (e ? '★'.repeat(e.stars) : d) + '</button>';
+      cal += key > today ? '<div class="future">' + d + '</div>' : key === today ? '<div class="' + cls + '">' + (e ? '★'.repeat(e.stars) : d) + '</div>' : '<button type="button" class="' + cls + '" data-day="' + key + '">' + (e ? (e.saved && !e.stars ? '✓' : '★'.repeat(e.stars)) : d) + '</button>';
     }
     cal += '</div>';
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
+    // missed yesterday after a streak? one ad saves it
+    const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
+    const canSave = !prog.daily[yKey] && prog.daily[dayKey(y2)] && !prog.daily[dayKey(y2)].late;
     panel('<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><h2>Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
-      '<div class="btns"><button class="btn" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
-      { play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
+      '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : '') + '" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+      { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.daily[yKey] = { stars: 0, saved: true }; saveProg(); flash('Streak saved', null, 1200); buzz('clear'); showDaily(mOff); },
+        play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
     document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); playDaily(b.dataset.day); }));
   }
 
@@ -1962,12 +2027,27 @@ window.Board = (function () {
     } catch (e) { thumbs = {}; }
     return thumbs;
   }
+  const skinOpen = (sk) => dev || (sk.premium ? window.Store.skins() : totalStars() >= sk.stars);
+  let trialPending = null, trialActive = false;
   function showSkins() {
     toMenu(); const th = skinThumbs(), have = totalStars();
-    const cards = SKINS.map((sk) => { const open = dev || have >= sk.stars, on = prog.skin === sk.id;
-      return '<button class="skin' + (on ? ' on' : '') + '" type="button" data-skin="' + sk.id + '"' + (open ? '' : ' disabled') + '>' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '<i></i>') + '<b>' + sk.name + '</b><small>' + (on ? 'Selected' : open ? 'Tap to use' : '★ ' + sk.stars) + '</small></button>'; }).join('');
+    const cards = SKINS.map((sk) => { const open = skinOpen(sk), on = prog.skin === sk.id;
+      return '<button class="skin' + (on ? ' on' : '') + (open ? '' : ' locked') + (sk.premium ? ' prem' : '') + '" type="button" data-skin="' + sk.id + '">' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '<i></i>') + '<b>' + sk.name + '</b><small>' + (on ? 'Selected' : open ? 'Tap to use' : sk.premium ? 'Premium' : '★ ' + sk.stars) + '</small></button>'; }).join('');
     panel('<div class="kicker">★ ' + have + '</div><h2>Skins</h2><div class="skins">' + cards + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
-    document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => { prog.skin = b.dataset.skin; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(); }));
+    document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => {
+      const sk = SKINS.find((k) => k.id === b.dataset.skin);
+      if (skinOpen(sk)) { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(); return; }
+      lockedSkin(sk);
+    }));
+  }
+  function lockedSkin(sk) { // buy the pack, or try this one for a level with an ad
+    const st = window.Store, th = skinThumbs();
+    panel('<div class="kicker">' + (sk.premium ? 'Premium skin' : 'Locked') + '</div><div class="foe">' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '') + '</div><h2>' + sk.name + '</h2><p>' + (sk.premium ? 'Submarine, Pirate Ship and UFO.' : 'Opens at ★ ' + sk.stars + '.') + '</p><div class="btns">' +
+      (sk.premium ? '<button class="btn" type="button" data-act="buy">Get all 3 · ' + st.price('skins') + '</button>' : '') +
+      '<button class="btn' + (sk.premium ? ' alt' : '') + '" type="button" data-act="try">Try it for 1 level' + adTag() + '</button><button class="btn alt" type="button" data-act="back">Back</button></div>',
+      { back: showSkins,
+        buy: async () => { const r = await st.buy('skins'); if (r === 'bought') { prog.skin = sk.id; saveProg(); wearSkin(sk.id); flash('Skins unlocked', 'thank you!', 1400); buzz('clear'); showSkins(); } else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true); },
+        try: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialPending = sk.id; startLevel(nextLevel()); } });
   }
 
   // ---------- tutorial (first level only) ----------
@@ -2159,7 +2239,7 @@ window.Board = (function () {
     if (shockT > 0) { shockT -= dt; const q = 1 - shockT / 0.6; shock.scale.setScalar(1 + q * 4); shockMat.opacity = Math.max(0, 1 - q); } else shockMat.opacity = 0;
     const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
     if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
-    const floaty = skinNow.id === 'drone';
+    const floaty = skinNow.id === 'drone' || skinNow.id === 'ufo';
     drone.position.set(heroX, gy + skinNow.lift + drop + Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025), heroZ);
     const mdx = tx - px, mdy = ty - py;
     if (dir && !entering) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
