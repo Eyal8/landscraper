@@ -7,13 +7,18 @@ from icon_art import *
 root = pathlib.Path(__file__).resolve().parent.parent
 tmp = root / 'design' / 'out'; tmp.mkdir(exist_ok=True)
 
+def sea_waves(op=.28):
+    pts = ((70,150),(330,90),(560,40),(900,120),(470,250),(80,470),(600,560),(880,640),(560,760),(760,980),(980,880),(150,560))
+    return ''.join(f'<path d="M{x},{y} q22,-14 44,0 t44,0" stroke="#fff" stroke-width="8" fill="none" opacity="{op}" stroke-linecap="round"/>' for x, y in pts)
+
 def scene(ext=0):
     e = ext
-    return ('<rect x="-2000" y="-2000" width="5000" height="5000" fill="url(#water)"/>' + rays(720, 380) + waves() +
-        land(f'M{-20-e},640 L250,640 Q300,640 300,690 L300,{1044+e} L{-20-e},{1044+e}Z') + flowers(10, 660, 280, 1010, 10) +
-        trail('M300,930 C350,900 372,850 373,760', 18) +
-        G(752, 385, 3.35, 0, puffer(True, (-.9, .5), 'angry')) + G(170, 250, 2.1, -10, jelly((.8, .5))) + G(860, 850, 1.7, 15, starfish((-.8, -.5))) +
-        G(430, 600, 3.2, 20, boat()))
+    return ('<rect x="-2000" y="-2000" width="5000" height="5000" fill="url(#water)"/>' + rays(720, 380) + sea_waves() +
+        land(f'M{-20-e},560 L280,560 Q330,560 330,610 L330,820 Q330,860 370,860 L{1044+e},860 L{1044+e},{1044+e} L{-20-e},{1044+e}Z') +
+        flowers(10, 590, 300, 1010, 10) + flowers(400, 890, 1010, 1010, 8, 7) +
+        trail('M390,860 C395,800 410,740 413,680', 18) +
+        G(778, 335, 3.2, 0, puffer(True, (-.9, .5), 'angry')) + G(170, 250, 2.1, -10, jelly((.8, .5))) + G(880, 740, 1.6, 15, starfish((-.8, -.5))) +
+        G(470, 520, 3.2, 20, boat()))
 render({'icon': scene()}, tmp)
 icon = Image.open(tmp / 'icon.png').convert('RGB')
 icon.save(root / 'assets/icon-only.png'); icon.save(root / 'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png')
