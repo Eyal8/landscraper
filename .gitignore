@@ -5,3 +5,4 @@ www/
 # Private notes live in the claude.ai Project, not here
 HANDOFF.md
 design/out/
+__pycache__/
