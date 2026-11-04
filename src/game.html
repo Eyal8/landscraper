@@ -113,14 +113,14 @@ body {
 #dpad b.lit { color: #ffd166; background: radial-gradient(circle at 50% 30%, rgba(90,110,190,0.75), rgba(26,36,80,0.75) 75%); box-shadow: inset 0 0 0 2px #ffd166, 0 4px 12px rgba(10,20,50,0.3); transform: scale(0.94); }
 #dpad b.hint { animation: dhint 1s ease-in-out infinite; }
 @keyframes dhint { 50% { color: #ffd166; transform: scale(1.12); } }
-#pad { position: absolute; width: 160px; height: 160px; margin: -80px 0 0 -80px; pointer-events: none; opacity: 0; transform: scale(0.8); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
+#pad { position: absolute; width: 80px; height: 80px; margin: -40px 0 0 -40px; pointer-events: none; opacity: 0; transform: scale(0.7); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4), left 0.06s linear, top 0.06s linear; z-index: 5; }
 #pad.on { opacity: 1; transform: scale(1); }
-#pad svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 10px rgba(10,20,50,0.3)); }
-#pad .wf { fill: rgba(16,24,56,0.38); stroke: rgba(255,255,255,0.55); stroke-width: 1.5; transition: fill 0.1s, stroke 0.1s; }
-#pad .wc { fill: none; stroke: rgba(255,255,255,0.85); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.1s; }
-#pad .w.lit .wf { fill: rgba(255,209,102,0.85); stroke: #fff6d8; }
-#pad .w.lit .wc { stroke: #3a2a00; }
-#pad .knob { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffffff, #dfe6ff); box-shadow: 0 3px 10px rgba(10,20,50,0.4), inset 0 -2px 0 rgba(0,0,0,0.1); }
+#pad svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 8px rgba(10,20,50,0.35)); }
+#pad .ring { fill: rgba(16,24,56,0.28); stroke: rgba(255,255,255,0.75); stroke-width: 3; }
+#pad .arr { transform-origin: 40px 40px; opacity: 0; transition: transform 0.12s ease-out, opacity 0.1s; }
+#pad .arr path { fill: var(--gold); stroke: #3a2a00; stroke-width: 2; stroke-linejoin: round; }
+#pad.dir .arr { opacity: 1; }
+#pad.dir .ring { stroke: var(--gold); }
 
 /* coach: short tips with a moving finger, first level only */
 #coach { position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
@@ -270,7 +270,7 @@ body {
   <div id="vignette"></div>
   <div id="flash"></div>
   <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
-  <div id="pad"><svg viewBox="0 0 160 160"><g class="w up"><path class="wf" d="M32.4 23.3 A74 74 0 0 1 127.6 23.3 L99.3 57.0 A30 30 0 0 0 60.7 57.0 Z"/><path class="wc" d="M88.0 32.0 L80.0 21.0 L72.0 32.0"/></g><g class="w right"><path class="wf" d="M136.7 32.4 A74 74 0 0 1 136.7 127.6 L103.0 99.3 A30 30 0 0 0 103.0 60.7 Z"/><path class="wc" d="M128.0 88.0 L139.0 80.0 L128.0 72.0"/></g><g class="w down"><path class="wf" d="M127.6 136.7 A74 74 0 0 1 32.4 136.7 L60.7 103.0 A30 30 0 0 0 99.3 103.0 Z"/><path class="wc" d="M72.0 128.0 L80.0 139.0 L88.0 128.0"/></g><g class="w left"><path class="wf" d="M23.3 127.6 A74 74 0 0 1 23.3 32.4 L57.0 60.7 A30 30 0 0 0 57.0 99.3 Z"/><path class="wc" d="M32.0 72.0 L21.0 80.0 L32.0 88.0"/></g></svg><div class="knob"></div></div>
+  <div id="pad" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="ring" cx="40" cy="40" r="30"/><g class="arr"><path d="M40 14 L52 30 H45 V44 H35 V30 H28 Z"/></g></svg></div>
   <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
   <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here.</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
@@ -586,6 +586,17 @@ window.Board = (function () {
       o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
     } catch (e) {}
   }
+  function hiss(d, v, f) { // filtered noise: fizz, splash, dust
+    try {
+      if (!settings.sound) return; if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume();
+      const t = ac.currentTime, n = Math.ceil(ac.sampleRate * d), buf = ac.createBuffer(1, n, ac.sampleRate), ch = buf.getChannelData(0); for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = f || 2500; bp.Q.value = 0.8;
+      g.gain.setValueAtTime(v || 0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); src.connect(bp); bp.connect(g); g.connect(ac.destination); src.start(t); src.stop(t + d);
+    } catch (e) {}
+  }
+  let lastEat = 0;
+  function chomp() { const now = performance.now(); if (now - lastEat < 110) return; lastEat = now; tone(330, 0.07, 'triangle', 0.08, 200); setTimeout(() => tone(280, 0.07, 'triangle', 0.07, 170), 75); hiss(0.08, 0.035, 900); }
+  function ouch() { tone(523, 0.1, 'square', 0.05, 440); setTimeout(() => tone(392, 0.32, 'triangle', 0.1, 120), 100); hiss(0.18, 0.05, 600); }
   const arp = (notes, gap, dur, type) => notes.forEach((f, k) => setTimeout(() => tone(f, dur || 0.18, type), k * (gap || 70)));
   const capx = window.Capacitor && window.capacitorExports;
   const isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -1576,7 +1587,7 @@ window.Board = (function () {
   const SPEEDS = { jelly: 0.5, crab: 0.75, eel: 0.85, urchin: 0.6, zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
   const SIZES = { jelly: 1.05, crab: 0.95, eel: 0.85, urchin: 0.95, zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
   const MAG_R = 4.5; // cells
-  const SAW_EMERGE = 1.3, warnGeo = new THREE.RingGeometry(0.5, 0.9, 32).rotateX(-Math.PI / 2);
+  const SAW_EMERGE = 1.3, warnGeo = new THREE.RingGeometry(0.64, 0.8, 40).rotateX(-Math.PI / 2);
   function sawCorner(k) { // the k-th farthest land corner from where the boat comes in
     const cs = [[1.5, 1.5], [W - 1.5, 1.5], [1.5, Hh - 1.5], [W - 1.5, Hh - 1.5]].filter(([x, y]) => cells[idx(Math.floor(x), Math.floor(y))] === LAND);
     cs.sort((a, b) => Math.hypot(b[0] - SPAWN_X, b[1] - SPAWN_Y) - Math.hypot(a[0] - SPAWN_X, a[1] - SPAWN_Y));
@@ -1792,6 +1803,12 @@ window.Board = (function () {
   }
 
   // ---------- eaters bite land ----------
+  function kingBite(hit, m) { // the King Puffer bites a 3x3 chunk out of the land it bounces into
+    const hx = hit % W, hy = (hit / W) | 0; let n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const x = hx + dx, y = hy + dy; if (inside(x, y) && eat(idx(x, y), m)) n++; }
+    if (n) { m.puff = 1; shake = Math.max(shake, 0.12); tone(110, 0.18, 'square', 0.07, 60); hiss(0.2, 0.06, 500); }
+    return n > 0;
+  }
   function eat(i, m) {
     const x = i % W, y = (i / W) | 0;
     if (fixed[i] === 2 || cells[i] !== LAND) return false; // the outer frame and the board's outline are never eaten
@@ -1799,7 +1816,7 @@ window.Board = (function () {
     if ((x === px && y === py) || (x === tx && y === ty)) return false;
     cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = 0; setMask(i); mask.needsUpdate = true;
     const [wx, wz] = W2(x, y); burst(wx, H_LAND, wz, 0xc9a27a, 14, 2.5, 4);
-    tone(140, 0.08, 'square', 0.06); buzz('eat');
+    chomp(); buzz('eat');
     pct = percent(); drawHud(); return true;
   }
 
@@ -1884,7 +1901,7 @@ window.Board = (function () {
       return;
     }
     if (mode === 'rush') { rushHit(why); return; }
-    if (!tutorialSafe()) lives--; tone(220, 0.5, 'sawtooth', 0.1, 70); buzz('hit'); shake = 0.35;
+    if (!tutorialSafe()) lives--; ouch(); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
@@ -2060,11 +2077,11 @@ window.Board = (function () {
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
   }
   function settingsButtons() {
-    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.controls === 'buttons' ? 'Buttons' : 'Swipe');
+    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.input === 'buttons' ? 'Buttons' : 'Swipe');
     return {
-      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      html: '<button class="btn alt" type="button" data-act="controls">' + ctl() + '</button><button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
       acts: {
-        controls: (b) => { settings.controls = settings.controls === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
+        controls: (b) => { settings.input = settings.input === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
         sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
         haptics: (b) => { settings.haptics = !settings.haptics; store.set('ls_settings', settings); b.textContent = lbl('Vibration', settings.haptics); buzz('claim'); }
       }
@@ -2390,7 +2407,7 @@ window.Board = (function () {
     dashes.count = trail.length * 2; dashes.instanceMatrix.needsUpdate = true;
   }
   function lightFuse(k) {
-    if (!fuse) { fuse = { pos: k }; tone(300, 0.6, 'sawtooth', 0.05, 1200); flash('Fuse!', 'get back to land', 800, true); buzz('warn'); }
+    if (!fuse) { fuse = { pos: k }; hiss(0.7, 0.07, 4200); tone(1400, 0.12, 'triangle', 0.04, 1800); flash('Fuse!', 'get back to land', 800, true); buzz('warn'); }
     else if (k > fuse.pos) fuse.pos = k;
   }
 
@@ -2612,10 +2629,10 @@ window.Board = (function () {
         if (m.kind === 'saw' && solid(m.x, m.y)) settleOnLand(m);
         let nx = m.x + m.vx * step;
         const ex = nx + Math.sign(m.vx) * R;
-        if (solid(ex, m.y)) { const hit = idx(clamp(Math.floor(ex), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); m.vx = -m.vx; nx = m.x; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        if (solid(ex, m.y)) { const hit = idx(clamp(Math.floor(ex), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)); m.vx = -m.vx; nx = m.x; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; else if (m.boss === 'boss' && m.eatCd <= 0 && kingBite(hit, m)) m.eatCd = 1.4; }
         let ny = m.y + m.vy * step;
         const ey = ny + Math.sign(m.vy) * R;
-        if (solid(nx, ey)) { const hit = idx(clamp(Math.floor(nx), 0, W - 1), clamp(Math.floor(ey), 0, Hh - 1)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; }
+        if (solid(nx, ey)) { const hit = idx(clamp(Math.floor(nx), 0, W - 1), clamp(Math.floor(ey), 0, Hh - 1)); m.vy = -m.vy; ny = m.y; if (m.kind === 'eater' && m.eatCd <= 0 && eat(hit, m)) m.eatCd = 0.3; else if (m.boss === 'boss' && m.eatCd <= 0 && kingBite(hit, m)) m.eatCd = 1.4; }
         m.x = nx; m.y = ny; m.eatCd -= dt;
         // Unstick: bouncing on the same axis two frames in a row means the body overlaps a wall on both sides
         // (e.g. land appeared right next to it). Move it to the middle of its cell, which is always open.
@@ -2784,20 +2801,24 @@ window.Board = (function () {
   let sw = null;
   // The pad appears where the finger lands and stays there. The knob follows the finger; the wedge it points into lights up.
   // Turning needs a clear move into another wedge (hysteresis), so a small wobble never changes direction.
-  const pad = $('pad'), knob = pad.querySelector('.knob'), wedges = {}; for (const k of ['up', 'down', 'left', 'right']) wedges[k] = pad.querySelector('.w.' + k);
-  const ANG = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }, DEAD = 18, KEEP = Math.PI / 6, KNOB_R = 48;
-  function padTo(d) { for (const k in wedges) wedges[k].classList.toggle('lit', k === d); }
-  function knobAt(dx, dy) { const r = Math.hypot(dx, dy), k = r > KNOB_R ? KNOB_R / r : 1; knob.style.transform = 'translate(' + dx * k + 'px,' + dy * k + 'px)'; }
-  function pickDir(dx, dy, cur) {
-    if (Math.hypot(dx, dy) < DEAD) return cur;
-    const a = Math.atan2(dy, dx); let best = null, bd = 9;
-    for (const k in ANG) { let d = Math.abs(a - ANG[k]); if (d > Math.PI) d = 2 * Math.PI - d; if (d < bd) { bd = d; best = k; } }
-    if (cur && best !== cur && bd > KEEP) return cur; // between wedges: keep the current direction
-    return best;
+  // Swipe steering: every turn is a short flick from where the finger is now (the anchor re-centres on each turn
+  // and follows the finger while it keeps going the same way), so it works the same wherever you touch.
+  const pad = $('pad'), padArrow = pad.querySelector('.arr');
+  const UNIT = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }, ROT = { up: 0, right: 90, down: 180, left: 270 }, TURN = 22;
+  function padShow(d) { pad.classList.toggle('dir', !!d); if (d) padArrow.style.transform = 'rotate(' + ROT[d] + 'deg)'; }
+  function padAt(x, y) { pad.style.left = x + 'px'; pad.style.top = y + 'px'; }
+  function swipeMove(x, y) { // returns a new direction, or null
+    let dx = x - sw.x, dy = y - sw.y; const cur = touchDir && UNIT[touchDir];
+    if (cur) { const along = dx * cur[0] + dy * cur[1]; if (along > 0) { sw.x += cur[0] * along; sw.y += cur[1] * along; dx = x - sw.x; dy = y - sw.y; } }
+    const ax = Math.abs(dx), ay = Math.abs(dy), big = Math.max(ax, ay);
+    if (big < TURN || big < Math.min(ax, ay) * 1.25) return null; // too small, or too diagonal to tell
+    const d = ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    if (d === touchDir) return null;
+    sw.x = x; sw.y = y; return d;
   }
   // fixed buttons
   const dpad = $('dpad'), dbtn = { up: dpad.querySelector('.up'), down: dpad.querySelector('.down'), left: dpad.querySelector('.left'), right: dpad.querySelector('.right') };
-  const useButtons = () => false; // the fixed buttons were replaced by the touch pad
+  const useButtons = () => settings.input === 'buttons'; // Settings: Swipe (default) or fixed Buttons
   let dpId = null;
   const dLight = (d) => { for (const k in dbtn) dbtn[k].classList.toggle('lit', k === d); };
   function dFrom(e) { const r = dpad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); if (Math.max(Math.abs(x), Math.abs(y)) < 14) return null; return Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up'); }
@@ -2813,15 +2834,15 @@ window.Board = (function () {
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
-    if (state === 'play') { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knobAt(0, 0); padTo(null); pad.classList.add('on'); }
+    if (state === 'play' && !useButtons()) { padAt(e.clientX, e.clientY); padShow(null); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
     if (e.pointerType === 'mouse' && e.buttons === 0) { release(); return; } // mouse released outside the window
-    const dx = e.clientX - sw.x, dy = e.clientY - sw.y; // measured from where the finger first touched
-    knobAt(dx, dy);
-    const d = pickDir(dx, dy, touchDir);
-    if (d && d !== touchDir) { steer(d); touchDir = d; padTo(d); }
+    if (useButtons()) return;
+    const d = swipeMove(e.clientX, e.clientY);
+    if (d) { steer(d); touchDir = d; padShow(d); buzz('tick'); }
+    padAt(sw.x, sw.y);
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
@@ -2837,10 +2858,11 @@ window.Board = (function () {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
 
   // ---------- loop ----------
-  let last = performance.now(), simT = 0, camFix = null;
+  let last = performance.now(), simT = 0, camFix = null, gameT = 0;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!window.__halt) update(dt, now / 1000); dpadVisible();
+    if (!paused) gameT += dt;
+    if (!window.__halt) update(paused ? 0 : dt, gameT); dpadVisible();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
