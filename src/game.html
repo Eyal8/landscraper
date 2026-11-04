@@ -1012,6 +1012,44 @@ window.Board = (function () {
     g.userData.anim = (t, dt) => { g.rotation.y += dt * 0.6; };
     return g;
   }
+  function makeJetski() { // an orange jet ski with a teal seat, spraying water
+    const g = new THREE.Group(), org = M(0xff7a1a, { shininess: 140, specular: 0xffffff }), wht = M(0xffffff, { shininess: 140 }), seat = M(0x14b8a6, { shininess: 60 }), blk = M(0x1c2240), chrome = M(0xdfe6f2, { shininess: 180, specular: 0xffffff });
+    const shape = new THREE.Shape(); shape.moveTo(-0.24, -0.42); shape.lineTo(0.24, -0.42); shape.lineTo(0.26, 0.1); shape.quadraticCurveTo(0.2, 0.42, 0, 0.56); shape.quadraticCurveTo(-0.2, 0.42, -0.26, 0.1); shape.lineTo(-0.24, -0.42);
+    const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.14, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 3 }), wht); hull.rotation.x = Math.PI / 2; hull.position.y = 0.02; g.add(hull);
+    const top = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.03, bevelSegments: 3 }), org); top.rotation.x = Math.PI / 2; top.position.y = 0.14; top.scale.set(0.92, 0.95, 1); g.add(top);
+    g.add(sph(0.11, seat, 1, 0.55, 2.2, 0, 0.22, -0.14));
+    const neck = boxM(0.1, 0.16, 0.1, org, 0, 0.24, 0.16); neck.rotation.x = -0.4; g.add(neck);
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.36, 10), chrome); bar.rotation.z = Math.PI / 2; bar.position.set(0, 0.33, 0.12); g.add(bar);
+    for (const x of [-0.18, 0.18]) g.add(sph(0.03, blk, 1.3, 1, 1, x, 0.33, 0.12));
+    g.add(boxM(0.2, 0.03, 0.12, M(0x7fe8ff, { shininess: 160, emissive: 0x0b4a66 }), 0, 0.28, 0.27));
+    const spray = []; for (let k = 0; k < 6; k++) { const d = sph(0.04, M(0xe8fbff, { transparent: true, opacity: 0.8 }), 1, 1, 1, 0, 0.05, -0.5); g.add(d); spray.push(d); }
+    g.userData.anim = (t, dt, mv) => { spray.forEach((d, k) => { const ph = (t * 2.4 + k / 6) % 1; d.position.set(Math.sin(k * 2.1) * 0.12 * ph, 0.05 + Math.sin(ph * Math.PI) * 0.22, -0.48 - ph * 0.35); d.scale.setScalar((mv ? 1 : 0.4) * (1 - ph)); }); g.rotation.z = Math.sin(t * 2.6) * 0.04; };
+    return g;
+  }
+  function makeSaturn() { // a little ringed planet with a face
+    const g = new THREE.Group(), cv = document.createElement('canvas'); cv.width = 64; cv.height = 128; const x = cv.getContext('2d');
+    ['#ffb547', '#ff8a3d', '#ffd27a', '#ff9f5a', '#ffc46b', '#f07a3a', '#ffd27a', '#ffb547'].forEach((c, k) => { x.fillStyle = c; x.fillRect(0, k * 16, 64, 16); });
+    const ball = sph(0.3, M(0xffffff, { map: new THREE.CanvasTexture(cv), shininess: 60 }), 1, 1, 1, 0, 0.32, 0); g.add(ball);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.05, 6, 48), M(0xb98cff, { shininess: 140, specular: 0xffffff, emissive: 0x2a1060 })); ring.rotation.x = Math.PI / 2; ring.scale.z = 0.4; const tilt = new THREE.Group(); tilt.position.y = 0.32; tilt.rotation.z = 0.35; tilt.add(ring); g.add(tilt);
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.025, 6, 48), M(0x7fe8ff, { emissive: 0x0b4a66 })); ring2.rotation.x = Math.PI / 2; ring2.scale.z = 0.4; tilt.add(ring2);
+    eyesOn(g, 0.38, 0.27, 0.09, 0.055);
+    g.add(sph(0.03, M(0xff5f8f), 1.6, 0.6, 1, 0, 0.27, 0.29));
+    g.userData.anim = (t) => { tilt.rotation.y = t * 0.8; ball.position.y = 0.32 + Math.sin(t * 2) * 0.03; };
+    return g;
+  }
+  function makeUnicorn() { // an inflatable unicorn with a rainbow mane and a gold horn
+    const g = new THREE.Group(), wht = M(0xffffff, { shininess: 140, specular: 0xffffff }), gold = M(0xffc21f, { shininess: 160, specular: 0xffffff }), pink = M(0xff8cc6), blk = M(0x111526);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.13, 14, 32), M(0xc9a2ff, { shininess: 140, specular: 0xffffff })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.1; g.add(ring);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.38, 14), wht); neck.position.set(0, 0.32, 0.3); neck.rotation.x = 0.35; g.add(neck);
+    const head = new THREE.Group(); head.position.set(0, 0.52, 0.4); g.add(head);
+    head.add(sph(0.12, wht, 0.9, 0.9, 1.25, 0, 0, 0.03)); head.add(sph(0.05, pink, 1.4, 0.7, 1, 0, -0.04, 0.17));
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.2, 10), gold); horn.position.set(0, 0.16, 0.02); horn.rotation.x = 0.3; head.add(horn);
+    eyesOn(head, 0.03, 0.09, 0.07, 0.03);
+    [0xff3f8e, 0xff9a1f, 0xffd23f, 0x5be04a, 0x3fb0ff, 0x9b5cff].forEach((c, k) => { for (const sx of [-0.05, 0.05]) g.add(sph(0.065, M(c, { shininess: 120 }), 1, 1, 1, sx, 0.62 - k * 0.075, 0.3 - k * 0.05)); });
+    const tail = []; [0xff3f8e, 0xffd23f, 0x3fb0ff].forEach((c, k) => { const t = sph(0.06, M(c, { shininess: 120 }), 1, 1, 1.4, (k - 1) * 0.06, 0.18, -0.44); g.add(t); tail.push(t); });
+    g.userData.anim = (t) => { g.rotation.z = Math.sin(t * 2) * 0.05; head.rotation.x = Math.sin(t * 1.6) * 0.08; };
+    return g;
+  }
   function makeCroc() { // an inflatable crocodile float
     const g = new THREE.Group(), grn = M(0x3fcf4a, { shininess: 140, specular: 0xffffff }), belly = M(0xc8f56a, { shininess: 120, specular: 0xffffff }), wht = M(0xffffff, { shininess: 100 }), blk = M(0x111526), pink = M(0xff5f8f);
     g.add(sph(0.3, grn, 1, 0.55, 1.75, 0, 0.12, -0.05)); // body
@@ -1039,12 +1077,15 @@ window.Board = (function () {
     { id: 'sub', name: 'Submarine', pack: 'sea', make: makeSub, lift: 0.28, sc: 1.15 },
     { id: 'pirate', name: 'Pirate Ship', pack: 'sea', make: makePirate, lift: 0.3 },
     { id: 'yacht', name: 'Yacht', pack: 'sea', make: makeYacht, lift: 0.3 },
+    { id: 'jetski', name: 'Jet Ski', pack: 'sea', make: makeJetski, lift: 0.28, sc: 1.15 },
     { id: 'ufo', name: 'UFO', pack: 'space', make: makeUfo, lift: 0.6 },
     { id: 'rocket', name: 'Rocket', pack: 'space', make: makeRocket, lift: 0.45, sc: 1.3 },
     { id: 'astro', name: 'Astronaut', pack: 'space', make: makeAstro, lift: 0.4, sc: 1.2 },
+    { id: 'saturn', name: 'Saturn', pack: 'space', make: makeSaturn, lift: 0.35, sc: 1.1 },
     { id: 'swan', name: 'Swan', pack: 'pool', make: makeSwan, lift: 0.26, sc: 1.2 },
     { id: 'donut', name: 'Donut', pack: 'pool', make: makeDonut, lift: 0.24, sc: 1.12 },
     { id: 'croc', name: 'Crocodile', pack: 'pool', make: makeCroc, lift: 0.26, sc: 1.1 },
+    { id: 'unicorn', name: 'Unicorn', pack: 'pool', make: makeUnicorn, lift: 0.26, sc: 1.1 },
   ];
   const skinGroups = { drone: droneG };
   for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); if (sk.sc) skinGroups[sk.id].scale.setScalar(sk.sc); body.add(skinGroups[sk.id]); }
