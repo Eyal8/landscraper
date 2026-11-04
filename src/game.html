@@ -2554,6 +2554,7 @@ window.Board = (function () {
         m.mesh.scale.setScalar(s * m.mesh.userData.s); m.mesh.position.y += dt * 1.2; m.mesh.rotation.y += dt * 14; m.shadow.visible = false; if (m.warn) m.warn.visible = false;
         continue;
       }
+      if (m.emerge > 0 && state !== 'play' && state !== 'intro') { m.emerge = 0; m.warn.visible = false; m.mesh.visible = true; } // menus: no warning, it is just there
       if (m.emerge > 0) { // a red ring blinks where it will come up, then it drills out of the ground
         if (live) m.emerge -= dt;
         const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz, k = Math.max(0, m.emerge), up = Math.min(1, Math.max(0, (0.45 - k) / 0.45));
