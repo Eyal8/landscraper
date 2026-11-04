@@ -157,6 +157,9 @@ body {
   background: #fff; color: #1d2a63; font: 500 13px var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
   box-shadow: 0 4px 0 rgba(10, 20, 60, 0.35);
 }
+.btn.cdb { position: relative; overflow: hidden; }
+.btn .cd { position: absolute; left: 0; bottom: 0; height: 5px; width: 100%; background: var(--gold); transform-origin: left; animation: cdBar 10s linear forwards; }
+@keyframes cdBar { to { transform: scaleX(0); } }
 .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(10, 20, 60, 0.35); }
 .btn.alt { background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -1429,7 +1432,7 @@ window.Board = (function () {
       }
       pr = next; store.set('ls_prog', pr);
     }
-    pr.skipped = pr.skipped || {}; pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.rush = pr.rush || 0;
+    pr.skipped = pr.skipped || {}; pr.done = pr.done || {}; pr.stars = pr.stars || {}; pr.best = pr.best || {}; pr.seen = pr.seen || []; pr.daily = pr.daily || {}; pr.skin = pr.skin || 'boat'; pr.lives = Math.min(5, Math.max(1, pr.lives || 3)); pr.rush = pr.rush || 0;
     return pr;
   })();
   { const sk0 = SKINS.find((k) => k.id === prog.skin); if (sk0 && sk0.pack && !(window.Store && window.Store.pack(sk0.pack))) prog.skin = 'boat'; }
@@ -1446,7 +1449,7 @@ window.Board = (function () {
   const worldOpen = (w) => isOpen(LEVELS.findIndex((x) => x.w === w));
 
   // ---------- game state ----------
-  let state = 'menu', paused = false, frozenT = 0, slowT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
+  let startLives = 3, state = 'menu', paused = false, frozenT = 0, slowT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
   let px = 0, py = 0, tx = 0, ty = 0, stepP = 1, dir = null, queue = [], drawing = false, trail = [], trailFrom = 0, monsters = [], powers = [], invuln = 0, lastLand = [0, 0];
   let clockT = 0, timePending = 0;
   const fmtClock = (t, tenths) => { t = Math.max(0, t); const m = Math.floor(t / 60), sec = t - m * 60; return m + ':' + (tenths ? sec.toFixed(1).padStart(4, '0') : String(Math.ceil(sec - 1e-9) === 60 ? 59 : Math.floor(sec)).padStart(2, '0')); };
@@ -1486,12 +1489,12 @@ window.Board = (function () {
       setTile(k); setMask(k);
     }
     tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; mask.needsUpdate = true;
-    monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = [];
+    monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = [];
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
-    clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = L.lives || 3; score = 0; shieldOn = sStart; bubbleK = 0; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
+    clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
@@ -1573,6 +1576,13 @@ window.Board = (function () {
   const SPEEDS = { jelly: 0.5, crab: 0.75, eel: 0.85, urchin: 0.6, zipper: 1.55, eater: 0.85, saw: 0.62, mini: 1.3, splitter: 0.9, hunter: 0.8, inker: 0.9, magnet: 0.55, boss: 0.75 };
   const SIZES = { jelly: 1.05, crab: 0.95, eel: 0.85, urchin: 0.95, zipper: 0.72, mini: 0.62, splitter: 1.15, hunter: 1.05, boss: 1.9 };
   const MAG_R = 4.5; // cells
+  const SAW_EMERGE = 1.3, warnGeo = new THREE.RingGeometry(0.5, 0.9, 32).rotateX(-Math.PI / 2);
+  function sawCorner(k) { // the k-th farthest land corner from where the boat comes in
+    const cs = [[1.5, 1.5], [W - 1.5, 1.5], [1.5, Hh - 1.5], [W - 1.5, Hh - 1.5]].filter(([x, y]) => cells[idx(Math.floor(x), Math.floor(y))] === LAND);
+    cs.sort((a, b) => Math.hypot(b[0] - SPAWN_X, b[1] - SPAWN_Y) - Math.hypot(a[0] - SPAWN_X, a[1] - SPAWN_Y));
+    return cs.length ? cs[k % cs.length] : [1.5, 1.5];
+  }
+  function sawsHome() { let k = 0; for (const m of monsters) if (m.kind === 'saw' && !m.dead) { [m.x, m.y] = sawCorner(k++); m.emerge = SAW_EMERGE; m.dug = false; } }
   const landKind = (m) => m.kind === 'saw' || m.kind === 'crab';
   const coastCell = (i) => cells[i] === LAND && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => { const x = (i % W) + dx, y = ((i / W) | 0) + dy; return inside(x, y) && cells[idx(x, y)] !== LAND; });
   function crabNext(m) { // the next shore cell to walk to: keep going, turn at corners, find the shore again if it moved
@@ -1634,7 +1644,7 @@ window.Board = (function () {
       const far = all.filter((i) => Math.hypot((i % W) - px, ((i / W) | 0) - py) > 10), pool = far.length ? far : all, c = pool.length ? pool[(rng() * pool.length) | 0] : idx(1, 1);
       x = (c % W) + 0.5; y = ((c / W) | 0) + 0.5;
     }
-    else if (kind === 'saw') { x = W - 1.5; y = 1.5 + monsters.filter((m) => m.kind === 'saw').length * 6; }
+    else if (kind === 'saw') { [x, y] = sawCorner(monsters.filter((m) => m.kind === 'saw' && !m.dead).length); }
     else {
       const all = seaCellsFree(), far = all.filter(([cx, cy]) => Math.hypot(cx - px, cy - py) > 8);
       const pool = far.length ? far : all, c = pool.length ? pool[(rng() * pool.length) | 0] : [W / 2, Hh / 2];
@@ -1642,6 +1652,7 @@ window.Board = (function () {
     }
     const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(bk || kind), shadow: blob(1.1 * sz), boss: bk, sz, eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
+    if (kind === 'saw') { m.warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ color: 0xff3048, transparent: true, opacity: 0, depthWrite: false })); m.warn.renderOrder = 3; scene.add(m.warn); m.emerge = SAW_EMERGE; }
     m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
     if (kind === 'jelly') { // the bolt: a child of the shadow, so it goes away with the jellyfish
       m.zap = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbff8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -1659,7 +1670,7 @@ window.Board = (function () {
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
-    if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); l.append(s.firstChild); }
+    if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); if (i >= 3) s.firstChild.setAttribute('fill', '#ffc93a'); l.append(s.firstChild); }
     const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT)); if (lureT > 0) pw.push('Lure ' + Math.ceil(lureT));
     $('power').innerHTML = pw.map((t) => '<span class="ts">' + t + '</span>').join('');
   }
@@ -1775,7 +1786,7 @@ window.Board = (function () {
   function spawnPower(force) {
     const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
     const [x, y] = free[(rng() * free.length) | 0];
-    let pool = L.powers.filter((k) => k !== 'life' || lives < 3); if (!pool.length) pool = L.powers;
+    let pool = L.powers.filter((k) => k !== 'life' || lives < 5); if (!pool.length) pool = L.powers;
     const kind = force || pool[(rng() * pool.length) | 0];
     powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
   }
@@ -1806,12 +1817,13 @@ window.Board = (function () {
   function levelClear() {
     levelEnds++; const had = earned();
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd();
-    const stars = L.boss ? Math.max(1, Math.min(3, lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
+    const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
     flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? fmtClock(clockT, true) : pct + '% claimed', 1600);
     arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
     let newWorld = false;
+    if (mode === 'campaign') { const bonus = stars === 3 && lives < 5; if (bonus) { lives++; setTimeout(() => { flash('Bonus life!', 'for a perfect clear', 1300); tone(988, 0.15, 'sine', 0.06, 1480); }, 2300); } prog.lives = lives; }
     if (mode === 'daily' && dailyKey === todayKey()) window.Board.submit('daily', clockT);
     if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && (!was.stars || was.late) }; }
     else {
@@ -1879,7 +1891,8 @@ window.Board = (function () {
     flash(lives > 0 ? (timeout ? 'Time\'s up!' : 'Ouch!') : 'Out of lives', lives > 0 ? why : timeout ? 'time ran out' : why, 1100, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
-    enter(0.65);
+    enter(0.65); if (lives > 0) sawsHome();
+    if (mode === 'campaign' && lives > 0) { prog.lives = lives; saveProg(); }
     drawHud();
     if (lives <= 0) { state = 'over'; setTimeout(outOfLives, 1300); }
   }
@@ -1887,15 +1900,20 @@ window.Board = (function () {
     levelEnds++;
     $('hud').hidden = true;
     const canGo = !continued;
-    if (mode === 'campaign') fails[L.id] = (fails[L.id] || 0) + 1;
+    if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
     panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
-      '<div class="btns">' + (canGo ? '<button class="btn" type="button" data-act="cont">Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont">Continue +1 life · <span id="cdN">10</span>' + adTag() + '<i class="cd"></i></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt" type="button" data-act="retryS">Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
       { cont: keepGoing, retryS: withShield(() => startLevel(cur)),
         skip: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.done[L.id] = true; prog.skipped[L.id] = true; saveProg(); if (cur + 1 < LEVELS.length) startLevel(cur + 1); else showHome(); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => startLevel(cur)), home: adBreak(showHome) });
+    contCountdown();
+  }
+  function contCountdown() { // the Continue offer goes away after 10 seconds
+    let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e) { clearInterval(tick); return; } n--; e.textContent = n;
+      if (n <= 0) { clearInterval(tick); const b = e.closest('button'); const nx = b.nextElementSibling; b.remove(); if (nx) nx.classList.remove('alt'); } }, 1000);
   }
   async function keepGoing() { // the rewarded Continue: one more life (and 15 seconds on the clock), once per level
     const ok = await window.Ads.showRewarded('continue');
@@ -2516,7 +2534,16 @@ window.Board = (function () {
       m.t += dt;
       if (m.dead) {
         m.dead += dt; const s = Math.max(0, 1 - m.dead * 2.5);
-        m.mesh.scale.setScalar(s * m.mesh.userData.s); m.mesh.position.y += dt * 1.2; m.mesh.rotation.y += dt * 14; m.shadow.visible = false;
+        m.mesh.scale.setScalar(s * m.mesh.userData.s); m.mesh.position.y += dt * 1.2; m.mesh.rotation.y += dt * 14; m.shadow.visible = false; if (m.warn) m.warn.visible = false;
+        continue;
+      }
+      if (m.emerge > 0) { // a red ring blinks where it will come up, then it drills out of the ground
+        if (live) m.emerge -= dt;
+        const wx = m.x - 0.5 + ox, wz = m.y - 0.5 + oz, k = Math.max(0, m.emerge), up = Math.min(1, Math.max(0, (0.45 - k) / 0.45));
+        m.warn.visible = true; m.warn.position.set(wx, H_LAND + 0.03, wz); m.warn.material.opacity = (1 - up) * (0.45 + 0.45 * Math.sin(m.t * 14)); m.warn.scale.setScalar(1 + 0.15 * Math.sin(m.t * 7));
+        m.mesh.visible = up > 0; m.mesh.position.set(wx, H_LAND - 0.7 + up * 1.0, wz); m.mesh.rotation.y += dt * 20; m.shadow.position.set(wx, H_LAND + 0.02, wz); m.shadow.visible = up > 0.5;
+        if (up > 0 && !m.dug) { m.dug = true; burst(wx, H_LAND + 0.1, wz, 0x8a5a33, 18, 3, 3); burst(wx, H_LAND + 0.1, wz, 0xd9c49a, 10, 2, 2); tone(160, 0.25, 'sawtooth', 0.05, 420); }
+        if (m.emerge <= 0) { m.warn.visible = false; m.mesh.visible = true; }
         continue;
       }
       if (live && !testFrozen && mult > 0) {
@@ -2713,7 +2740,7 @@ window.Board = (function () {
       if (m.ring.visible) { const k = 1 + Math.sin(t * 10) * 0.12; m.ring.scale.setScalar(k / m.shadow.scale.x); }
       if (m.mesh.userData.jaws) { m.mesh.rotation.y = Math.atan2(m.vx, m.vy); const o = Math.abs(Math.sin(m.t * 7)) * 0.5; m.mesh.userData.jaws[0].rotation.x = -o; m.mesh.userData.jaws[1].rotation.x = o * 0.4; }
     }
-    monsters = monsters.filter((m) => { if (m.dead && m.dead > 0.5) { scene.remove(m.mesh); scene.remove(m.shadow); return false; } return true; });
+    monsters = monsters.filter((m) => { if (m.dead && m.dead > 0.5) { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); return false; } return true; });
     // power-ups
     for (const p of powers) {
       p.t += dt;
@@ -2835,7 +2862,7 @@ window.Board = (function () {
     skipIntro() { if (state === 'intro') { hidePanel(); state = 'play'; } }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
-    clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); }); monsters = []; },
+    clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
     setClock(v) { clockT = v; }, get clock() { return clockT; },
     giveShield() { shieldOn = true; bubbleK = 0; },
