@@ -184,7 +184,7 @@ body {
 .row4 { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; }
 .row4 .btn { padding: 12px 4px; font-size: 12px; letter-spacing: 0.08em; }
 .row4 .gear { width: 44px; padding: 0; display: grid; place-items: center; }
-.row4 .gear svg { width: 20px; height: 20px; }
+.row4 .gear svg { width: 24px; height: 24px; }
 .trophies { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; max-height: 52vh; overflow-y: auto; padding: 2px; }
 .tro { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .tro .medal { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; position: relative; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 3px 10px rgba(10,20,50,0.3); }
@@ -1943,7 +1943,7 @@ window.Board = (function () {
       '<button class="mode" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
-      '<div class="row4"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button><button class="btn alt gear" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Zm8.4 4.6-.1-2.4 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.5 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6a8 8 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button></div>',
+      '<div class="row4"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button><button class="btn alt gear" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div>',
       { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings });
   }
 
