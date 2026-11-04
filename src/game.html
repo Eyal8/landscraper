@@ -231,8 +231,8 @@ body {
 .skin.g-sea { background: linear-gradient(165deg, rgba(64,170,255,0.5), rgba(20,70,160,0.25) 75%); }
 .skin.g-space { background: radial-gradient(circle at 78% 22%, rgba(255,255,255,0.7) 0 1px, transparent 2px), radial-gradient(circle at 22% 60%, rgba(255,255,255,0.6) 0 1px, transparent 2px), radial-gradient(circle at 60% 82%, rgba(255,255,255,0.5) 0 1px, transparent 2px), linear-gradient(165deg, rgba(150,90,255,0.55), rgba(30,12,80,0.45) 75%); }
 .skin.g-pool { background: linear-gradient(165deg, rgba(255,120,210,0.5), rgba(60,215,200,0.28) 80%); }
-.skin .gb { position: absolute; top: 7px; left: 7px; width: 18px; height: 18px; color: rgba(255,255,255,0.9); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
-.skin .gb .ic-star { width: 18px; height: 18px; vertical-align: top; }
+.skin .gb { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; color: rgba(255,255,255,0.9); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
+.skin .gb .ic-star { width: 22px; height: 22px; vertical-align: top; }
 .skin .lk { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; padding: 3px; box-sizing: border-box; border-radius: 50%; background: rgba(10,16,40,0.65); color: #fff; }
 .skin.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 1px #fff; }
 .sprev .pvh { width: 128px; height: 128px; flex: none; }
@@ -823,7 +823,7 @@ window.Board = (function () {
   // ---------- the player: a little hover drone ----------
   const drone = new THREE.Group();
   const body = new THREE.Group(); drone.add(body);
-  const white = new THREE.MeshPhongMaterial({ color: 0xff2e55, shininess: 110, specular: 0xffffff, emissive: 0x3a0010 }); // the drone's body: one bright hero color in every world
+  const white = new THREE.MeshPhongMaterial({ color: 0x2f86ff, shininess: 110, specular: 0xffffff, emissive: 0x001a44 }); // the drone's body: electric blue (the motorboat is the red one)
   const accent = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x888888 });
   const dark = new THREE.MeshPhongMaterial({ color: 0x1c2240, shininess: 120, specular: 0x8899ff });
   const glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
@@ -862,6 +862,15 @@ window.Board = (function () {
     g.userData.anim = (t, dt, mv) => { prop.rotation.z += dt * (mv ? 40 : 8); };
     return g;
   }
+  function sailArt() { // a sun over two waves, painted on the raft's sail
+    const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+    x.translate(128, 120); x.fillStyle = '#ff9a1f';
+    for (let k = 0; k < 12; k++) { x.save(); x.rotate(k * Math.PI / 6); x.beginPath(); x.moveTo(-10, -62); x.lineTo(0, -92); x.lineTo(10, -62); x.fill(); x.restore(); }
+    x.beginPath(); x.arc(0, 0, 54, 0, Math.PI * 2); const gr = x.createRadialGradient(-16, -16, 6, 0, 0, 56); gr.addColorStop(0, '#ffe066'); gr.addColorStop(1, '#ff7a1a'); x.fillStyle = gr; x.fill();
+    x.setTransform(1, 0, 0, 1, 0, 0); x.lineWidth = 14; x.lineCap = 'round';
+    for (const [y, col] of [[196, '#2f86ff'], [226, '#1d5fd6']]) { x.strokeStyle = col; x.beginPath(); for (let i = 0; i <= 8; i++) { const px = 24 + i * 26; i ? x.quadraticCurveTo(px - 13, y + (i % 2 ? -14 : 14), px, y) : x.moveTo(px, y); } x.stroke(); }
+    const t = new THREE.CanvasTexture(c); return t;
+  }
   function makeRaft() { // logs, a mast and a striped sail
     const g = new THREE.Group(), log = M(0xb07a4a, { shininess: 25 }), rope = M(0xf2dfb0), cloth = M(0xfff7e8, { side: THREE.DoubleSide }), red = M(0xff2e55, { side: THREE.DoubleSide });
     for (let k = 0; k < 5; k++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.95 + (k % 2) * 0.08, 12), log); c.rotation.x = Math.PI / 2; c.position.set(-0.32 + k * 0.16, 0.0, 0); g.add(c); }
@@ -870,7 +879,7 @@ window.Board = (function () {
     const sail = new THREE.Group(); sail.position.set(0, 0.48, -0.05);
     const sg = new THREE.PlaneGeometry(0.62, 0.62, 6, 6); const pos = sg.attributes.position; for (let i = 0; i < pos.count; i++) pos.setZ(i, 0.12 * (1 - Math.pow(pos.getX(i) / 0.31, 2)) * (1 - Math.pow(pos.getY(i) / 0.31, 2) * 0.4)); sg.computeVertexNormals();
     const s1 = new THREE.Mesh(sg, cloth); s1.position.y = 0.05; sail.add(s1);
-    const st = new THREE.Mesh(new THREE.PlaneGeometry(0.63, 0.12), red); st.position.set(0, 0.05, 0.125); sail.add(st);
+    const s2 = new THREE.Mesh(sg, M(0xffffff, { map: sailArt(), side: THREE.DoubleSide, transparent: true, depthWrite: false })); s2.position.set(0, 0.05, 0.004); sail.add(s2);
     g.add(sail);
     const flag = boxM(0.16, 0.09, 0.01, M(0xffd166), 0.08, 0.92, -0.05); g.add(flag);
     g.userData.anim = (t, dt, mv) => { sail.rotation.y = Math.sin(t * 1.6) * 0.12; flag.rotation.y = Math.sin(t * 9) * 0.3; };
@@ -989,16 +998,21 @@ window.Board = (function () {
     g.userData.anim = (t, dt) => { g.rotation.y += dt * 0.6; };
     return g;
   }
-  function makeTub() { // a bathtub with feet, bubbles on top
-    const g = new THREE.Group(), por = M(0xff5f9e, { shininess: 150, specular: 0xffffff }), rimM = M(0xffffff, { shininess: 150 }), gold = M(0xffd23f, { shininess: 140 }), foam = M(0xbdf3ff, { shininess: 40 });
-    const tub = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.28, 24, 1, true), por); tub.scale.z = 1.5; tub.position.y = 0.16; tub.material.side = THREE.DoubleSide; g.add(tub);
-    const bottom = sph(0.3, por, 1, 0.3, 1.5, 0, 0.04, 0); g.add(bottom);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 8, 32), rimM); rim.rotation.x = Math.PI / 2; rim.scale.y = 1.5; rim.position.y = 0.3; g.add(rim);
-    for (const [x, z] of [[-0.22, -0.34], [0.22, -0.34], [-0.22, 0.34], [0.22, 0.34]]) g.add(sph(0.05, gold, 1, 1, 1, x, -0.02, z));
-    const bubbles = []; for (let k = 0; k < 9; k++) { const b = sph(0.07 + (k % 3) * 0.02, foam, 1, 1, 1, Math.cos(k * 2.3) * 0.18, 0.32, Math.sin(k * 2.3) * 0.28); g.add(b); bubbles.push(b); }
-    const tap = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.02, 6, 12, Math.PI), gold); tap.position.set(0, 0.38, -0.46); g.add(tap);
-    { const dy = M(0xffd23a, { shininess: 120 }); g.add(sph(0.09, dy, 1, 0.8, 1.2, 0.08, 0.44, 0.12)); g.add(sph(0.06, dy, 1, 1, 1, 0.08, 0.53, 0.2)); g.add(sph(0.03, M(0xff8a1f), 1.2, 0.5, 1.2, 0.08, 0.52, 0.26)); }
-    g.userData.anim = (t) => { bubbles.forEach((b, k) => { b.position.y = 0.32 + Math.sin(t * 3 + k) * 0.02; }); };
+  function makeCroc() { // an inflatable crocodile float
+    const g = new THREE.Group(), grn = M(0x3fcf4a, { shininess: 140, specular: 0xffffff }), belly = M(0xc8f56a, { shininess: 120, specular: 0xffffff }), wht = M(0xffffff, { shininess: 100 }), blk = M(0x111526), pink = M(0xff5f8f);
+    g.add(sph(0.3, grn, 1, 0.55, 1.75, 0, 0.12, -0.05)); // body
+    g.add(sph(0.29, belly, 1.02, 0.25, 1.72, 0, 0.04, -0.05));
+    const head = new THREE.Group(); head.position.set(0, 0.16, 0.5); g.add(head);
+    head.add(sph(0.17, grn, 1.05, 0.62, 1.7, 0, 0, 0.06)); // snout
+    head.add(sph(0.16, pink, 0.95, 0.12, 1.55, 0, -0.06, 0.08)); // mouth
+    for (const k of [-1, 1]) { for (let n = 0; n < 4; n++) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.06, 6), wht); t.rotation.x = Math.PI; t.position.set(k * 0.14, -0.04, -0.06 + n * 0.08); head.add(t); } }
+    for (const k of [-1, 1]) { head.add(sph(0.075, grn, 1, 1, 1, k * 0.09, 0.12, -0.12)); head.add(sph(0.05, wht, 1, 1, 0.7, k * 0.09, 0.16, -0.08)); head.add(sph(0.026, blk, 1, 1, 0.7, k * 0.09, 0.17, -0.045)); }
+    for (const k of [-1, 1]) head.add(sph(0.022, blk, 1, 0.6, 1, k * 0.05, 0.08, 0.32)); // nostrils
+    for (let n = 0; n < 5; n++) { const r = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.1, 8), M(0x2aa63a, { shininess: 120 })); r.position.set(0, 0.29 - n * 0.012, 0.22 - n * 0.16); g.add(r); }
+    const tail = new THREE.Group(); tail.position.set(0, 0.12, -0.52); g.add(tail);
+    tail.add(sph(0.14, grn, 1, 0.8, 2.0, 0, 0, -0.18));
+    for (const [x, z] of [[0.26, 0.22], [-0.26, 0.22], [0.24, -0.3], [-0.24, -0.3]]) g.add(sph(0.08, grn, 1.3, 0.6, 1, x, 0.02, z)); // feet
+    g.userData.anim = (t, dt, mv) => { tail.rotation.y = Math.sin(t * (mv ? 7 : 2.4)) * 0.35; head.rotation.x = -Math.abs(Math.sin(t * 1.3)) * 0.12; g.rotation.z = Math.sin(t * 2) * 0.04; };
     return g;
   }
   droneG.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
@@ -1016,7 +1030,7 @@ window.Board = (function () {
     { id: 'astro', name: 'Astronaut', pack: 'space', make: makeAstro, lift: 0.4, sc: 1.2 },
     { id: 'swan', name: 'Swan', pack: 'pool', make: makeSwan, lift: 0.26, sc: 1.2 },
     { id: 'donut', name: 'Donut', pack: 'pool', make: makeDonut, lift: 0.24, sc: 1.12 },
-    { id: 'tub', name: 'Bathtub', pack: 'pool', make: makeTub, lift: 0.28, sc: 1.08 },
+    { id: 'croc', name: 'Crocodile', pack: 'pool', make: makeCroc, lift: 0.26, sc: 1.1 },
   ];
   const skinGroups = { drone: droneG };
   for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); if (sk.sc) skinGroups[sk.id].scale.setScalar(sk.sc); body.add(skinGroups[sk.id]); }
@@ -2205,9 +2219,9 @@ window.Board = (function () {
   let trialPending = null, trialActive = false;
   const LOCK = '<svg class="lk" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2.6 0h4.8V7.5a2.4 2.4 0 0 0-4.8 0zM12 13.5a1.6 1.6 0 0 0-.8 3V18h1.6v-1.5a1.6 1.6 0 0 0-.8-3z"/></svg>';
   const GROUP_ICON = {
-    sea: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor"><path d="M1 10c2.7 0 2.7-2.4 5.5-2.4S9.2 10 12 10s2.7-2.4 5.5-2.4S20.3 10 23 10v3c-2.7 0-2.7-2.4-5.5-2.4S14.8 13 12 13s-2.7-2.4-5.5-2.4S3.7 13 1 13zm0 6c2.7 0 2.7-2.4 5.5-2.4S9.2 16 12 16s2.7-2.4 5.5-2.4S20.3 16 23 16v3c-2.7 0-2.7-2.4-5.5-2.4S14.8 19 12 19s-2.7-2.4-5.5-2.4S3.7 19 1 19z"/></svg>',
-    space: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/><path d="M3.5 17.5c-1.6-1.6 1.6-5.8 6-8.6s8.6-3.6 10.5-2.6c1.4.8.3 3-1.6 5.2l-.6-1.5c.9-1.3 1.2-2.2.8-2.5-1-.8-4.6.4-8.2 2.7-3.7 2.4-6.2 5.4-5.4 6.3.4.4 1.6.2 3.2-.5l.9 1.4c-2.6 1.2-4.7 1.4-5.6.1z"/></svg>',
-    pool: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>' };
+    sea: '<svg class="gb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fff"/><g fill="none" stroke="#1d5fd6" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="6.4" r="1.9"/><path d="M12 8.3v10.2M8.4 11.2h7.2M6 14.2c.6 2.8 3 4.4 6 4.4s5.4-1.6 6-4.4"/></g></svg>',
+    space: '<svg class="gb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fff"/><path d="M12 3.6c2.6 2 3.8 4.9 3.8 8.2v3.6H8.2v-3.6c0-3.3 1.2-6.2 3.8-8.2z" fill="#7a3cff"/><circle cx="12" cy="10" r="1.7" fill="#7fe8ff"/><path d="M8.2 12.6 5.6 15.4v2.2l2.6-1.2zM15.8 12.6l2.6 2.8v2.2l-2.6-1.2z" fill="#ff3f8e"/><path d="M10 16.4h4l-.6 3.4h-2.8z" fill="#ff9a1f"/></svg>',
+    pool: '<svg class="gb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fff"/><circle cx="12" cy="12" r="8.6" fill="#ff3f8e"/><path d="M12 3.4a8.6 8.6 0 0 1 8.2 6L12 12zM20.2 14.6A8.6 8.6 0 0 1 12 20.6V12zM3.8 14.6 12 12l-8.2-2.6a8.6 8.6 0 0 0 0 5.2z" fill="#ffd23f"/><path d="M12 12 6.2 5.6A8.6 8.6 0 0 1 12 3.4zM12 12l-5.8 6.4A8.6 8.6 0 0 0 12 20.6z" fill="#3fd0ff"/><circle cx="12" cy="12" r="2.4" fill="#fff"/></svg>' };
   const groupOf = (k) => k.pack || 'prog';
   const PACK_TINT = { sea: '#3fb0ff', space: '#9b5cff', pool: '#ff7ad9' };
   let skinView = null, pv = null;
