@@ -113,14 +113,14 @@ body {
 #dpad b.lit { color: #ffd166; background: radial-gradient(circle at 50% 30%, rgba(90,110,190,0.75), rgba(26,36,80,0.75) 75%); box-shadow: inset 0 0 0 2px #ffd166, 0 4px 12px rgba(10,20,50,0.3); transform: scale(0.94); }
 #dpad b.hint { animation: dhint 1s ease-in-out infinite; }
 @keyframes dhint { 50% { color: #ffd166; transform: scale(1.12); } }
-#pad { position: absolute; width: 80px; height: 80px; margin: -40px 0 0 -40px; pointer-events: none; opacity: 0; transform: scale(0.7); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4), left 0.06s linear, top 0.06s linear; z-index: 5; }
+#pad { position: absolute; width: 160px; height: 160px; margin: -80px 0 0 -80px; pointer-events: none; opacity: 0; transform: scale(0.8); transition: opacity 0.12s, transform 0.18s cubic-bezier(.2,.9,.3,1.4); }
 #pad.on { opacity: 1; transform: scale(1); }
-#pad svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 8px rgba(10,20,50,0.35)); }
-#pad .ring { fill: rgba(16,24,56,0.28); stroke: rgba(255,255,255,0.75); stroke-width: 3; }
-#pad .arr { transform-origin: 40px 40px; opacity: 0; transition: transform 0.12s ease-out, opacity 0.1s; }
-#pad .arr path { fill: var(--gold); stroke: #3a2a00; stroke-width: 2; stroke-linejoin: round; }
-#pad.dir .arr { opacity: 1; }
-#pad.dir .ring { stroke: var(--gold); }
+#pad svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 10px rgba(10,20,50,0.3)); }
+#pad .wf { fill: rgba(16,24,56,0.38); stroke: rgba(255,255,255,0.55); stroke-width: 1.5; transition: fill 0.1s, stroke 0.1s; }
+#pad .wc { fill: none; stroke: rgba(255,255,255,0.85); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.1s; }
+#pad .w.lit .wf { fill: rgba(255,209,102,0.85); stroke: #fff6d8; }
+#pad .w.lit .wc { stroke: #3a2a00; }
+#pad .knob { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffffff, #dfe6ff); box-shadow: 0 3px 10px rgba(10,20,50,0.4), inset 0 -2px 0 rgba(0,0,0,0.1); }
 
 /* coach: short tips with a moving finger, first level only */
 #coach { position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
@@ -270,7 +270,7 @@ body {
   <div id="vignette"></div>
   <div id="flash"></div>
   <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
-  <div id="pad" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="ring" cx="40" cy="40" r="30"/><g class="arr"><path d="M40 14 L52 30 H45 V44 H35 V30 H28 Z"/></g></svg></div>
+  <div id="pad"><svg viewBox="0 0 160 160"><g class="w up"><path class="wf" d="M32.4 23.3 A74 74 0 0 1 127.6 23.3 L99.3 57.0 A30 30 0 0 0 60.7 57.0 Z"/><path class="wc" d="M88.0 32.0 L80.0 21.0 L72.0 32.0"/></g><g class="w right"><path class="wf" d="M136.7 32.4 A74 74 0 0 1 136.7 127.6 L103.0 99.3 A30 30 0 0 0 103.0 60.7 Z"/><path class="wc" d="M128.0 88.0 L139.0 80.0 L128.0 72.0"/></g><g class="w down"><path class="wf" d="M127.6 136.7 A74 74 0 0 1 32.4 136.7 L60.7 103.0 A30 30 0 0 0 99.3 103.0 Z"/><path class="wc" d="M72.0 128.0 L80.0 139.0 L88.0 128.0"/></g><g class="w left"><path class="wf" d="M23.3 127.6 A74 74 0 0 1 23.3 32.4 L57.0 60.7 A30 30 0 0 0 57.0 99.3 Z"/><path class="wc" d="M32.0 72.0 L21.0 80.0 L32.0 88.0"/></g></svg><div class="knob"></div></div>
   <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
   <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here.</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
@@ -2843,20 +2843,27 @@ window.Board = (function () {
   let sw = null;
   // The pad appears where the finger lands and stays there. The knob follows the finger; the wedge it points into lights up.
   // Turning needs a clear move into another wedge (hysteresis), so a small wobble never changes direction.
-  // Swipe steering: every turn is a short flick from where the finger is now (the anchor re-centres on each turn
-  // and follows the finger while it keeps going the same way), so it works the same wherever you touch.
-  const pad = $('pad'), padArrow = pad.querySelector('.arr');
-  const UNIT = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }, ROT = { up: 0, right: 90, down: 180, left: 270 }, TURN = 22;
-  function padShow(d) { pad.classList.toggle('dir', !!d); if (d) padArrow.style.transform = 'rotate(' + ROT[d] + 'deg)'; }
-  function padAt(x, y) { pad.style.left = x + 'px'; pad.style.top = y + 'px'; }
-  function swipeMove(x, y) { // returns a new direction, or null
-    let dx = x - sw.x, dy = y - sw.y; const cur = touchDir && UNIT[touchDir];
-    if (cur) { const along = dx * cur[0] + dy * cur[1]; if (along > 0) { sw.x += cur[0] * along; sw.y += cur[1] * along; dx = x - sw.x; dy = y - sw.y; } }
-    const ax = Math.abs(dx), ay = Math.abs(dy), big = Math.max(ax, ay);
-    if (big < TURN || big < Math.min(ax, ay) * 1.25) return null; // too small, or too diagonal to tell
-    const d = ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-    if (d === touchDir) return null;
-    sw.x = x; sw.y = y; return d;
+  // The radial pad opens where the finger lands. The knob follows the finger and the wedge it points into lights up.
+  // Calm by design: a big dead zone, a wide margin between wedges, and when the finger goes far the pad slides along
+  // behind it, so turning back is always a short move.
+  const pad = $('pad'), knob = pad.querySelector('.knob'), wedges = {}; for (const k of ['up', 'down', 'left', 'right']) wedges[k] = pad.querySelector('.w.' + k);
+  const ANG = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }, DEAD = 26, HOLD = 16, SWITCH = 30 * Math.PI / 180, KNOB_R = 48, FOLLOW = 58;
+  function padTo(d) { for (const k in wedges) wedges[k].classList.toggle('lit', k === d); }
+  function knobAt(dx, dy) { const r = Math.hypot(dx, dy), k = r > KNOB_R ? KNOB_R / r : 1; knob.style.transform = 'translate(' + dx * k + 'px,' + dy * k + 'px)'; }
+  function pickDir(dx, dy, cur) {
+    if (Math.hypot(dx, dy) < DEAD) return cur;
+    const a = Math.atan2(dy, dx); let best = null, bd = 9;
+    for (const k in ANG) { let d = Math.abs(a - ANG[k]); if (d > Math.PI) d = 2 * Math.PI - d; if (d < bd) { bd = d; best = k; } }
+    if (cur && best !== cur && bd > SWITCH) return cur; // a new direction only when the finger is clearly inside its wedge
+    return best;
+  }
+  function padMove(x, y) { // drag the pad along when the finger goes past its rim
+    let dx = x - sw.x, dy = y - sw.y;
+    const u = touchDir && { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[touchDir];
+    if (u) { const along = dx * u[0] + dy * u[1]; if (along > HOLD) { sw.x += u[0] * (along - HOLD); sw.y += u[1] * (along - HOLD); dx = x - sw.x; dy = y - sw.y; pad.style.left = sw.x + 'px'; pad.style.top = sw.y + 'px'; } } // keep the centre just behind the finger, so any turn is the same short move
+    const r = Math.hypot(dx, dy);
+    if (r > FOLLOW) { const k = (r - FOLLOW) / r; sw.x += dx * k; sw.y += dy * k; dx = x - sw.x; dy = y - sw.y; pad.style.left = sw.x + 'px'; pad.style.top = sw.y + 'px'; }
+    return [dx, dy];
   }
   // fixed buttons
   const dpad = $('dpad'), dbtn = { up: dpad.querySelector('.up'), down: dpad.querySelector('.down'), left: dpad.querySelector('.left'), right: dpad.querySelector('.right') };
@@ -2876,15 +2883,16 @@ window.Board = (function () {
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
-    if (state === 'play' && !useButtons()) { padAt(e.clientX, e.clientY); padShow(null); pad.classList.add('on'); }
+    if (state === 'play' && !useButtons()) { pad.style.left = e.clientX + 'px'; pad.style.top = e.clientY + 'px'; knobAt(0, 0); padTo(null); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
     if (!sw) return;
     if (e.pointerType === 'mouse' && e.buttons === 0) { release(); return; } // mouse released outside the window
     if (useButtons()) return;
-    const d = swipeMove(e.clientX, e.clientY);
-    if (d) { steer(d); touchDir = d; padShow(d); buzz('tick'); }
-    padAt(sw.x, sw.y);
+    const [dx, dy] = padMove(e.clientX, e.clientY);
+    knobAt(dx, dy);
+    const d = pickDir(dx, dy, touchDir);
+    if (d && d !== touchDir) { steer(d); touchDir = d; padTo(d); const u = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[d]; sw.x = e.clientX - u[0] * HOLD; sw.y = e.clientY - u[1] * HOLD; pad.style.left = sw.x + 'px'; pad.style.top = sw.y + 'px'; knobAt(u[0] * HOLD, u[1] * HOLD); } // re-centre behind the finger on every turn
   });
   const release = () => { sw = null; touchHeld = false; touchDir = null; pad.classList.remove('on'); };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); stage.addEventListener('lostpointercapture', release);
