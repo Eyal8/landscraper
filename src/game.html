@@ -207,7 +207,7 @@ body {
 .ic-star { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.25em; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
 .lvl small .ic-star { width: 1.15em; height: 1.15em; margin: 0 -0.08em; }
 .cal .ic-star { width: 1em; height: 1em; margin: 0 -0.12em; }
-.have { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.12); font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.have { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
 .have .ic-star { width: 22px; height: 22px; vertical-align: middle; }
 .have b { font: 800 20px var(--display); color: var(--gold); letter-spacing: 0; }
 .sprev { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 6px; border-radius: 22px; background: radial-gradient(circle at 25% 50%, var(--pk, #ff8fb1) 0, transparent 62%), rgba(255,255,255,0.1); box-sizing: border-box; }
@@ -226,7 +226,20 @@ body {
 .skin { min-width: 0; }
 .skin b { font: 800 13px var(--display); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
 .skin small { font: 500 11px var(--mono); letter-spacing: 0.04em; color: var(--gold); text-transform: uppercase; }
-.skin.on { background: rgba(255,255,255,0.3); box-shadow: inset 0 0 0 2px #fff; }
+.skin { position: relative; }
+.skin.g-prog { background: linear-gradient(165deg, rgba(255,196,64,0.32), rgba(255,255,255,0.07) 70%); }
+.skin.g-sea { background: linear-gradient(165deg, rgba(64,170,255,0.5), rgba(20,70,160,0.25) 75%); }
+.skin.g-space { background: radial-gradient(circle at 78% 22%, rgba(255,255,255,0.7) 0 1px, transparent 2px), radial-gradient(circle at 22% 60%, rgba(255,255,255,0.6) 0 1px, transparent 2px), radial-gradient(circle at 60% 82%, rgba(255,255,255,0.5) 0 1px, transparent 2px), linear-gradient(165deg, rgba(150,90,255,0.55), rgba(30,12,80,0.45) 75%); }
+.skin.g-pool { background: linear-gradient(165deg, rgba(255,120,210,0.5), rgba(60,215,200,0.28) 80%); }
+.skin .gb { position: absolute; top: 7px; left: 7px; width: 18px; height: 18px; color: rgba(255,255,255,0.9); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
+.skin .gb .ic-star { width: 18px; height: 18px; vertical-align: top; }
+.skin .lk { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; padding: 3px; box-sizing: border-box; border-radius: 50%; background: rgba(10,16,40,0.65); color: #fff; }
+.skin.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 1px #fff; }
+.sprev .pvh { width: 128px; height: 128px; flex: none; }
+#stage .sprev canvas, .sprev canvas { position: static; inset: auto; display: block; width: 128px; height: 128px; flex: none; touch-action: none; cursor: grab; }
+.have .ic-star { animation: starPulse 4.5s ease-in-out infinite; }
+@keyframes starPulse { 0%, 78%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); } 86% { transform: scale(1.22) rotate(-10deg); filter: drop-shadow(0 0 7px rgba(255,214,90,1)); } 92% { transform: scale(0.96) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .have .ic-star { animation: none; } }
 .skin.locked img { filter: brightness(0) opacity(0.35); }
 .skin.prem small { color: #c59bff; }
 .skin.prem.locked img { filter: none; }
@@ -2190,30 +2203,64 @@ window.Board = (function () {
   }
   const skinOpen = (sk) => dev || (sk.pack ? window.Store.pack(sk.pack) : totalStars() >= sk.stars);
   let trialPending = null, trialActive = false;
+  const LOCK = '<svg class="lk" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2.6 0h4.8V7.5a2.4 2.4 0 0 0-4.8 0zM12 13.5a1.6 1.6 0 0 0-.8 3V18h1.6v-1.5a1.6 1.6 0 0 0-.8-3z"/></svg>';
+  const GROUP_ICON = {
+    sea: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor"><path d="M1 10c2.7 0 2.7-2.4 5.5-2.4S9.2 10 12 10s2.7-2.4 5.5-2.4S20.3 10 23 10v3c-2.7 0-2.7-2.4-5.5-2.4S14.8 13 12 13s-2.7-2.4-5.5-2.4S3.7 13 1 13zm0 6c2.7 0 2.7-2.4 5.5-2.4S9.2 16 12 16s2.7-2.4 5.5-2.4S20.3 16 23 16v3c-2.7 0-2.7-2.4-5.5-2.4S14.8 19 12 19s-2.7-2.4-5.5-2.4S3.7 19 1 19z"/></svg>',
+    space: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/><path d="M3.5 17.5c-1.6-1.6 1.6-5.8 6-8.6s8.6-3.6 10.5-2.6c1.4.8.3 3-1.6 5.2l-.6-1.5c.9-1.3 1.2-2.2.8-2.5-1-.8-4.6.4-8.2 2.7-3.7 2.4-6.2 5.4-5.4 6.3.4.4 1.6.2 3.2-.5l.9 1.4c-2.6 1.2-4.7 1.4-5.6.1z"/></svg>',
+    pool: '<svg class="gb" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>' };
+  const groupOf = (k) => k.pack || 'prog';
   const PACK_TINT = { sea: '#3fb0ff', space: '#9b5cff', pool: '#ff7ad9' };
-  let skinView = null;
+  let skinView = null, pv = null;
+  function livePreview(sk, holder) { // the chosen skin turning slowly; drag to spin it
+    if (!holder) return;
+    try {
+      if (!pv) {
+        const r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); r.setSize(128, 128);
+        const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x556699, 0.8)); const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(2, 4, 3); sc.add(dl); const rl = new THREE.DirectionalLight(0xbfe4ff, 0.5); rl.position.set(-3, 2, -3); sc.add(rl);
+        const cam = new THREE.PerspectiveCamera(27, 1, 0.1, 50); cam.position.set(0, 1.55, 3.05); cam.lookAt(0, 0.24, 0);
+        pv = { r, sc, cam, cache: {}, g: null, rot: 0.5, vel: 0, drag: null, raf: 0, last: 0 };
+        const el = r.domElement;
+        el.addEventListener('pointerdown', (e) => { e.stopPropagation(); pv.drag = { x: e.clientX, rot: pv.rot, t: performance.now() }; pv.vel = 0; el.setPointerCapture(e.pointerId); });
+        el.addEventListener('pointermove', (e) => { if (!pv.drag) return; const now = performance.now(), nr = pv.drag.rot + (e.clientX - pv.drag.x) * 0.014; pv.vel = (nr - pv.rot) / Math.max(0.016, (now - pv.drag.t) / 1000); pv.drag.t = now; pv.rot = nr; });
+        const up = (e) => { if (pv.drag) { pv.drag = null; pv.vel = clamp(pv.vel, -8, 8); } };
+        el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('click', (e) => e.stopPropagation());
+      }
+      let g = pv.cache[sk.id];
+      if (!g) { g = sk.make ? sk.make() : droneG.clone(true); if (sk.sc) g.scale.setScalar(sk.sc); pv.cache[sk.id] = g; }
+      if (pv.g !== g) { if (pv.g) pv.sc.remove(pv.g); pv.sc.add(g); g.visible = true; g.position.set(0, 0, 0); pv.g = g; }
+      holder.innerHTML = ''; holder.appendChild(pv.r.domElement);
+      if (!pv.raf) { pv.last = performance.now(); const tick = (now) => {
+        if (!document.body.contains(pv.r.domElement)) { pv.raf = 0; return; }
+        const dt = Math.min(0.05, (now - pv.last) / 1000); pv.last = now;
+        if (!pv.drag) { pv.vel *= Math.pow(0.04, dt); pv.rot += dt * (reduceMotion ? 0 : 0.6) + pv.vel * dt; }
+        pv.g.rotation.set(0, pv.rot, 0); if (pv.g.userData.anim) pv.g.userData.anim(now / 1000, dt, false);
+        pv.r.render(pv.sc, pv.cam); pv.raf = requestAnimationFrame(tick); };
+        pv.raf = requestAnimationFrame(tick); }
+    } catch (e) { /* no WebGL: the still picture stays */ }
+  }
   function showSkins(viewId) {
     toMenu(); const th = skinThumbs(), have = totalStars(), st = window.Store, all = st.allSkins();
     const prevScroll = document.querySelector('.skins') ? document.querySelector('.skins').scrollTop : 0;
     skinView = typeof viewId === 'string' ? viewId : prog.skin; const sk = SKINS.find((k) => k.id === skinView) || SKINS[0];
     const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
-      return '<button class="skin' + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : STAR + ' ' + k.stars) + '</small></button>'; }).join('');
+      return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
     const open = skinOpen(sk), on = prog.skin === sk.id;
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
     const tag = sk.pack ? '<span class="tag prem">' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + (sk.stars ? STAR + ' ' + sk.stars + ' stars' : 'Free') + '</span>';
-    const line = on ? 'You are playing with it.' : open ? 'Unlocked.' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
-    const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Use it</button>' :
+    const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
+    const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
       sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + st.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
       '<button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>';
     const big = th[sk.id];
-    panel('<div class="have">' + STAR + '<b>' + have + '</b>stars</div><h2>Skins</h2>' +
-      '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + (big ? '<img alt="" src="' + big + '"' + (open ? '' : ' style="opacity:.92"') + '>' : '') + '<div class="info">' + tag + '<b>' + sk.name + '</b><span>' + line + '</span>' + act + '</div></div>' +
+    panel('<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
+      '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + '<div class="pvh">' + (big ? '<img alt="" src="' + big + '">' : '') + '</div>' + '<div class="info">' + tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act + '</div></div>' +
       '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Every pack, now and later</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
       { back: showHome, all: () => buyIt('allSkins', () => showSkins(sk.id)),
         use: () => { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(sk.id); },
         buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(sk.id); }),
         try: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialPending = sk.id; startLevel(nextLevel()); } });
     const grid = document.querySelector('.skins'); if (grid) grid.scrollTop = prevScroll;
+    livePreview(sk, document.querySelector('.pvh'));
     document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => {
       const k = SKINS.find((x) => x.id === b.dataset.skin); buzz('select');
       if (k.id === skinView && skinOpen(k) && prog.skin !== k.id) { prog.skin = k.id; saveProg(); wearSkin(k.id); tone(660, 0.12, 'sine', 0.05, 990); }
