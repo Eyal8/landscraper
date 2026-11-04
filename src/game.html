@@ -81,7 +81,7 @@ body {
 #adSim .big { font: 800 44px var(--display); }
 #adSim p { margin: 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5; }
 #adClose:disabled { opacity: 0.4; }
-.btn small { display: block; font-size: 9px; opacity: 0.7; letter-spacing: 0.12em; margin-top: 2px; }
+.btn small { display: block; font-size: 11px; opacity: 0.7; letter-spacing: 0.12em; margin-top: 2px; }
 .cal button { all: unset; cursor: pointer; aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
 .cal button.done { background: var(--gold); color: #3a2a00; font-weight: 700; }
 .cal button.late { background: rgba(255,209,102,0.45); color: #3a2a00; }
@@ -147,8 +147,8 @@ body {
 @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
 .card h1 { margin: 0; font: 800 34px/1 var(--display); letter-spacing: -0.01em; }
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
-.card p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
-.card .kicker { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
+.card .kicker { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
 .card .big { font: 800 44px/1 var(--display); font-variant-numeric: tabular-nums; }
 .card .got { font: 800 17px var(--display); color: var(--gold); letter-spacing: 0; }
 .btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -172,7 +172,7 @@ body {
 .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .lvl { cursor: pointer; aspect-ratio: 1; border-radius: 14px; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: rgba(255,255,255,0.14); color: var(--ink); font: 800 16px var(--display); }
-.lvl small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); min-height: 11px; }
+.lvl small { font: 500 11px var(--mono); letter-spacing: 0; color: var(--gold); min-height: 13px; }
 .lvl.cur { background: #fff; color: #1d2a63; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -182,7 +182,7 @@ body {
 .mode[disabled] { cursor: default; opacity: 0.5; }
 .row3 { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .row4 { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; }
-.row4 .btn { padding: 12px 4px; font-size: 10px; }
+.row4 .btn { padding: 12px 4px; font-size: 12px; letter-spacing: 0.08em; }
 .row4 .gear { width: 44px; padding: 0; display: grid; place-items: center; }
 .row4 .gear svg { width: 20px; height: 20px; }
 .trophies { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; max-height: 52vh; overflow-y: auto; padding: 2px; }
@@ -195,26 +195,43 @@ body {
 .tro.bronze .medal { background: radial-gradient(circle at 35% 30%, #ffd2a8, #d98a4a 55%, #8a4a1f); }
 .tro.none .medal { background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18); }
 .tro.none .medal svg, .tro.none .medal img { opacity: 0.25; filter: grayscale(1); }
-.tro b { font: 800 11px var(--display); }
-.tro small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
-.sect { width: 100%; font: 500 10px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-align: left; margin-top: 4px; }
-.row3 .btn { padding: 12px 6px; font-size: 11px; }
+.tro b { font: 800 13px var(--display); }
+.tro small { font: 500 11px var(--mono); letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
+.sect { width: 100%; font: 500 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-align: left; margin-top: 4px; }
+.row3 .btn { padding: 12px 6px; font-size: 12px; }
 .worlds { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 .world { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line); }
 .world b { font: 800 17px var(--display); display: block; }
-.world span { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.world span { font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
 .world[disabled] { cursor: default; filter: grayscale(0.7); opacity: 0.55; }
-.skins { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 56vh; overflow-y: auto; padding: 2px; }
+.ic-star { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.25em; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
+.lvl small .ic-star { width: 1.15em; height: 1.15em; margin: 0 -0.08em; }
+.cal .ic-star { width: 1em; height: 1em; margin: 0 -0.12em; }
+.have { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.12); font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.have .ic-star { width: 22px; height: 22px; vertical-align: middle; }
+.have b { font: 800 20px var(--display); color: var(--gold); letter-spacing: 0; }
+.sprev { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 6px; border-radius: 22px; background: radial-gradient(circle at 25% 50%, var(--pk, #ff8fb1) 0, transparent 62%), rgba(255,255,255,0.1); box-sizing: border-box; }
+.sprev img { width: 128px; height: 128px; flex: none; filter: drop-shadow(0 8px 10px rgba(0,0,20,0.35)); }
+.sprev .info { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; flex: 1; min-width: 0; }
+.sprev .info b { font: 800 22px/1.05 var(--display); }
+.sprev .info span { font: 500 12px/1.4 var(--mono); letter-spacing: 0.04em; color: var(--ink-soft); }
+.sprev .info .tag { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sprev .info .tag.prem { color: #d2b1ff; }
+.sprev .btn { padding: 11px 12px; font-size: 12px; letter-spacing: 0.08em; box-shadow: 0 3px 0 rgba(10,20,60,0.35); }
+.sprev .btn.alt { background: rgba(255,255,255,0.14); color: var(--ink); }
+.skins { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 34vh; overflow-y: auto; padding: 2px; }
+.skin.view { box-shadow: inset 0 0 0 2px var(--gold); }
 .skin { cursor: pointer; border: 0; border-radius: 16px; padding: 6px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .skin img, .skin i { width: 100%; aspect-ratio: 1; display: block; }
-.skin b { font: 800 13px var(--display); }
-.skin small { font: 500 9px var(--mono); letter-spacing: 0.06em; color: var(--gold); text-transform: uppercase; }
+.skin { min-width: 0; }
+.skin b { font: 800 13px var(--display); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+.skin small { font: 500 11px var(--mono); letter-spacing: 0.04em; color: var(--gold); text-transform: uppercase; }
 .skin.on { background: rgba(255,255,255,0.3); box-shadow: inset 0 0 0 2px #fff; }
 .skin.locked img { filter: brightness(0) opacity(0.35); }
 .skin.prem small { color: #c59bff; }
 .skin.prem.locked img { filter: none; }
-.cal { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font: 500 11px var(--mono); }
-.cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 10px; }
+.cal { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font: 500 13px var(--mono); }
+.cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 12px; }
 .cal div { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
 .cal div.done { background: var(--gold); color: #3a2a00; font-weight: 700; }
 .cal div.today { box-shadow: inset 0 0 0 2px #fff; }
@@ -587,7 +604,6 @@ window.Board = (function () {
     clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), ms || 1000);
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
-  const STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>';
   function panel(html, actions) {
     $('card').innerHTML = html; $('panel').hidden = false;
     $('card').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
@@ -899,60 +915,60 @@ window.Board = (function () {
     return g;
   }
   function makeUfo() { // a flying saucer with a little alien
-    const g = new THREE.Group(), steel = M(0xc9d3e6, { shininess: 160, specular: 0xffffff }), glass = M(0x9fffd9, { transparent: true, opacity: 0.45, shininess: 160, specular: 0xffffff }), alien = M(0x7be36b), dark = M(0x111526);
-    g.add(sph(0.5, steel, 1, 0.22, 1, 0, 0.05, 0));
+    const g = new THREE.Group(), steel = M(0x8f4dff, { shininess: 160, specular: 0xffffff, emissive: 0x24085a }), glass = M(0x9ff6ff, { transparent: true, opacity: 0.5, shininess: 160, specular: 0xffffff }), alien = M(0x5be04a, { shininess: 80 }), dark = M(0x111526);
+    g.add(sph(0.5, steel, 1, 0.22, 1, 0, 0.05, 0)); { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.035, 8, 40), new THREE.MeshBasicMaterial({ color: 0x5ff6ff })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.04; g.add(ring); }
     g.add(sph(0.22, glass, 1, 0.9, 1, 0, 0.16, 0));
-    g.add(sph(0.1, alien, 1, 1.1, 1, 0, 0.2, 0)); for (const x of [-0.04, 0.04]) g.add(sph(0.025, dark, 1, 1.4, 1, x, 0.23, 0.08));
-    const lights = []; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, l = sph(0.04, M(0xffd166, { emissive: 0xffaa00 }), 1, 1, 1, Math.cos(a) * 0.42, 0.04, Math.sin(a) * 0.42); g.add(l); lights.push(l); }
+    g.add(sph(0.13, alien, 1, 1.1, 1, 0, 0.22, 0)); for (const x of [-0.05, 0.05]) g.add(sph(0.035, dark, 1, 1.4, 1, x, 0.26, 0.1));
+    const lights = []; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, lc = [0xffd23f, 0xff3f8e, 0x5ff6ff, 0x7be36b][k % 4], l = sph(0.055, M(lc, { emissive: lc }), 1, 1, 1, Math.cos(a) * 0.42, 0.06, Math.sin(a) * 0.42); g.add(l); lights.push(l); }
     g.userData.anim = (t, dt) => { lights.forEach((l, k) => { l.material.emissiveIntensity = 0.5 + 0.5 * Math.sin(t * 8 - k); }); g.rotation.y += dt * 0; };
     return g;
   }
-  function makeYacht() { // a white yacht with a blue stripe and a sundeck
-    const g = new THREE.Group(), wht = M(0xf7f9ff, { shininess: 140, specular: 0xffffff }), blue = M(0x2a6bff), glass = M(0x1d2a63, { shininess: 160, specular: 0xffffff }), wood = M(0xc98a52);
+  function makeYacht() { // a navy yacht with a gold stripe, white decks and a sundeck
+    const g = new THREE.Group(), navy = M(0x1b3a9e, { shininess: 150, specular: 0xffffff }), wht = M(0xffffff, { shininess: 140, specular: 0xffffff }), blue = M(0xffc21f, { shininess: 140, specular: 0xffffff }), glass = M(0x5fe3ff, { shininess: 160, specular: 0xffffff, emissive: 0x0b4a66 }), wood = M(0xc98a52);
     const shape = new THREE.Shape(); shape.moveTo(-0.28, -0.5); shape.lineTo(0.28, -0.5); shape.lineTo(0.3, 0.15); shape.quadraticCurveTo(0.22, 0.5, 0, 0.66); shape.quadraticCurveTo(-0.22, 0.5, -0.3, 0.15); shape.lineTo(-0.28, -0.5);
-    const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 3 }), wht); hull.rotation.x = Math.PI / 2; hull.position.y = 0.06; g.add(hull);
+    const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 3 }), navy); hull.rotation.x = Math.PI / 2; hull.position.y = 0.06; g.add(hull);
     const st = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.05, bevelEnabled: false }), blue); st.rotation.x = Math.PI / 2; st.position.y = -0.06; st.scale.set(1.05, 1.03, 1); g.add(st);
     g.add(boxM(0.5, 0.03, 0.7, wood, 0, 0.09, -0.02));
     g.add(boxM(0.36, 0.16, 0.36, wht, 0, 0.19, -0.12)); g.add(boxM(0.37, 0.08, 0.2, glass, 0, 0.22, 0.0));
     g.add(boxM(0.28, 0.1, 0.22, wht, 0, 0.32, -0.16)); g.add(boxM(0.29, 0.05, 0.12, glass, 0, 0.33, -0.08));
-    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 6), blue); mast.position.set(0, 0.47, -0.2); g.add(mast);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 6), blue); mast.position.set(0, 0.47, -0.2); g.add(mast); g.add(boxM(0.12, 0.07, 0.01, M(0xff2e55), 0.06, 0.53, -0.2));
     g.userData.anim = (t) => { g.rotation.z = Math.sin(t * 1.7) * 0.03; };
     return g;
   }
   function makeRocket() { // a little rocket that flies low, flame out the back
-    const g = new THREE.Group(), body = M(0xf2f4fa, { shininess: 140, specular: 0xffffff }), red = M(0xff2e55), glass = M(0x7fe8ff, { emissive: 0x1b4a66 }), flame = new THREE.MeshBasicMaterial({ color: 0xffb03a });
+    const g = new THREE.Group(), body = M(0x1fc7d4, { shininess: 140, specular: 0xffffff }), red = M(0xff2e55, { shininess: 120 }), glass = M(0x7fe8ff, { emissive: 0x1b4a66 }), flame = new THREE.MeshBasicMaterial({ color: 0xffb03a });
     const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.62, 20), body); tube.rotation.x = Math.PI / 2; tube.position.y = 0.2; g.add(tube);
     const nose = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 20), red); nose.rotation.x = Math.PI / 2; nose.position.set(0, 0.2, 0.46); g.add(nose);
-    const win = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 16), glass); win.position.set(0, 0.36, 0.1); g.add(win);
+    const win = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 16), glass); win.position.set(0, 0.36, 0.1); g.add(win); const wr = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 8, 20), M(0xffffff)); wr.rotation.x = Math.PI / 2; wr.position.set(0, 0.372, 0.1); g.add(wr); { const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.172, 0.172, 0.06, 20), M(0xffffff)); b1.rotation.x = Math.PI / 2; b1.position.set(0, 0.2, -0.12); g.add(b1); }
     for (let k = 0; k < 3; k++) { const a = k * 2.09 + Math.PI / 2, fin = boxM(0.02, 0.18, 0.18, red, Math.cos(a) * 0.19, 0.2 + Math.sin(a) * 0.19, -0.26); fin.rotation.z = a - Math.PI / 2; g.add(fin); }
     const fl = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 14), flame); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.2, -0.46); g.add(fl);
     g.userData.anim = (t, dt, mv) => { const k = (mv ? 1 : 0.55) + Math.random() * 0.25; fl.scale.set(k, k * (mv ? 1.4 : 0.8), k); g.rotation.z = Math.sin(t * 3) * 0.05; };
     return g;
   }
   function makeAstro() { // an astronaut riding a glowing board
-    const g = new THREE.Group(), suit = M(0xf2f4fa, { shininess: 90 }), visor = M(0x1d2a63, { shininess: 160, specular: 0xffd166 }), board = M(0x9b5cff, { emissive: 0x3a1a7a }), glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
+    const g = new THREE.Group(), suit = M(0xff8a1f, { shininess: 90 }), helm = M(0xffffff, { shininess: 120 }), visor = M(0xffc21f, { shininess: 180, specular: 0xffffff, emissive: 0x4a3000 }), board = M(0xff3fa4, { emissive: 0x5a0a3a }), glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
     g.add(sph(0.38, board, 1, 0.12, 1.5, 0, 0.0, 0)); g.add(sph(0.36, glow, 1.05, 0.04, 1.55, 0, -0.04, 0));
     g.add(sph(0.14, suit, 1, 1.25, 0.9, 0, 0.26, -0.02)); // body
     g.add(boxM(0.18, 0.18, 0.08, M(0xc9d3e6), 0, 0.28, -0.14)); // backpack
     const head = new THREE.Group(); head.position.set(0, 0.5, 0); g.add(head);
-    head.add(sph(0.13, suit, 1, 1, 1, 0, 0, 0)); head.add(sph(0.095, visor, 1.1, 0.8, 0.6, 0, 0.0, 0.07));
+    head.add(sph(0.14, helm, 1, 1, 1, 0, 0, 0)); head.add(sph(0.1, visor, 1.1, 0.8, 0.6, 0, 0.0, 0.07));
     for (const x of [-0.12, 0.12]) { const arm = sph(0.05, suit, 1, 2, 1, x, 0.3, 0.02); arm.rotation.z = x > 0 ? -0.6 : 0.6; g.add(arm); }
     g.userData.anim = (t) => { head.rotation.y = Math.sin(t * 1.5) * 0.3; glow.color.setHSL(0.5 + Math.sin(t * 2) * 0.05, 1, 0.7); };
     return g;
   }
   function makeSwan() { // an inflatable swan float
-    const g = new THREE.Group(), wht = M(0xffffff, { shininess: 120, specular: 0xffffff }), org = M(0xff9a2a), blk = M(0x111526);
+    const g = new THREE.Group(), wht = M(0xff8cc6, { shininess: 130, specular: 0xffffff }), wing = M(0xffc4e4, { shininess: 130, specular: 0xffffff }), org = M(0xff9a2a), blk = M(0x111526);
     g.add(sph(0.36, wht, 1, 0.5, 1.25, 0, 0.12, -0.05));
-    for (const k of [-1, 1]) { const w = sph(0.2, wht, 0.5, 0.55, 1.1, k * 0.28, 0.25, -0.12); w.rotation.z = k * 0.4; g.add(w); }
+    for (const k of [-1, 1]) { const w = sph(0.2, wing, 0.5, 0.55, 1.1, k * 0.28, 0.25, -0.12); w.rotation.z = k * 0.4; g.add(w); }
     const neck = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.06, 10, 20, Math.PI * 1.15), wht); neck.rotation.y = Math.PI / 2; neck.position.set(0, 0.36, 0.22); g.add(neck);
     const head = sph(0.09, wht, 1, 1, 1.2, 0, 0.52, 0.32); g.add(head);
     const beak = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 10), org); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.5, 0.45); g.add(beak);
-    for (const x of [-0.05, 0.05]) g.add(sph(0.018, blk, 1, 1, 1, x, 0.55, 0.39));
+    for (const x of [-0.05, 0.05]) g.add(sph(0.022, blk, 1, 1, 1, x, 0.55, 0.39)); { const cr = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.06, 6, 1, true), M(0xffd23f, { shininess: 160, side: THREE.DoubleSide })); cr.position.set(0, 0.63, 0.3); g.add(cr); }
     g.userData.anim = (t) => { g.rotation.z = Math.sin(t * 2) * 0.05; };
     return g;
   }
   function makeDonut() { // a pink donut swim ring with sprinkles
-    const g = new THREE.Group(), dough = M(0xf2c38a, { shininess: 50 }), icing = M(0xff7ad9, { shininess: 130, specular: 0xffffff });
+    const g = new THREE.Group(), dough = M(0xe0a060, { shininess: 50 }), icing = M(0xff4fae, { shininess: 130, specular: 0xffffff });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.15, 14, 32), dough); ring.rotation.x = Math.PI / 2; ring.position.y = 0.1; g.add(ring);
     const top = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.13, 12, 32, Math.PI * 2), icing); top.rotation.x = Math.PI / 2; top.position.y = 0.15; top.scale.z = 0.7; g.add(top);
     const cols = [0xffffff, 0x7ff0ff, 0xffd166, 0x7be36b, 0x9b5cff];
@@ -961,13 +977,14 @@ window.Board = (function () {
     return g;
   }
   function makeTub() { // a bathtub with feet, bubbles on top
-    const g = new THREE.Group(), por = M(0xfdfdff, { shininess: 150, specular: 0xffffff }), gold = M(0xffd23f, { shininess: 140 }), foam = M(0xeaf6ff, { shininess: 20 });
+    const g = new THREE.Group(), por = M(0xff5f9e, { shininess: 150, specular: 0xffffff }), rimM = M(0xffffff, { shininess: 150 }), gold = M(0xffd23f, { shininess: 140 }), foam = M(0xbdf3ff, { shininess: 40 });
     const tub = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.28, 24, 1, true), por); tub.scale.z = 1.5; tub.position.y = 0.16; tub.material.side = THREE.DoubleSide; g.add(tub);
     const bottom = sph(0.3, por, 1, 0.3, 1.5, 0, 0.04, 0); g.add(bottom);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 8, 32), por); rim.rotation.x = Math.PI / 2; rim.scale.y = 1.5; rim.position.y = 0.3; g.add(rim);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 8, 32), rimM); rim.rotation.x = Math.PI / 2; rim.scale.y = 1.5; rim.position.y = 0.3; g.add(rim);
     for (const [x, z] of [[-0.22, -0.34], [0.22, -0.34], [-0.22, 0.34], [0.22, 0.34]]) g.add(sph(0.05, gold, 1, 1, 1, x, -0.02, z));
     const bubbles = []; for (let k = 0; k < 9; k++) { const b = sph(0.07 + (k % 3) * 0.02, foam, 1, 1, 1, Math.cos(k * 2.3) * 0.18, 0.32, Math.sin(k * 2.3) * 0.28); g.add(b); bubbles.push(b); }
     const tap = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.02, 6, 12, Math.PI), gold); tap.position.set(0, 0.38, -0.46); g.add(tap);
+    { const dy = M(0xffd23a, { shininess: 120 }); g.add(sph(0.09, dy, 1, 0.8, 1.2, 0.08, 0.44, 0.12)); g.add(sph(0.06, dy, 1, 1, 1, 0.08, 0.53, 0.2)); g.add(sph(0.03, M(0xff8a1f), 1.2, 0.5, 1.2, 0.08, 0.52, 0.26)); }
     g.userData.anim = (t) => { bubbles.forEach((b, k) => { b.position.y = 0.32 + Math.sin(t * 3 + k) * 0.02; }); };
     return g;
   }
@@ -978,18 +995,18 @@ window.Board = (function () {
     { id: 'duck', name: 'Duck', stars: 30, make: makeDuck, lift: 0.26 },
     { id: 'drone', name: 'Drone', stars: 60, make: null, lift: 0.55 },
     { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26 },
-    { id: 'sub', name: 'Submarine', pack: 'sea', make: makeSub, lift: 0.28 },
+    { id: 'sub', name: 'Submarine', pack: 'sea', make: makeSub, lift: 0.28, sc: 1.15 },
     { id: 'pirate', name: 'Pirate Ship', pack: 'sea', make: makePirate, lift: 0.3 },
     { id: 'yacht', name: 'Yacht', pack: 'sea', make: makeYacht, lift: 0.3 },
     { id: 'ufo', name: 'UFO', pack: 'space', make: makeUfo, lift: 0.6 },
-    { id: 'rocket', name: 'Rocket', pack: 'space', make: makeRocket, lift: 0.45 },
-    { id: 'astro', name: 'Astronaut', pack: 'space', make: makeAstro, lift: 0.4 },
-    { id: 'swan', name: 'Swan', pack: 'pool', make: makeSwan, lift: 0.26 },
-    { id: 'donut', name: 'Donut', pack: 'pool', make: makeDonut, lift: 0.24 },
-    { id: 'tub', name: 'Bathtub', pack: 'pool', make: makeTub, lift: 0.28 },
+    { id: 'rocket', name: 'Rocket', pack: 'space', make: makeRocket, lift: 0.45, sc: 1.3 },
+    { id: 'astro', name: 'Astronaut', pack: 'space', make: makeAstro, lift: 0.4, sc: 1.2 },
+    { id: 'swan', name: 'Swan', pack: 'pool', make: makeSwan, lift: 0.26, sc: 1.2 },
+    { id: 'donut', name: 'Donut', pack: 'pool', make: makeDonut, lift: 0.24, sc: 1.12 },
+    { id: 'tub', name: 'Bathtub', pack: 'pool', make: makeTub, lift: 0.28, sc: 1.08 },
   ];
   const skinGroups = { drone: droneG };
-  for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); body.add(skinGroups[sk.id]); }
+  for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); if (sk.sc) skinGroups[sk.id].scale.setScalar(sk.sc); body.add(skinGroups[sk.id]); }
   let skinNow = SKINS[0];
   function wearSkin(id) { skinNow = SKINS.find((k) => k.id === id) || SKINS[0]; for (const k in skinGroups) skinGroups[k].visible = k === skinNow.id; }
   wearSkin('boat');
@@ -1749,6 +1766,8 @@ window.Board = (function () {
   }
 
   // ---------- level flow ----------
+  document.body.insertAdjacentHTML('afterbegin', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4a8"/><stop offset=".5" stop-color="#ffc93a"/><stop offset="1" stop-color="#ff9500"/></linearGradient></defs></svg>');
+  const STAR = '<svg class="ic-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3 6.2 6.8.9-5 4.7 1.3 6.8L12 17.1l-6.1 3.3 1.3-6.8-5-4.7L9 8z" fill="url(#gStar)" stroke="#8a4a00" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 5.2l1.6 3.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg>';
   const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
   let dailyBest = false, levelEnds = 0, continued = false, startShield = false;
   const fails = {}; // failed tries per level this session (Skip appears after 3)
@@ -1961,7 +1980,7 @@ window.Board = (function () {
   function worldTrophies() {
     return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w);
       return [{ id: 'w' + w, tier: prog.done[boss.id] ? 'gold' : 'none', title: wd.name, sub: prog.done[boss.id] ? 'Cleared' : 'Beat the boss', boss: BOSS_OF[wd.id] },
-              { id: 'p' + w, tier: st >= 60 ? 'gold' : 'none', title: wd.name, sub: st + ' / 60 ★', star: true }]; }).flat();
+              { id: 'p' + w, tier: st >= 60 ? 'gold' : 'none', title: wd.name, sub: st + ' / 60 ' + STAR, star: true }]; }).flat();
   }
   const earned = () => trophyList().filter((t) => t.tier !== 'none').map((t) => t.id + t.tier).concat(worldTrophies().filter((t) => t.tier !== 'none').map((t) => t.id));
   let bossThumbs = {};
@@ -1979,7 +1998,7 @@ window.Board = (function () {
     let html = '<h2>Worlds</h2><div class="worlds">';
     WORLDS.forEach((wd, w) => {
       const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
-      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>★ ' + st + ' / 60</span></button>';
+      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
     });
     html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>';
     panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
@@ -1990,7 +2009,7 @@ window.Board = (function () {
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, open = isOpen(i);
-      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? '★'.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
+      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
     html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Worlds</button></div>';
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
@@ -2065,7 +2084,7 @@ window.Board = (function () {
     for (let k = 0; k < first; k++) cal += '<div class="blank"></div>';
     for (let d = 1; d <= days; d++) { // past days can be played (after an ad); future days are dim
       const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key], cls = (e ? (e.late ? 'late' : 'done') : '') + (key === today ? ' today' : '');
-      cal += key > today ? '<div class="future">' + d + '</div>' : key === today ? '<div class="' + cls + '">' + (e ? '★'.repeat(e.stars) : d) + '</div>' : '<button type="button" class="' + cls + '" data-day="' + key + '">' + (e ? (e.saved && !e.stars ? '✓' : '★'.repeat(e.stars)) : d) + '</button>';
+      cal += key > today ? '<div class="future">' + d + '</div>' : key === today ? '<div class="' + cls + '">' + (e ? STAR.repeat(e.stars) : d) + '</div>' : '<button type="button" class="' + cls + '" data-day="' + key + '">' + (e ? (e.saved && !e.stars ? '✓' : STAR.repeat(e.stars)) : d) + '</button>';
     }
     cal += '</div>';
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
@@ -2152,9 +2171,9 @@ window.Board = (function () {
   function skinThumbs() { // render each skin once into a small picture
     if (thumbs) return thumbs; thumbs = {};
     try {
-      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setPixelRatio(1); r.setSize(160, 160);
-      const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x445588, 0.9)); const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(2, 4, 3); sc.add(dl);
-      const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(1.75, 1.8, 2.55); cam.lookAt(0, 0.22, 0);
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setPixelRatio(1); r.setSize(300, 300);
+      const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x556699, 0.8)); const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(2, 4, 3); sc.add(dl); const rim = new THREE.DirectionalLight(0xbfe4ff, 0.5); rim.position.set(-3, 2, -3); sc.add(rim);
+      const cam = new THREE.PerspectiveCamera(27, 1, 0.1, 50); cam.position.set(1.75, 1.8, 2.55); cam.lookAt(0, 0.24, 0);
       for (const sk of SKINS) {
         const g = skinGroups[sk.id], was = g.visible, par = g.parent; g.visible = true; sc.add(g); g.rotation.set(0, 0.5, 0); g.position.set(0, 0, 0);
         r.render(sc, cam); thumbs[sk.id] = r.domElement.toDataURL(); sc.remove(g); par.add(g); g.rotation.set(0, 0, 0); g.visible = was;
@@ -2171,31 +2190,36 @@ window.Board = (function () {
   }
   const skinOpen = (sk) => dev || (sk.pack ? window.Store.pack(sk.pack) : totalStars() >= sk.stars);
   let trialPending = null, trialActive = false;
-  function showSkins() {
-    toMenu(); const th = skinThumbs(), have = totalStars();
-    const cards = SKINS.map((sk) => { const open = skinOpen(sk), on = prog.skin === sk.id;
-      return '<button class="skin' + (on ? ' on' : '') + (open ? '' : ' locked') + (sk.pack ? ' prem' : '') + '" type="button" data-skin="' + sk.id + '">' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '<i></i>') + '<b>' + sk.name + '</b><small>' + (on ? 'Selected' : open ? 'Tap to use' : sk.pack ? PACKS[sk.pack] : '★ ' + sk.stars) + '</small></button>'; }).join('');
-    const all = window.Store.allSkins();
-    panel('<div class="kicker">★ ' + have + '</div><h2>Skins</h2><div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + window.Store.price('allSkins') + '<small>Every pack, now and later</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
-      { back: showHome, all: () => buyIt('allSkins', showSkins) });
+  const PACK_TINT = { sea: '#3fb0ff', space: '#9b5cff', pool: '#ff7ad9' };
+  let skinView = null;
+  function showSkins(viewId) {
+    toMenu(); const th = skinThumbs(), have = totalStars(), st = window.Store, all = st.allSkins();
+    const prevScroll = document.querySelector('.skins') ? document.querySelector('.skins').scrollTop : 0;
+    skinView = typeof viewId === 'string' ? viewId : prog.skin; const sk = SKINS.find((k) => k.id === skinView) || SKINS[0];
+    const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
+      return '<button class="skin' + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : STAR + ' ' + k.stars) + '</small></button>'; }).join('');
+    const open = skinOpen(sk), on = prog.skin === sk.id;
+    const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
+    const tag = sk.pack ? '<span class="tag prem">' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + (sk.stars ? STAR + ' ' + sk.stars + ' stars' : 'Free') + '</span>';
+    const line = on ? 'You are playing with it.' : open ? 'Unlocked.' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
+    const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Use it</button>' :
+      sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + st.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
+      '<button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>';
+    const big = th[sk.id];
+    panel('<div class="have">' + STAR + '<b>' + have + '</b>stars</div><h2>Skins</h2>' +
+      '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + (big ? '<img alt="" src="' + big + '"' + (open ? '' : ' style="opacity:.92"') + '>' : '') + '<div class="info">' + tag + '<b>' + sk.name + '</b><span>' + line + '</span>' + act + '</div></div>' +
+      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Every pack, now and later</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+      { back: showHome, all: () => buyIt('allSkins', () => showSkins(sk.id)),
+        use: () => { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(sk.id); },
+        buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(sk.id); }),
+        try: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialPending = sk.id; startLevel(nextLevel()); } });
+    const grid = document.querySelector('.skins'); if (grid) grid.scrollTop = prevScroll;
     document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => {
-      const sk = SKINS.find((k) => k.id === b.dataset.skin);
-      if (skinOpen(sk)) { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(); return; }
-      lockedSkin(sk);
+      const k = SKINS.find((x) => x.id === b.dataset.skin); buzz('select');
+      if (k.id === skinView && skinOpen(k) && prog.skin !== k.id) { prog.skin = k.id; saveProg(); wearSkin(k.id); tone(660, 0.12, 'sine', 0.05, 990); }
+      showSkins(k.id);
     }));
   }
-  function lockedSkin(sk) { // buy the pack, or try this one for a level with an ad
-    const st = window.Store, th = skinThumbs();
-    const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
-    panel('<div class="kicker">' + (sk.pack ? PACKS[sk.pack] : 'Locked') + '</div><div class="foe">' + (th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '') + '</div><h2>' + sk.name + '</h2><p>' + (sk.pack ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] + '.' : 'Opens at ★ ' + sk.stars + '.') + '</p><div class="btns">' +
-      (sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + st.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Every pack, now and later</small></button>' : '') +
-      '<button class="btn alt" type="button" data-act="try">Try it for 1 level' + adTag() + '</button><button class="btn alt" type="button" data-act="back">Back</button></div>',
-      { back: showSkins,
-        buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(); }),
-        all: () => buyIt('allSkins', () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(); }),
-        try: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialPending = sk.id; startLevel(nextLevel()); } });
-  }
-
   // ---------- tutorial (first level only) ----------
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
   let tut = null, tutT = 0;
