@@ -13,7 +13,7 @@ with sync_playwright() as p:
         pg.reload(); pg.wait_for_function('window.__game'); pg.wait_for_timeout(1500)
         for step in js: pg.evaluate(step); pg.wait_for_timeout(900)
         f = out / f'{name}.png'; pg.screenshot(path=str(f)); Image.open(f).convert('RGB').save(f); print('wrote', f.name); pg.close()
-    shot('shop-no-ads-everything', ["document.querySelector('[data-act=settings]').click()"])
+    shot('shop-no-ads-everything', ["document.querySelector('[data-act=shop]').click()"])
     for pack, skin in (('sea', 'sub'), ('space', 'ufo'), ('pool', 'swan')):
         shot(f'pack-{pack}', ["document.querySelector('[data-act=skins]').click()", f"document.querySelector('[data-skin={skin}]').click()"])
     shot('all-skins', ["document.querySelector('[data-act=skins]').click()"])

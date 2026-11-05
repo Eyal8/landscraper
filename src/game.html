@@ -186,7 +186,11 @@ body {
 .row3 { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .row4 { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; }
 .row4 .btn { padding: 12px 4px; font-size: 12px; letter-spacing: 0.08em; }
-.row4 .gear { width: 44px; padding: 0; display: grid; place-items: center; }
+#card { position: relative; }
+.hbar { width: 100%; display: flex; justify-content: space-between; margin: -8px 0 -6px; }
+.card .corner { width: 42px; height: 42px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
+.card .corner svg { width: 22px; height: 22px; }
+.card .corner:active { transform: scale(0.94); }
 .row4 .gear svg { width: 24px; height: 24px; }
 .trophies { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; max-height: 52vh; overflow-y: auto; padding: 2px; }
 .tro { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
@@ -2040,14 +2044,14 @@ window.Board = (function () {
   function showHome() {
     toMenu(); onHome = true;
     const nx = nextLevel(), lv = LEVELS[nx], done = prog.daily[todayKey()];
-    panel('<h1>Landscraper</h1>' +
+    panel('<div class="hbar"><button class="corner l" type="button" data-act="shop" aria-label="Shop"><svg viewBox="0 0 24 24"><path d="M5.5 8.5h13l-1.1 11.2a1.5 1.5 0 0 1-1.5 1.3H8.1a1.5 1.5 0 0 1-1.5-1.3z" fill="currentColor"/><path d="M9 10V7a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="corner r" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div><h1>Landscraper</h1>' +
       '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
       '<div class="modes">' +
       '<button class="mode" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
-      '<div class="row4"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button><button class="btn alt gear" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div>',
-      { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings });
+      '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
+      { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
   }
 
   // ---------- trophies: one per month of Daily (bronze 10 days, silver 20, gold every day), two per world ----------
@@ -2120,7 +2124,7 @@ window.Board = (function () {
   function settingsButtons() {
     const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.input === 'buttons' ? 'Buttons' : 'Swipe');
     return {
-      html: '<button class="btn alt" type="button" data-act="controls">' + ctl() + '</button><button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
       acts: {
         controls: (b) => { settings.input = settings.input === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
         sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
@@ -2130,19 +2134,21 @@ window.Board = (function () {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    const st = window.Store, noAds = st && st.noAds();
-    const skinsOwned = st.allSkins();
-    const shop = (noAds && skinsOwned ? '<p>Thank you for your support!</p>' : '') +
-      (!noAds && !skinsOwned ? '<button class="btn" type="button" data-act="buyAll">Everything · ' + st.price('bundle') + '<small>Best value · no ads + every skin</small></button>' : '') +
-      (noAds ? '' : '<button class="btn' + (skinsOwned ? '' : ' alt') + '" type="button" data-act="buy">Remove Ads · ' + st.price() + '</button>') +
-      (skinsOwned ? '' : '<button class="btn alt" type="button" data-act="buySkins">All skins · ' + st.price('allSkins') + '</button>') + '<button class="btn alt" type="button" data-act="restore">Restore purchases</button>' + (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '');
-    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html + shop + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
-      Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); },
-        buy: () => buyIt('noAds', showSettings), buySkins: () => buyIt('allSkins', showSettings), buyAll: () => buyIt('bundle', showSettings),
-        restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showSettings(); },
-        privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
+    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
+      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
+      Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
+  }
+  function showShop() {
+    toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins();
+    panel('<h2>Shop</h2>' + (noAds && skinsOwned ? '<p>You own everything. Thank you for your support!</p>' : '<p>One-time purchases. They stay yours on every device.</p>') + '<div class="btns">' +
+      (!noAds && !skinsOwned ? '<button class="btn" type="button" data-act="buyAll">Everything · ' + st.price('bundle') + '<small>Best value · no ads + every skin</small></button>' : '') +
+      (noAds ? '' : '<button class="btn' + (skinsOwned ? '' : ' alt') + '" type="button" data-act="buy">Remove Ads · ' + st.price() + '<small>No ads between levels</small></button>') +
+      (skinsOwned ? '' : '<button class="btn alt" type="button" data-act="buySkins">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') +
+      '<button class="btn alt" type="button" data-act="restore">Restore purchases</button><button class="btn" type="button" data-act="back">Back</button></div>',
+      { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
+        restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
   }
 
   // ---------- Daily: one level a day, the same for everyone ----------
@@ -2859,7 +2865,7 @@ window.Board = (function () {
   }
   // fixed buttons
   const dpad = $('dpad'), dbtn = { up: dpad.querySelector('.up'), down: dpad.querySelector('.down'), left: dpad.querySelector('.left'), right: dpad.querySelector('.right') };
-  const useButtons = () => settings.input === 'buttons'; // Settings: Swipe (default) or fixed Buttons
+  const useButtons = () => false; // the touch pad only
   let dpId = null;
   const dLight = (d) => { for (const k in dbtn) dbtn[k].classList.toggle('lit', k === d); };
   function dFrom(e) { const r = dpad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); if (Math.max(Math.abs(x), Math.abs(y)) < 14) return null; return Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up'); }
