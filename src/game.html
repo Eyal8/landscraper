@@ -75,6 +75,8 @@ body {
 #flash.show { opacity: 1; transform: translate(-50%, -6px) scale(1); }
 #flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(10,20,50,0.5); }
 #flash.bad { color: #ffe0e6; }
+#flash { padding: 12px 24px 14px; border-radius: 24px; background: rgba(14, 20, 52, 0.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 6px 24px rgba(10, 16, 40, 0.3); }
+#flash.bad { background: rgba(70, 12, 30, 0.66); }
 #adSim { position: fixed; inset: 0; z-index: 100; background: #101320; color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; }
 #adSim[hidden] { display: none; }
 #adSim .adbox { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 320px; }
@@ -181,6 +183,16 @@ body {
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
 .mode b { font: 800 17px var(--display); }
+.mode.daily { background: linear-gradient(160deg, rgba(64,224,208,0.32), rgba(255,255,255,0.08) 75%); box-shadow: inset 0 0 0 1px rgba(110,240,220,0.45); }
+.mode.daily b, h2.daily, .kicker.daily { color: #7ff5e2; }
+.mode.rush { background: linear-gradient(160deg, rgba(255,128,80,0.36), rgba(255,255,255,0.08) 75%); box-shadow: inset 0 0 0 1px rgba(255,160,110,0.5); }
+.mode.rush b, h2.rush, .kicker.rush { color: #ffb48a; }
+.btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
+.btn.go small { opacity: 0.75; }
+.btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
+.btn.go-rush { background: linear-gradient(180deg, #ffc49e, #ff7e4a); color: #4a1600; box-shadow: 0 4px 0 #b84a1e; }
+.card .home-x { position: absolute; top: 16px; left: 16px; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
+.card .home-x svg { width: 20px; height: 20px; }
 .mode span { color: var(--ink-soft); letter-spacing: 0.08em; text-transform: uppercase; }
 .mode[disabled] { cursor: default; opacity: 0.5; }
 .row3 { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -628,7 +640,7 @@ window.Board = (function () {
   // ---------- HUD helpers ----------
   let flashT = 0;
   function flash(text, small, ms, bad) {
-    const f = $('flash');
+    const f = $('flash'); ms = Math.max(ms || 1000, small ? 1800 : 1200);
     f.innerHTML = ''; f.append(text); f.classList.toggle('bad', !!bad);
     if (small) { const s = document.createElement('small'); s.textContent = small; f.append(s); }
     f.classList.remove('show'); void f.offsetWidth; f.classList.add('show');
@@ -2014,11 +2026,12 @@ window.Board = (function () {
   function landed() {
     const [wx, wz] = W2(SPAWN_X, SPAWN_Y);
     burst(wx, H_LAND + 0.1, wz, 0xfff6e0, 22, 3, 1.2); burst(wx, H_LAND + 0.1, wz, 0x9ff4ff, 12, 2, 2.5);
-    shockT = 0.6; tone(330, 0.12, 'sine', 0.08); setTimeout(() => tone(660, 0.16, 'sine', 0.07), 70); setTimeout(() => tone(990, 0.2, 'sine', 0.05), 140); buzz('tick');
+    shockT = 0.6; setTimeout(() => { if (touchHeld && touchDir && touchDir !== 'any') steer(touchDir); else for (const k of keysHeld) if (KEYS[k]) steer(KEYS[k]); }, 0); // a direction chosen during the drop counts
+    tone(330, 0.12, 'sine', 0.08); setTimeout(() => tone(660, 0.16, 'sine', 0.07), 70); setTimeout(() => tone(990, 0.2, 'sine', 0.05), 140); buzz('tick');
   }
   function banner() {
-    if (mode === 'rush') flash('Rush', 'claim fast · +5s per claim', 1300);
-    else flash(mode === 'daily' ? 'Daily' : L.boss ? 'Boss' : 'Level ' + L.name, L.boss ? 'trap it 3 times' : 'claim ' + L.goal + '%', 1300);
+    if (mode === 'rush') flash('Rush', 'claim fast · +5s per claim', 2400);
+    else flash(mode === 'daily' ? 'Daily' : L.boss ? 'Boss' : 'Level ' + L.name, L.boss ? 'trap it 3 times' : 'claim ' + L.goal + '%', 2400);
     enter(0.25); $('hint').textContent = ''; tutorialStart();
   }
   let iconR = null;
@@ -2045,13 +2058,13 @@ window.Board = (function () {
     toMenu(); onHome = true;
     const nx = nextLevel(), lv = LEVELS[nx], done = prog.daily[todayKey()];
     panel('<div class="hbar"><button class="corner l" type="button" data-act="shop" aria-label="Shop"><svg viewBox="0 0 24 24"><path d="M5.5 8.5h13l-1.1 11.2a1.5 1.5 0 0 1-1.5 1.3H8.1a1.5 1.5 0 0 1-1.5-1.3z" fill="currentColor"/><path d="M9 10V7a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="corner r" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div><h1>Landscraper</h1>' +
-      '<div class="btns"><button class="btn" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
+      '<div class="btns"><button class="btn go" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
       '<div class="modes">' +
-      '<button class="mode" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
-      '<button class="mode" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
+      '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
+      '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
       '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
-      { play: () => startLevel(nx), daily: showDaily, rush: startRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
+      { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
   }
 
   // ---------- trophies: one per month of Daily (bronze 10 days, silver 20, gold every day), two per world ----------
@@ -2200,8 +2213,8 @@ window.Board = (function () {
     // missed yesterday after a streak? one ad saves it
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
     const canSave = !prog.daily[yKey] && prog.daily[dayKey(y2)] && !prog.daily[dayKey(y2)].late;
-    panel('<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><h2>Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
-      '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : '') + '" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><h2 class="daily">Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
+      '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.daily[yKey] = { stars: 0, saved: true }; saveProg(); flash('Streak saved', null, 1200); buzz('clear'); showDaily(mOff); },
         play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
     document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); playDaily(b.dataset.day); }));
@@ -2225,14 +2238,16 @@ window.Board = (function () {
     const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
     return { id: 'rush', name: 'Rush', w, l: 0, world: w, mon, speed: 4.2 + n * 0.3, goal: RUSH_GOAL, board, time: 0, powers: ['slow', 'freeze', 'time'], newPower: null, boss: false, lives: 99 };
   }
+  function showRush() {
+    toMenu();
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="kicker rush">Rush</div><h2 class="rush">Beat the clock</h2><p>Claim 50% to clear a board and get +10s.<br>Every claim adds +5s. One hit costs 5s.<br>How many boards can you clear?</p>' +
+      (prog.rush ? '<div class="got">Best ' + prog.rush.toLocaleString('en-US') + '</div>' : '') +
+      '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
+      { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
+  }
   function startRush() {
     mode = 'rush'; rng = Math.random; rushTime = 60; rushBoard = 0; rushTotal = 0; timePending = 0; rushExtra = false; rushOrder = WORLDS.map((_, w) => w).filter(worldOpen).flatMap((w) => BOARDS[WORLDS[w].id].map((b) => [w, b])).sort(() => Math.random() - 0.5);
     begin(rushLevel(0)); mode = 'rush'; drawHud();
-    if (!prog.seen.includes('rush') && state === 'play') { // explain it once
-      state = 'intro'; prog.seen.push('rush'); saveProg();
-      panel('<div class="kicker">Rush</div><h2>Beat the clock</h2><p>Claim 50% to clear a board: +10s.<br>How many boards can you clear?</p><div class="btns"><button class="btn" type="button" data-act="go">Go</button></div>',
-        { go: () => { hidePanel(); state = 'play'; } });
-    }
   }
   const rushLabel = () => Math.ceil(rushTime) + 's · ' + rushTotal.toLocaleString('en-US') + ' pts';
   function rushClaimed(n) {
