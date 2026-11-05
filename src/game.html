@@ -187,6 +187,13 @@ body {
 .mode.daily b, h2.daily, .kicker.daily { color: #7ff5e2; }
 .mode.rush { background: linear-gradient(160deg, rgba(255,128,80,0.36), rgba(255,255,255,0.08) 75%); box-shadow: inset 0 0 0 1px rgba(255,160,110,0.5); }
 .mode.rush b, h2.rush, .kicker.rush { color: #ffb48a; }
+.togs { width: 100%; display: flex; justify-content: center; gap: 28px; margin: 2px 0; }
+.tog { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.tog svg { width: 26px; height: 26px; padding: 13px; border-radius: 50%; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
+.tog span { font: 500 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.tog .no { display: none; } .tog.off .no { display: inline; } .tog.off .on { display: none; }
+.tog.off svg { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
+.tog:active svg { transform: scale(0.94); }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -2134,14 +2141,16 @@ window.Board = (function () {
     html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Worlds</button></div>';
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
   }
+  const SND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  const VIB = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7.5" y="3" width="9" height="18" rx="2.2"/><path class="on" d="M4.5 8v8M2 10v4M19.5 8v8M22 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M3 3l18 18" stroke="#ff5a7a" stroke-width="2.4" stroke-linecap="round"/></svg>';
   function settingsButtons() {
-    const lbl = (k, on) => k + ': ' + (on ? 'On' : 'Off'), ctl = () => 'Controls: ' + (settings.input === 'buttons' ? 'Buttons' : 'Swipe');
+    const t = (k, on, svg, lbl) => '<button class="tog' + (on ? '' : ' off') + '" type="button" data-act="' + k + '" aria-pressed="' + on + '">' + svg + '<span>' + lbl + '</span></button>';
+    const flip = (b, on) => { b.classList.toggle('off', !on); b.setAttribute('aria-pressed', on); };
     return {
-      html: '<button class="btn alt" type="button" data-act="sound">' + lbl('Sound', settings.sound) + '</button><button class="btn alt" type="button" data-act="haptics">' + lbl('Vibration', settings.haptics) + '</button>',
+      html: '<div class="togs">' + t('sound', settings.sound, SND, 'Sound') + t('haptics', settings.haptics, VIB, 'Vibration') + '</div>',
       acts: {
-        controls: (b) => { settings.input = settings.input === 'buttons' ? 'swipe' : 'buttons'; store.set('ls_settings', settings); b.textContent = ctl(); buzz('select'); resize(); },
-        sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); b.textContent = lbl('Sound', settings.sound); tone(660, 0.12, 'triangle'); },
-        haptics: (b) => { settings.haptics = !settings.haptics; store.set('ls_settings', settings); b.textContent = lbl('Vibration', settings.haptics); buzz('claim'); }
+        sound: (b) => { settings.sound = !settings.sound; store.set('ls_settings', settings); flip(b, settings.sound); tone(660, 0.12, 'triangle'); },
+        haptics: (b) => { settings.haptics = !settings.haptics; store.set('ls_settings', settings); flip(b, settings.haptics); buzz('claim'); }
       }
     };
   }
