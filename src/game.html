@@ -2872,11 +2872,12 @@ window.Board = (function () {
   function dpadVisible() { const v = useButtons() && (state === 'play' || state === 'intro') && !paused; if (v !== dShown) { dpad.hidden = !v; dShown = v; } if (dpId !== null && touchDir && dir !== touchDir) steer(touchDir); }
   stage.addEventListener('pointerdown', (e) => {
     if (e.target.closest('#panel') || e.target.closest('#pauseBtn') || e.target.closest('#dpad') || e.target.closest('#adSim')) return;
+    if (state === 'play' && !$('hud').hidden && e.clientY < $('hud').getBoundingClientRect().bottom + 6) return; // the HUD strip at the top is not a steering area
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
     try { stage.setPointerCapture(e.pointerId); } catch (err) {} // still get the release when the finger or mouse leaves the frame
     if (state === 'play' && !useButtons()) { // near an edge the pad is drawn a little inside the screen so all four arrows show
-      const W0 = window.innerWidth, H0 = window.innerHeight; sw.vx = clamp(e.clientX, 82, W0 - 82); sw.vy = clamp(e.clientY, 82, H0 - 82);
+      const W0 = window.innerWidth, H0 = window.innerHeight; sw.vx = clamp(e.clientX, 82, W0 - 82); sw.vy = clamp(e.clientY, Math.max(82, $('hud').getBoundingClientRect().bottom + 82), H0 - 82);
       pad.style.left = sw.vx + 'px'; pad.style.top = sw.vy + 'px'; knobAt(0, 0); padTo(null); pad.classList.add('on'); }
   });
   stage.addEventListener('pointermove', (e) => {
@@ -2885,7 +2886,7 @@ window.Board = (function () {
     if (useButtons()) return;
     let dx = e.clientX - sw.x, dy = e.clientY - sw.y; // from where the finger landed: the pad stays put
     // Near a screen edge there is little room to move toward it, so a short move that way counts as a full one.
-    const room = (d) => clamp(d * 0.5, 6, DEAD), W0 = window.innerWidth, H0 = window.innerHeight;
+    const room = (d) => clamp(d * 0.35, 4, DEAD), W0 = window.innerWidth, H0 = window.innerHeight;
     dx *= DEAD / room(dx < 0 ? sw.x : W0 - sw.x); dy *= DEAD / room(dy < 0 ? sw.y : H0 - sw.y);
     knobAt(dx, dy);
     const d = pickDir(dx, dy, touchDir);
