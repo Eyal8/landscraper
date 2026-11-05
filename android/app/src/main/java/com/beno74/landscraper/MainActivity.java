@@ -1,5 +1,6 @@
 package com.beno74.landscraper;
 
+import android.app.Activity;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,5 +29,22 @@ public class MainActivity extends BridgeActivity {
                 v.setSystemGestureExclusionRects(rects);
             });
         }
+    }
+
+    // Android 14+: a screenshot pauses the game, so the player doesn't lose a life
+    private Object shotCb;
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (Build.VERSION.SDK_INT >= 34) {
+            Activity.ScreenCaptureCallback cb = () -> { if (getBridge() != null) getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript("window.__shot && window.__shot()", null)); };
+            shotCb = cb;
+            registerScreenCaptureCallback(getMainExecutor(), cb);
+        }
+    }
+    @Override
+    public void onStop() {
+        if (Build.VERSION.SDK_INT >= 34 && shotCb != null) { unregisterScreenCaptureCallback((Activity.ScreenCaptureCallback) shotCb); shotCb = null; }
+        super.onStop();
     }
 }

@@ -6,6 +6,10 @@ import UIKit
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(GamesPlugin())
+        // A screenshot does not pause the app by itself: tell the game, so it pauses
+        NotificationCenter.default.addObserver(forName: UIApplication.userDidTakeScreenshotNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.bridge?.webView?.evaluateJavaScript("window.__shot && window.__shot()", completionHandler: nil)
+        }
     }
     // Steering often starts near the screen edges: let the game have the first swipe there (the home bar waits for a second one).
     override open var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }

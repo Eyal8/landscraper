@@ -1443,7 +1443,7 @@ window.Board = (function () {
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzpess'],
     glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzpiss'],
     reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhhjjzpicc'],
-    volcano: ['bbl', 'bbzl', 'bbzjl', 'bbzpjlc', 'bbbzpijlc', 'bbzlw', 'bbzjlws', 'bbzhjlc', 'bbzpijlcs', 'bbzzphijlcc', 'bbu', 'bbzuu', 'bbzhjuu', 'bbzpiluuc', 'bbbzphijluuc', 'bbzluu', 'bbzzpjluuc', 'bbzhpiluuuc', 'bbbzzphijluuuc', 'Bbhhzpijluuucc']
+    volcano: ['bbl', 'bbzl', 'bzjl', 'bbzjlc', 'bbzpjlc', 'bzlw', 'bbzjlw', 'bzhjlc', 'bbzpjlc', 'bbzphjlc', 'bbu', 'bbzu', 'bzhju', 'bbzpluc', 'bbzphjluc', 'bzlu', 'bbzpjluc', 'bzhpiluc', 'bbzphijluc', 'Bbhzpjluc']
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
@@ -1459,7 +1459,7 @@ window.Board = (function () {
   WORLDS.forEach((wd, w) => {
     const boards = BOARDS[wd.id], lineup = LINEUPS[wd.id], bo = BOOSTERS[wd.id];
     for (let l = 0; l < 20; l++) {
-      const d = WAVE[l] + w * 2.6, mon = lineup[l].split('').map((c) => (c === 'B' ? BOSS_OF[wd.id] : KIND[c]));
+      const d = WAVE[l] + w * 2.2, mon = lineup[l].split('').map((c) => (c === 'B' ? BOSS_OF[wd.id] : KIND[c]));
       const firstOfWave = l % 5 === 0, introAt = Object.entries(bo.intro).filter(([, at]) => at - 1 <= l);
       const pool = bo.pool.filter((k) => !bo.intro[k] || bo.intro[k] - 1 <= l);
       LEVELS.push({
@@ -2910,6 +2910,7 @@ window.Board = (function () {
   });
   window.addEventListener('keyup', (e) => { keysHeld.delete(e.key); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
+  window.__shot = () => { release(); if (state === 'play' && !paused) showPause(); }; // the phone took a screenshot: pause, so the player doesn't lose a life
 
   // ---------- loop ----------
   let last = performance.now(), simT = 0, camFix = null, gameT = 0;
