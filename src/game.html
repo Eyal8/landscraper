@@ -2109,9 +2109,10 @@ window.Board = (function () {
     return out.reverse();
   }
   function worldTrophies() {
-    return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w);
-      return [{ id: 'w' + w, tier: prog.done[boss.id] ? 'gold' : 'none', title: wd.name, sub: prog.done[boss.id] ? 'Cleared' : 'Beat the boss', boss: BOSS_OF[wd.id] },
-              { id: 'p' + w, tier: st >= 60 ? 'gold' : 'none', title: wd.name, sub: st + ' / 60 ' + STAR, star: true }]; }).flat();
+    return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w); // bosses first, then stars: bronze 30, silver 45, gold 60
+      const tier = st >= 60 ? 'gold' : st >= 45 ? 'silver' : st >= 30 ? 'bronze' : 'none', next = st >= 60 ? 0 : st >= 45 ? 60 : st >= 30 ? 45 : 30;
+      return [{ id: 'w' + w, tier: prog.done[boss.id] && !prog.skipped[boss.id] ? 'gold' : 'none', title: wd.name, sub: prog.done[boss.id] ? 'Trapped' : 'Trap the boss', boss: BOSS_OF[wd.id], kind: 'boss' },
+              { id: 'p' + w + tier, tier, title: wd.name, sub: next ? st + ' / ' + next + ' ' + STAR : '60 ' + STAR, star: true, kind: 'star' }]; }).flat();
   }
   const earned = () => trophyList().filter((t) => t.tier !== 'none').map((t) => t.id + t.tier).concat(worldTrophies().filter((t) => t.tier !== 'none').map((t) => t.id));
   let bossThumbs = {};
@@ -2120,8 +2121,9 @@ window.Board = (function () {
     const months = trophyList(), worlds = worldTrophies();
     const medal = (t, inner, sub) => '<div class="tro ' + t.tier + '"><div class="medal">' + inner + '</div><b>' + t.title + '</b><small>' + sub + '</small></div>';
     const mHtml = months.length ? months.map((t) => medal(t, t.icon, t.tier === 'none' ? t.n + ' / 10 days' : t.tier === 'gold' ? 'Every day' : t.n + ' days')).join('') : '<p style="grid-column:1/-1">Play the Daily 10 days in a month for a trophy.</p>';
-    const wHtml = worlds.map((t) => { if (t.boss && !bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss); return medal(t, t.boss ? bossThumbs[t.boss] : glyph(0), t.sub); }).join('');
-    panel('<h2>Trophies</h2><div class="trophies"><div class="sect" style="grid-column:1/-1">Daily</div>' + mHtml + '<div class="sect" style="grid-column:1/-1">Worlds</div>' + wHtml + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
+    const one = (t) => { if (t.boss && !bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss); return medal(t, t.boss ? bossThumbs[t.boss] : glyph(0), t.sub); };
+    const wHtml = worlds.filter((t) => t.kind === 'boss').map(one).join('') + '<div class="sect" style="grid-column:1/-1">Stars</div>' + worlds.filter((t) => t.kind === 'star').map(one).join('');
+    panel('<h2>Trophies</h2><div class="trophies"><div class="sect" style="grid-column:1/-1">Daily</div>' + mHtml + '<div class="sect" style="grid-column:1/-1">Bosses</div>' + wHtml + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
   function showWorlds() {
