@@ -168,7 +168,18 @@ body {
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .stars { display: flex; gap: 10px; }
 .stars svg { width: 44px; height: 44px; color: rgba(255,255,255,0.18); }
-.stars svg.on { color: var(--gold); animation: star 0.45s cubic-bezier(.2,.9,.3,1.6) backwards; filter: drop-shadow(0 2px 8px rgba(255, 209, 102, 0.6)); }
+.stars svg.on { color: var(--gold); animation: star 0.45s cubic-bezier(.2,.9,.3,1.6) backwards, shine 2.4s ease-in-out 1s infinite; filter: drop-shadow(0 2px 8px rgba(255, 209, 102, 0.6)); }
+@keyframes shine { 0%, 100% { filter: drop-shadow(0 2px 8px rgba(255,209,102,0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 16px rgba(255,226,120,1)) brightness(1.15); transform: scale(1.08); } }
+.stars { position: relative; }
+.stars .rays { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; margin: -130px 0 0 -130px; pointer-events: none; z-index: -1; opacity: 0;
+  background: repeating-conic-gradient(rgba(255,214,90,0.28) 0 10deg, transparent 10deg 30deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
+  animation: raysIn 0.6s ease-out 0.2s forwards, raysSpin 14s linear infinite; }
+@keyframes raysIn { to { opacity: 1; } } @keyframes raysSpin { to { transform: rotate(360deg); } }
+.stars .sp { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #fff6c2; box-shadow: 0 0 10px #ffd166; opacity: 0; animation: spark 1.6s ease-out infinite; }
+@keyframes spark { 0% { opacity: 0; transform: scale(0.2); } 30% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(0.2) translateY(-14px); } }
+.card h2.win { animation: winPop 0.6s cubic-bezier(.2,.9,.3,1.5) both; background: linear-gradient(180deg, #fff, #ffe08a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@keyframes winPop { from { transform: scale(0.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .stars svg.on, .stars .rays, .stars .sp, .card h2.win { animation: none; opacity: 1; } }
 @keyframes star { from { transform: scale(0) rotate(-40deg); } }
 .foe { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,0.08); }
 .foe img { width: 88px; height: 88px; }
@@ -199,6 +210,9 @@ body {
 .rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
+.tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -1915,7 +1929,7 @@ window.Board = (function () {
   // ---------- level flow ----------
   document.body.insertAdjacentHTML('afterbegin', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4a8"/><stop offset=".5" stop-color="#ffc93a"/><stop offset="1" stop-color="#ff9500"/></linearGradient></defs></svg>');
   const STAR = '<svg class="ic-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3 6.2 6.8.9-5 4.7 1.3 6.8L12 17.1l-6.1 3.3 1.3-6.8-5-4.7L9 8z" fill="url(#gStar)" stroke="#8a4a00" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 5.2l1.6 3.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg>';
-  const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
+  const starsSvg = (n, lazy) => '<div class="stars"><i class="rays"></i>' + [[-10, 4, 0], [104, 0, 0.5], [210, 8, 1], [40, 44, 0.8], [170, 46, 0.3]].map(([x, y, d]) => '<i class="sp" style="left:' + x + 'px;top:' + y + 'px;animation-delay:' + (1 + d) + 's"></i>').join('') + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
   let dailyBest = false, levelEnds = 0, continued = false, startShield = false;
   const fails = {}; // failed tries per level this session (Skip appears after 3)
   const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
@@ -1956,7 +1970,7 @@ window.Board = (function () {
       const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
       const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
-      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
+      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
         '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
@@ -1984,6 +1998,16 @@ window.Board = (function () {
     if (state !== 'play') return;
     clockT = 15; invuln = 0; die('+15 seconds', true);
   }
+  const WHY = {
+    'a monster caught you': ['A monster got you', 'Caught!', 'Too close!', 'Chomp!', 'Bumped!'],
+    'the fuse caught you': ['The fuse got you', 'Too slow, it burnt!', 'Boom!', 'The spark won'],
+    'you crossed your own trail': ['You crossed your own line', 'Tangled up!', 'Own line, oops'],
+    'a buzzsaw caught you on land': ['The saw got you', 'Buzzed!', 'Sliced!'],
+    'a crab pinched you': ['Pinched!', 'The crab got you', 'Snip snap!'],
+    'a jellyfish bolt hit you': ['Zapped!', 'Shocked!', 'The bolt got you'],
+    'an eel caught you': ['The eel got you', 'Slurp!', 'Eel attack!'] };
+  const OUCH = ['Ouch!', 'Oops!', 'Whoa!', 'Argh!', 'Yikes!'];
+  const pick = (a) => a[(Math.random() * a.length) | 0];
   function die(why, timeout) {
     window.__lastWhy = why;
     if ((invuln > 0 && !timeout) || state !== 'play') return;
@@ -1999,7 +2023,7 @@ window.Board = (function () {
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
-    flash(lives > 0 ? (timeout ? 'Time\'s up!' : 'Ouch!') : 'Out of lives', lives > 0 ? why : timeout ? 'time ran out' : why, 1100, true);
+    const say = WHY[why] ? pick(WHY[why]) : why; flash(lives > 0 ? (timeout ? 'Time\'s up!' : pick(OUCH)) : 'Out of lives', lives > 0 ? say : timeout ? 'time ran out' : say, 1100, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
     enter(0.65); if (lives > 0) sawsHome();
@@ -2140,16 +2164,27 @@ window.Board = (function () {
       return [{ id: 'w' + w, tier: prog.done[boss.id] && !prog.skipped[boss.id] ? 'gold' : 'none', title: wd.name, sub: prog.done[boss.id] ? 'Trapped' : 'Trap the boss', boss: BOSS_OF[wd.id], kind: 'boss' },
               { id: 'p' + w + tier, tier, title: wd.name, sub: next ? st + ' / ' + next + ' ' + STAR : '60 ' + STAR, star: true, kind: 'star' }]; }).flat();
   }
-  const earned = () => trophyList().filter((t) => t.tier !== 'none').map((t) => t.id + t.tier).concat(worldTrophies().filter((t) => t.tier !== 'none').map((t) => t.id));
+  function rushTrophy() { const b = prog.rushBoards || 0, tier = b >= 10 ? 'gold' : b >= 6 ? 'silver' : b >= 3 ? 'bronze' : 'none', next = b >= 10 ? 0 : b >= 6 ? 10 : b >= 3 ? 6 : 3;
+    return { id: 'r' + tier, tier, title: 'Rush', sub: next ? b + ' / ' + next + ' boards' : '10 boards' }; }
+  const earned = () => trophyList().filter((t) => t.tier !== 'none').map((t) => t.id + t.tier).concat(worldTrophies().filter((t) => t.tier !== 'none').map((t) => t.id)).concat(rushTrophy().tier !== 'none' ? [rushTrophy().id] : []);
   let bossThumbs = {};
-  function showTrophies() {
-    toMenu();
-    const months = trophyList(), worlds = worldTrophies();
+  const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
+  let troTab = 'worlds';
+  const BOLT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>';
+  function showTrophies(tab) {
+    toMenu(); if (typeof tab === 'string') troTab = tab;
     const medal = (t, inner, sub) => '<div class="tro ' + t.tier + '"><div class="medal">' + inner + '</div><b>' + t.title + '</b><small>' + sub + '</small></div>';
-    const mHtml = months.length ? months.map((t) => medal(t, t.icon, t.tier === 'none' ? t.n + ' / 10 days' : t.tier === 'gold' ? 'Every day' : t.n + ' days')).join('') : '<p style="grid-column:1/-1">Play the Daily 10 days in a month for a trophy.</p>';
-    const one = (t) => { if (t.boss && !bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss); return medal(t, t.boss ? bossThumbs[t.boss] : glyph(0), t.sub); };
-    const wHtml = worlds.filter((t) => t.kind === 'boss').map(one).join('') + '<div class="sect" style="grid-column:1/-1">Stars</div>' + worlds.filter((t) => t.kind === 'star').map(one).join('');
-    panel('<h2>Trophies</h2><div class="trophies"><div class="sect" style="grid-column:1/-1">Daily</div>' + mHtml + '<div class="sect" style="grid-column:1/-1">Bosses</div>' + wHtml + '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Home</button></div>', { back: showHome });
+    let body = '';
+    if (troTab === 'daily') { const months = trophyList();
+      body = months.length ? months.map((t) => medal(t, t.icon, t.tier === 'none' ? t.n + ' / 10 days' : t.tier === 'gold' ? 'Every day' : t.n + ' days')).join('') : '<p style="grid-column:1/-1">Play the Daily 10 days in a month:<br>bronze. 20 days: silver. Every day: gold.</p>'; }
+    else if (troTab === 'rush') { const r = rushTrophy();
+      body = '<div style="grid-column:1/-1;display:flex;justify-content:center">' + medal(r, BOLT, r.sub) + '</div><p style="grid-column:1/-1">Clear boards in one run:<br>3 bronze · 6 silver · 10 gold' + (prog.rush ? '<br>Best ' + prog.rush.toLocaleString('en-US') + (prog.rushBoards ? ' · ' + prog.rushBoards + ' boards' : '') : '') + '</p>'; }
+    else { const worlds = worldTrophies();
+      const one = (t) => { if (t.boss && !bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss); return medal(t, t.boss ? bossThumbs[t.boss] : glyph(0), t.sub); };
+      body = '<div class="sect" style="grid-column:1/-1">Bosses</div>' + worlds.filter((t) => t.kind === 'boss').map(one).join('') + '<div class="sect" style="grid-column:1/-1">Stars</div>' + worlds.filter((t) => t.kind === 'star').map(one).join(''); }
+    const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
+    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="trophies">' + body + '</div>',
+      { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush') });
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
   function showWorlds() {
