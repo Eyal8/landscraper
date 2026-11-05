@@ -2344,7 +2344,7 @@ window.Board = (function () {
     const big = th[sk.id];
     panel('<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
       '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + '<div class="pvh">' + (big ? '<img alt="" src="' + big + '">' : '') + '</div>' + '<div class="info">' + tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act + '</div></div>' +
-      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Every pack, now and later</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
       { back: showHome, all: () => buyIt('allSkins', () => showSkins(sk.id)),
         use: () => { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(sk.id); },
         buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(sk.id); }),
