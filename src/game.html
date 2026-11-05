@@ -1466,7 +1466,7 @@ window.Board = (function () {
         id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
         mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
         board: firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
-        time: Math.min(200, 100 + 6 * mon.length + (lineup[l].includes('B') ? 40 : 0)), // tuned with the test bot: the clock should push, not decide
+        time: Math.round(Math.min(130, 50 + 5 * mon.length + l * 1.5 + (lineup[l].includes('B') ? 25 : 0)) / 5) * 5, // about 40% tighter after real play: the clock should push
         powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
         boss: lineup[l].includes('B')
       });
