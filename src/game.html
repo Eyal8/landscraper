@@ -194,6 +194,9 @@ body {
 .tog .no { display: none; } .tog.off .no { display: inline; } .tog.off .on { display: none; }
 .tog.off svg { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
 .tog:active svg { transform: scale(0.94); }
+.rbest { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 26px; border-radius: 18px; background: rgba(255,255,255,0.08); }
+.rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+.rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -2249,8 +2252,8 @@ window.Board = (function () {
   }
   function showRush() {
     toMenu();
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="kicker rush">Rush</div><h2 class="rush">Beat the clock</h2><p>Claim 50% to clear a board and get +10s.<br>Every claim adds +5s. One hit costs 5s.<br>How many boards can you clear?</p>' +
-      (prog.rush ? '<div class="got">Best ' + prog.rush.toLocaleString('en-US') + '</div>' : '') +
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="kicker rush">Rush</div><h2 class="rush">Beat the clock</h2><p>Clear as many boards as you can.<br>Each one gets harder.</p>' +
+      (prog.rush ? '<div class="rbest"><span>Best</span><b>' + prog.rush.toLocaleString('en-US') + '</b>' + (prog.rushBoards ? '<span>' + prog.rushBoards + (prog.rushBoards === 1 ? ' board' : ' boards') + '</span>' : '') + '</div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
   }
@@ -2290,7 +2293,7 @@ window.Board = (function () {
     }, 1200);
   }
   function rushFinal() {
-    levelEnds++; const best = rushTotal > prog.rush; if (best) { prog.rush = rushTotal; saveProg(); }
+    levelEnds++; const best = rushTotal > prog.rush; if (best) { prog.rush = rushTotal; prog.rushBoards = rushBoard; saveProg(); }
     window.Board.submit('rush', rushTotal);
     {
       panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
