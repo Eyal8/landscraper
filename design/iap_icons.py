@@ -44,12 +44,12 @@ def crown():
             '<circle cx="0" cy="40" r="44" fill="#ff3f8e"/><circle cx="-160" cy="80" r="30" fill="#3fd0ff"/><circle cx="160" cy="80" r="30" fill="#7be36b"/>')
 bg = lambda g: f'<rect width="1024" height="1024" fill="url(#{g})"/>'
 I = {
-  'pack-sea': bg('sea2') + rays(512, 512, 18, .09) + waves() + G(512, 540, 1.45, -8, sub()),
-  'pack-space': bg('space2') + stars() + G(512, 512, 1.55, 0, saturn()),
-  'pack-pool': bg('pool2') + rays(512, 512, 18, .1) + G(512, 512, 1.6, 0, donut()),
-  'all-skins': bg('gold2') + rays(512, 512, 22, .14) + G(300, 330, .75, -10, sub()) + G(730, 360, .72, 0, saturn()) + G(512, 720, .78, 0, donut()),
-  'remove-ads': bg('teal2') + rays(512, 512, 18, .08) + G(512, 512, 1.15, 0, noads()),
-  'everything': bg('space2') + rays(512, 560, 22, .12) + stars(30, 7) + G(512, 540, 1.05, 0, crown()),
+  'pack-sea': bg('sea2') + rays(512, 512, 18, .09) + waves() + G(480, 530, 1.05, -8, sub()),
+  'pack-space': bg('space2') + stars() + G(512, 512, 1.12, 0, saturn()),
+  'pack-pool': bg('pool2') + rays(512, 512, 18, .1) + G(512, 512, 1.25, 0, donut()),
+  'all-skins': bg('gold2') + rays(512, 512, 22, .14) + G(360, 400, .55, -10, sub()) + G(680, 410, .52, 0, saturn()) + G(512, 650, .58, 0, donut()),
+  'remove-ads': bg('teal2') + rays(512, 512, 18, .08) + G(512, 512, .9, 0, noads()),
+  'everything': bg('space2') + rays(512, 560, 22, .12) + stars(30, 7) + G(512, 520, .8, 0, crown()),
 }
 tmp = pathlib.Path(__file__).parent / 'out'
 import icon_art
