@@ -9,7 +9,6 @@ class MainViewController: CAPBridgeViewController {
     }
     // Steering often starts near the screen edges: let the game have the first swipe there (the home bar waits for a second one).
     override open var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
-    override open var prefersHomeIndicatorAutoHidden: Bool { true }
 }
 
 // Game Center: sign-in, submit a score, open a leaderboard. JS name: "Games".
