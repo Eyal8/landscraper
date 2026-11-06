@@ -142,11 +142,14 @@ body {
   background: rgba(12, 18, 44, 0.38);
 }
 .card {
-  width: min(360px, 100%); max-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: min(400px, 100%); max-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 14px;
   padding: 24px 20px 20px; border-radius: 28px; text-align: center; overflow-y: auto;
   background: var(--card); border: 1px solid var(--line); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   animation: cardIn 0.35s cubic-bezier(.2,.9,.3,1.25);
 }
+#card.swap { animation: none; }
+#card.swap > * { animation: swapIn 0.28s ease-out both; }
+@keyframes swapIn { from { opacity: 0; transform: translateY(6px); } }
 @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
 .card h1 { margin: 0; font: 800 34px/1 var(--display); letter-spacing: -0.01em; }
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
@@ -210,7 +213,7 @@ body {
 .rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
-.card.troc { width: min(420px, 100%); height: min(640px, 100%); overflow: hidden; }
+.card.troc { width: min(400px, 100%); height: min(640px, 100%); overflow: hidden; }
 .card.troc .tbody > * { flex-shrink: 0; }
 .card.troc .tbody { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; box-sizing: border-box; }
 .trow { display: grid; grid-template-columns: 1.25fr repeat(4, 1fr); align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: rgba(255,255,255,0.06); }
@@ -738,13 +741,24 @@ window.Board = (function () {
     clearTimeout(flashT); flashLeft = ms || 1000; flashAt = performance.now(); flashT = setTimeout(flashOut, flashLeft); // drifts up and fades
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
-  function panel(html, actions) {
-    $('card').className = 'card'; $('card').innerHTML = html; $('panel').hidden = false;
+  let swapRaf = 0;
+  function panel(html, actions) { // switching between cards: the card glides to its new size and the new content fades in
+    const c = $('card'), was = !$('panel').hidden && !reduceMotion ? c.getBoundingClientRect() : null;
+    c.className = 'card'; c.innerHTML = html; $('panel').hidden = false;
+    if (was && was.height > 0) {
+      c.classList.add('swap'); cancelAnimationFrame(swapRaf); c.style.transition = 'none'; c.style.height = was.height + 'px'; // hold the old size until the new one is known
+      swapRaf = requestAnimationFrame(() => {
+        c.style.transition = 'none'; c.style.height = ''; const to = c.getBoundingClientRect().height;
+        c.style.height = was.height + 'px'; void c.offsetHeight;
+        c.style.transition = 'height 0.28s cubic-bezier(.3,.8,.3,1)'; c.style.height = to + 'px';
+        setTimeout(() => { c.style.transition = ''; c.style.height = ''; }, 300);
+      });
+    }
     $('card').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
       e.stopPropagation(); buzz('select'); const a = actions[b.dataset.act]; if (a) a(b);
     }));
   }
-  const hidePanel = () => { $('panel').hidden = true; };
+  const hidePanel = () => { $('panel').hidden = true; $('card').style.height = ''; };
   function popAt(wx, wz, text, color) {
     const v = new THREE.Vector3(wx, 1.4, wz).project(camera);
     const d = document.createElement('div'); d.className = 'pop'; d.textContent = text;
