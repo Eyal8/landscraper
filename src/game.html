@@ -148,8 +148,8 @@ body {
   animation: cardIn 0.35s cubic-bezier(.2,.9,.3,1.25);
 }
 #card.swap { animation: none; }
-#card.swap > * { animation: swapIn 0.28s ease-out both; }
-@keyframes swapIn { from { opacity: 0; transform: translateY(6px); } }
+#card.swap > * { animation: swapIn 0.2s ease-out 0.2s both; }
+@keyframes swapIn { from { opacity: 0; } } /* content appears once the card has reached its new size, so nothing slides */
 @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
 .card h1 { margin: 0; font: 800 34px/1 var(--display); letter-spacing: -0.01em; }
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
