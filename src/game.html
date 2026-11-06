@@ -210,6 +210,17 @@ body {
 .rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
+.card.troc { width: min(420px, 100%); height: min(640px, 100%); overflow: hidden; }
+.card.troc .tbody { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; box-sizing: border-box; }
+.trow { display: grid; grid-template-columns: 1.25fr repeat(4, 1fr); align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: rgba(255,255,255,0.06); }
+.trow.head { background: none; padding: 0 6px; } .trow.head i { font: 500 11px var(--mono); font-style: normal; color: var(--gold); letter-spacing: 0.1em; }
+.trow > span { text-align: left; display: flex; flex-direction: column; gap: 2px; } .trow > span b { font: 800 14px var(--display); } .trow > span small { font: 500 11px var(--mono); color: var(--ink-soft); }
+.trow .ic-star { width: 1em; height: 1em; }
+.trow .tro .medal { width: 46px; height: 46px; } .trow .tro .medal svg { width: 22px; height: 22px; } .trow .tro .medal img { width: 44px; height: 44px; }
+.trow .tro small { font-size: 10px; letter-spacing: 0; }
+.trow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tro.none.lk-bronze .medal { box-shadow: inset 0 0 0 2px rgba(217,138,74,0.55); } .tro.none.lk-silver .medal { box-shadow: inset 0 0 0 2px rgba(201,211,230,0.55); } .tro.none.lk-gold .medal { box-shadow: inset 0 0 0 2px rgba(255,201,40,0.6); }
+.tnote { font-size: 13px; } .mnav { margin-bottom: 4px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -675,7 +686,7 @@ window.Board = (function () {
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   function panel(html, actions) {
-    $('card').innerHTML = html; $('panel').hidden = false;
+    $('card').className = 'card'; $('card').innerHTML = html; $('panel').hidden = false;
     $('card').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
       e.stopPropagation(); buzz('select'); const a = actions[b.dataset.act]; if (a) a(b);
     }));
@@ -2158,33 +2169,49 @@ window.Board = (function () {
     }
     return out.reverse();
   }
+  // Trophies: every medal is on show from the start, locked ones faded in their own colour.
+  const TIERS = ['bronze', 'silver', 'gold'];
   function worldTrophies() {
-    return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w); // bosses first, then stars: bronze 30, silver 45, gold 60
-      const tier = st >= 60 ? 'gold' : st >= 45 ? 'silver' : st >= 30 ? 'bronze' : 'none', next = st >= 60 ? 0 : st >= 45 ? 60 : st >= 30 ? 45 : 30;
-      return [{ id: 'w' + w, tier: prog.done[boss.id] && !prog.skipped[boss.id] ? 'gold' : 'none', title: wd.name, sub: prog.done[boss.id] ? 'Trapped' : 'Trap the boss', boss: BOSS_OF[wd.id], kind: 'boss' },
-              { id: 'p' + w + tier, tier, title: wd.name, sub: next ? st + ' / ' + next + ' ' + STAR : '60 ' + STAR, star: true, kind: 'star' }]; }).flat();
+    return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w);
+      return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], tier: TIERS[k], need: n, got: st >= n })) }; });
   }
-  function rushTrophy() { const b = prog.rushBoards || 0, tier = b >= 10 ? 'gold' : b >= 6 ? 'silver' : b >= 3 ? 'bronze' : 'none', next = b >= 10 ? 0 : b >= 6 ? 10 : b >= 3 ? 6 : 3;
-    return { id: 'r' + tier, tier, title: 'Rush', sub: next ? b + ' / ' + next + ' boards' : '10 boards' }; }
-  const earned = () => trophyList().filter((t) => t.tier !== 'none').map((t) => t.id + t.tier).concat(worldTrophies().filter((t) => t.tier !== 'none').map((t) => t.id)).concat(rushTrophy().tier !== 'none' ? [rushTrophy().id] : []);
+  const RUSH_B = [3, 6, 10], RUSH_S = [10000, 30000, 60000];
+  const kfmt = (n) => n >= 1000 ? (n / 1000) + 'k' : String(n);
+  const earned = () => trophyList().flatMap((t) => TIERS.filter((tr, k) => t.n >= [10, 20, t.days][k]).map((tr) => t.id + tr))
+    .concat(worldTrophies().flatMap((t) => (t.bossDone ? ['w' + t.w] : []).concat(t.stars.filter((x) => x.got).map((x) => x.id))))
+    .concat(RUSH_B.map((n, k) => (prog.rushBoards || 0) >= n ? 'rb' + k : null).filter(Boolean), RUSH_S.map((n, k) => (prog.rush || 0) >= n ? 'rs' + k : null).filter(Boolean));
   let bossThumbs = {};
   const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
-  let troTab = 'worlds';
   const BOLT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>';
+  const STARI = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>';
+  const CUP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm0 4H6v1a2 2 0 0 0 1 1.7zm11 0h-1v2.7A2 2 0 0 0 18 8z"/></svg>';
+  let troTab = 'worlds', troMonth = 0;
   function showTrophies(tab) {
-    toMenu(); if (typeof tab === 'string') troTab = tab;
-    const medal = (t, inner, sub) => '<div class="tro ' + t.tier + '"><div class="medal">' + inner + '</div><b>' + t.title + '</b><small>' + sub + '</small></div>';
+    toMenu(); if (typeof tab === 'string') { if (tab !== troTab) troMonth = 0; troTab = tab; }
+    const md = (tier, got, inner, label, sub) => '<div class="tro ' + (got ? tier : 'none lk-' + tier) + '"><div class="medal">' + inner + '</div>' + (label ? '<b>' + label + '</b>' : '') + '<small>' + sub + '</small></div>';
     let body = '';
-    if (troTab === 'daily') { const months = trophyList();
-      body = months.length ? months.map((t) => medal(t, t.icon, t.tier === 'none' ? t.n + ' / 10 days' : t.tier === 'gold' ? 'Every day' : t.n + ' days')).join('') : '<p style="grid-column:1/-1">Play the Daily 10 days in a month:<br>bronze. 20 days: silver. Every day: gold.</p>'; }
-    else if (troTab === 'rush') { const r = rushTrophy();
-      body = '<div style="grid-column:1/-1;display:flex;justify-content:center">' + medal(r, BOLT, r.sub) + '</div><p style="grid-column:1/-1">Clear boards in one run:<br>3 bronze · 6 silver · 10 gold' + (prog.rush ? '<br>Best ' + prog.rush.toLocaleString('en-US') + (prog.rushBoards ? ' · ' + prog.rushBoards + ' boards' : '') : '') + '</p>'; }
-    else { const worlds = worldTrophies();
-      const one = (t) => { if (t.boss && !bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss); return medal(t, t.boss ? bossThumbs[t.boss] : glyph(0), t.sub); };
-      body = '<div class="sect" style="grid-column:1/-1">Bosses</div>' + worlds.filter((t) => t.kind === 'boss').map(one).join('') + '<div class="sect" style="grid-column:1/-1">Stars</div>' + worlds.filter((t) => t.kind === 'star').map(one).join(''); }
+    if (troTab === 'worlds') {
+      body = '<div class="trow head"><span></span><i>Boss</i><i>30</i><i>45</i><i>60</i></div>' + worldTrophies().map((t) => { if (!bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss);
+        return '<div class="trow"><span><b>' + t.name + '</b><small>' + t.st + ' / 60 ' + STAR + '</small></span>' + md('gold', t.bossDone, bossThumbs[t.boss], '', t.bossDone ? 'Trapped' : 'Trap it') +
+          t.stars.map((x) => md(x.tier, x.got, STARI, '', x.got ? 'Done' : Math.max(0, x.need - t.st) + ' more')).join('') + '</div>'; }).join('');
+    } else if (troTab === 'daily') {
+      const now = new Date(), d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + troMonth, 1)), y = d0.getUTCFullYear(), mo = d0.getUTCMonth(), t = monthTrophy(y, mo);
+      const first = Object.keys(prog.daily).sort()[0], minOff = first ? (Number(first.slice(0, 4)) - now.getUTCFullYear()) * 12 + Number(first.slice(5, 7)) - 1 - now.getUTCMonth() : 0;
+      body = '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' +
+        '<div class="trow3">' + [10, 20, t.days].map((n, k) => md(TIERS[k], t.n >= n, t.icon, n === t.days ? 'All ' + n : n + ' days', t.n >= n ? 'Done' : t.n + ' / ' + n)).join('') + '</div>' +
+        '<p class="tnote">Days played this month: <b>' + t.n + '</b></p>';
+    } else {
+      const b = prog.rushBoards || 0, sc = prog.rush || 0;
+      body = '<div class="sect">Boards in one run</div><div class="trow3">' + RUSH_B.map((n, k) => md(TIERS[k], b >= n, BOLT, n + ' boards', b >= n ? 'Done' : b + ' / ' + n)).join('') + '</div>' +
+        '<div class="sect">Score in one run</div><div class="trow3">' + RUSH_S.map((n, k) => md(TIERS[k], sc >= n, CUP, kfmt(n), sc >= n ? 'Done' : kfmt(Math.floor(sc / 100) * 100) + ' / ' + kfmt(n))).join('') + '</div>';
+    }
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
-    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="trophies">' + body + '</div>',
-      { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush') });
+    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody">' + body + '</div>',
+      { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
+    $('card').classList.add('troc');
+    if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
+      el.addEventListener('pointerdown', (e) => { sx = e.clientX; }); el.addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null;
+        if (Math.abs(dx) > 50) { const btn = $('card').querySelector('[data-act=' + (dx > 0 ? 'mprev' : 'mnext') + ']'); if (btn && !btn.disabled) btn.click(); } }); }
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
   function showWorlds() {
