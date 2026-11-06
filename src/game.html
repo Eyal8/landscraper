@@ -2261,7 +2261,8 @@ window.Board = (function () {
       return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], k, need: n, got: st >= n })) }; });
   }
   const RUSH_B = [3, 6, 10, 15, 20], RUSH_S = [10000, 30000, 60000, 100000, 150000];
-  const RUSH_BL = METAL.map((m) => m.concat('layers')), RUSH_SL = METAL.map((m) => m.concat('trophy'));
+  const RUSH_COL = [['round', '#ffd0a8', '#ff7a3a'], ['round', '#ffb0cf', '#e8407a'], ['round', '#dcb4ff', '#8a3fe0'], ['round', '#a8dcff', '#2a78e0'], ['round', '#a8ffe2', '#10a882']]; // orange, pink, violet, blue, mint
+  const RUSH_BL = RUSH_COL.map((m) => m.concat('layers')), RUSH_SL = RUSH_COL.map((m) => m.concat('trophy'));
   const RUSH_NAMES = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Legend'];
   const kfmt = (n) => n >= 1000 ? Math.floor(n / 1000) + 'k' : String(n);
   const earned = () => trophyList().flatMap((t) => TIERS.filter((tr, k) => t.n >= [10, 20, t.days][k]).map((tr) => t.id + tr))
@@ -2309,9 +2310,9 @@ window.Board = (function () {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
       const block = (title, list, looks, have, lab, unit) => { const k = list.findIndex((n) => have < n), nx = k < 0 ? null : list[k], prev = k <= 0 ? 0 : list[k - 1];
         return '<div class="rblock"><div class="rtop"><b>' + title + '</b><span>' + (nx ? lab(have) + ' / ' + lab(nx) + ' ' + unit : 'All done') + '</span></div>' +
-          '<div class="wbar"><i style="width:' + (nx ? Math.min(100, (have - prev) / (nx - prev) * 100) : 100) + '%;background:linear-gradient(90deg,' + (nx ? METAL[k][1] + ',' + METAL[k][2] : '#ecd4ff,#8a3fe0') + ')"></i></div>' +
+          '<div class="wbar"><i style="width:' + (nx ? Math.min(100, (have - prev) / (nx - prev) * 100) : 100) + '%;background:linear-gradient(90deg,' + (nx ? RUSH_COL[k][1] + ',' + RUSH_COL[k][2] : '#a8ffe2,#10a882') + ')"></i></div>' +
           '<div class="rrow">' + list.map((n, j) => '<div class="rb">' + badge(looks[j], have >= n, null, 54, 'Rush · ' + RUSH_NAMES[j] + '|' + lab(n) + ' ' + unit + ' in one run') + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div></div>'; };
-      body = block('Boards', RUSH_B, RUSH_BL, b, (n) => n, 'boards') + block('Score', RUSH_S, RUSH_SL, sc, kfmt, 'points') + '<p class="tnote">Best in a single Rush run</p>';
+      body = block('Boards', RUSH_B, RUSH_BL, b, (n) => n, 'boards') + block('Score', RUSH_S, RUSH_SL, sc, kfmt, 'points');
     }
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
     panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
