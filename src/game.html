@@ -313,11 +313,15 @@ h2.shop { color: #ffd166; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
-.btn small.adt { display: flex; align-items: center; justify-content: center; gap: 4px; } .btn small.adt svg { width: 11px; height: 11px; }
+.btn small.adt { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn small.adt svg { width: 12px; height: 12px; padding: 2px 5px; border-radius: 4px; background: currentColor; box-sizing: content-box; }
+.btn small.adt svg path { fill: #1d2a63; } .btn.alt small.adt svg path { fill: #2a3560; } .btn.go-daily small.adt svg path { fill: #9ffbe9; } .btn.go-rush small.adt svg path { fill: #ffc49e; }
 .big.rscore { color: #ffb48a; text-shadow: 0 0 24px rgba(255,140,80,0.4); }
 .rstats { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rstats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 18px; background: rgba(255,140,80,0.12); box-shadow: inset 0 0 0 1px rgba(255,160,110,0.3); }
 .rstats svg { width: 22px; height: 22px; color: #ffb48a; } .rstats b { font: 800 20px var(--display); } .rstats span { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.btn.alt.m-rush { color: #ffb48a; box-shadow: inset 0 0 0 1.5px rgba(255,150,100,0.6); background: rgba(255,130,80,0.12); }
+.btn.alt.m-daily { color: #7ff5e2; box-shadow: inset 0 0 0 1.5px rgba(110,240,220,0.55); background: rgba(80,230,200,0.1); }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -2712,8 +2716,8 @@ window.Board = (function () {
   function showPause() {
     if (state !== 'play') return;
     paused = true; flashHold(true); const sb = settingsButtons();
-    panel('<div class="kicker">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
-      (mode === 'daily' ? '<button class="btn alt" type="button" data-act="cal">Calendar</button>' : mode === 'rush' ? '<button class="btn alt" type="button" data-act="rmenu">Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
+    panel('<div class="kicker' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
       Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: showHome,
         cal: () => showDaily(), rmenu: () => showRush(), lvls: () => showWorld(L.w) }, sb.acts));
