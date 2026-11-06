@@ -271,6 +271,28 @@ body {
 .rbolt { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.05em; margin-right: 4px; }
 .rbolt.big.cal { fill: #7ff5e2; width: 38px; height: 38px; filter: drop-shadow(0 0 12px rgba(80,240,210,0.5)); }
 .rbolt.big { width: 46px; height: 46px; fill: #ffb48a; margin: 0 0 -6px; filter: drop-shadow(0 0 12px rgba(255,140,80,0.6)); }
+.shopbag { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #3a2400; background: linear-gradient(180deg, #ffe680, #ffb21e); box-shadow: 0 4px 0 #b8740a, 0 0 24px rgba(255,190,60,0.45); margin-bottom: -6px; }
+.shopbag svg { width: 28px; height: 28px; }
+h2.shop { color: #ffd166; }
+.pcards { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.pcard { all: unset; box-sizing: border-box; position: relative; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 14px; border-radius: 22px; text-align: left; color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+.pcard:active { transform: translateY(2px); }
+.pcard.p-all { background: linear-gradient(120deg, #7a3cff, #e8457a 60%, #ffb21e); padding: 20px 14px; box-shadow: 0 5px 0 #6a2a8a, 0 10px 30px rgba(232,69,122,0.35); }
+.pcard.p-ads { background: linear-gradient(120deg, #0f8fa0, #22c7b0); }
+.pcard.p-skins { background: linear-gradient(120deg, #2a5fd6, #3fb0ff); }
+.pcard.owned { opacity: 0.55; cursor: default; }
+.pcard .pic { width: 46px; height: 46px; flex: none; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,0.2); color: #fff; }
+.pcard.p-all .pic { width: 50px; height: 50px; color: #ffe27a; background: rgba(0,0,0,0.18); }
+.pcard .pic svg { width: 60%; height: 60%; }
+.pcard .thumbs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; } .pcard .thumbs img { width: 100%; height: 100%; object-fit: contain; }
+.pcard .ptx { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pcard .ptx b { font: 800 17px var(--display); white-space: nowrap; } .pcard.p-all .ptx b { font-size: 19px; }
+.pcard { gap: 12px; padding: 14px 12px; }
+.pcard .ptx span { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
+.pcard .pprice { flex: none; padding: 8px 11px; border-radius: 999px; background: #fff; color: #1d2a63; font: 800 15px var(--display); }
+.pcard.p-all .pprice { background: #ffe27a; color: #4a2a00; font-size: 15px; }
+.pcard .ribbon { position: absolute; top: -9px; right: 18px; padding: 4px 10px; border-radius: 999px; background: #fff; color: #c2185b; font: 500 10px var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+.linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -743,6 +765,8 @@ window.Board = (function () {
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   let swapRaf = 0;
   function panel(html, actions) { // switching between cards: the card glides to its new size and the new content fades in
+    const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // one way home everywhere: the house in the corner
+    if (html.includes(HB)) html = HOME_X.replace('data-act="back"', 'data-act="home"') + html.replace(HB, '');
     const c = $('card'), was = !$('panel').hidden && !reduceMotion ? c.getBoundingClientRect() : null;
     c.className = 'card'; c.innerHTML = html; $('panel').hidden = false;
     if (was && was.height > 0) {
@@ -2285,7 +2309,6 @@ window.Board = (function () {
     .concat(worldTrophies().flatMap((t) => (t.bossDone ? ['w' + t.w] : []).concat(t.stars.filter((x) => x.got).map((x) => x.id))))
     .concat(RUSH_B.map((n, k) => (prog.rushBoards || 0) >= n ? 'rb' + k : null).filter(Boolean), RUSH_S.map((n, k) => (prog.rush || 0) >= n ? 'rs' + k : null).filter(Boolean));
   let bossThumbs = {};
-  const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
   const DAY_LOOK = [['#7ff5e2', '#1a9e8c'], ['#9fc4ff', '#3a5fd6'], ['#ffe27a', '#ff8a1f']];
   function calBadge(k, got, label) { // a calendar page
     const [c1, c2] = DAY_LOOK[k], id = 'cb' + (bid++);
@@ -2340,25 +2363,27 @@ window.Board = (function () {
         if (Math.abs(dx) > 50) { const btn = $('card').querySelector('[data-act=' + (dx > 0 ? 'mprev' : 'mnext') + ']'); if (btn && !btn.disabled) btn.click(); } }); }
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
+  const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
+  const BACK_X = '<button class="home-x" type="button" data-act="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
   function showWorlds() {
     toMenu();
-    let html = '<h2>Worlds</h2><div class="worlds">';
+    let html = HOME_X + '<h2>Worlds</h2><div class="worlds">';
     WORLDS.forEach((wd, w) => {
       const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
       html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
     });
-    html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Back</button></div>';
+    html += '</div>';
     panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
   }
   function showWorld(w) {
     toMenu();
-    let html = '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid">';
+    let html = BACK_X + '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid">';
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, open = isOpen(i);
       html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
-    html += '</div><div class="btns"><button class="btn alt" type="button" data-act="back">Worlds</button></div>';
+    html += '</div>';
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
   }
   const SND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
@@ -2376,22 +2401,30 @@ window.Board = (function () {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    panel('<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
-      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '<button class="btn" type="button" data-act="back">Back</button></div>',
+    panel(HOME_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
+      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
   function showShop() {
-    toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins();
-    panel('<h2>Shop</h2>' + (noAds && skinsOwned ? '<p>You own everything. Thank you for your support!</p>' : '<p>One-time purchases. They stay yours on every device.</p>') + '<div class="btns">' +
-      (!noAds && !skinsOwned ? '<button class="btn" type="button" data-act="buyAll">Everything · ' + st.price('bundle') + '<small>Best value · no ads + every skin</small></button>' : '') +
-      (noAds ? '' : '<button class="btn' + (skinsOwned ? '' : ' alt') + '" type="button" data-act="buy">Remove Ads · ' + st.price() + '<small>No ads between levels</small></button>') +
-      (skinsOwned ? '' : '<button class="btn alt" type="button" data-act="buySkins">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') +
-      '<button class="btn alt" type="button" data-act="restore">Restore purchases</button><button class="btn" type="button" data-act="back">Back</button></div>',
+    toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
+    const nSk = SKINS.filter((k) => k.pack).length;
+    const thumbs = ['sub', 'ufo', 'swan', 'unicorn'].map((k) => th[k] ? '<img alt="" src="' + th[k] + '">' : '').join('');
+    const card = (act, cls, icon, title, sub, price, owned, extra) => '<button class="pcard ' + cls + (owned ? ' owned' : '') + '" type="button"' + (owned ? ' disabled' : ' data-act="' + act + '"') + '>' + (extra || '') +
+      '<div class="pic">' + icon + '</div><div class="ptx"><b>' + title + '</b><span>' + sub + '</span></div><div class="pprice">' + (owned ? 'Owned' : price) + '</div></button>';
+    const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
+    const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="6" width="17" height="12" rx="3"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M4 20 20 4" stroke="#ff4d6d" stroke-width="2.6"/></svg>';
+    panel(HOME_X + '<div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2>' +
+      '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device.') + '</p><div class="pcards">' +
+      card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
+      card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
+      card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skins', nSk + ' skins + future packs', st.price('allSkins'), skinsOwned) +
+      '</div><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
         restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
   }
+
 
   // ---------- Daily: one level a day, the same for everyone ----------
   const pad2 = (n) => String(n).padStart(2, '0');
@@ -2592,9 +2625,9 @@ window.Board = (function () {
       sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + st.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
       '<button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>';
     const big = th[sk.id];
-    panel('<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
+    panel(HOME_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
       '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + '<div class="pvh">' + (big ? '<img alt="" src="' + big + '">' : '') + '</div>' + '<div class="info">' + tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act + '</div></div>' +
-      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '<button class="btn alt" type="button" data-act="back">Home</button></div>',
+      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
       { back: showHome, all: () => buyIt('allSkins', () => showSkins(sk.id)),
         use: () => { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(sk.id); },
         buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(sk.id); }),
