@@ -2455,7 +2455,7 @@ window.Board = (function () {
   }
   function showRush() {
     toMenu();
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Beat the clock</h2><p>Clear as many boards as you can.<br>Each one gets harder.</p>' +
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Beat the clock. Clear as many boards as you can, each one harder.</p>' +
       (prog.rush ? '<div class="rbest"><span>Best</span><b>' + prog.rush.toLocaleString('en-US') + '</b>' + (prog.rushBoards ? '<span>' + prog.rushBoards + (prog.rushBoards === 1 ? ' board' : ' boards') + '</span>' : '') + '</div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
