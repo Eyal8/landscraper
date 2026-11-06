@@ -10,7 +10,7 @@ w, h, store = DEVICES[name]
 out = root / 'store' / store / 'screenshots'; out.mkdir(parents=True, exist_ok=True)
 for old in out.glob(f'{name}-*.png'): old.unlink()
 url = f'file://{root}/www/index.html'
-SEEN = "['rush','bouncer','eater','saw','zipper','splitter','hunter','inker','magnet','jelly','crab','eel','urchin','boss','bstar','boct','bjelly','beel','p-life','p-slow','p-freeze','p-shield','p-bomb','p-lure','p-time','trap']"
+SEEN = "['rush','bouncer','eater','saw','zipper','splitter','hunter','inker','magnet','jelly','crab','eel','urchin','boss','bstar','boct','bjelly','beel','p-life','p-slow','p-freeze','p-shield','p-bomb','p-lure','p-time','p-boost','trap']"
 
 def rect_up(x0, y0, x1, bottom=35):
     """Trail from the bottom border up column x0, across row y0, down column x1."""
