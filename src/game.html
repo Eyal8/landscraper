@@ -56,6 +56,10 @@ body {
 .endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
 .endbar .track i.goal { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
 .endbar .tk { position: absolute; top: -3px; width: 2px; height: 20px; margin-left: -1px; background: rgba(255,255,255,0.5); border-radius: 2px; }
+.endbar .tk .tks { position: absolute; top: -24px; left: 50%; width: 18px; height: 18px; margin-left: -9px; color: rgba(255,255,255,0.25); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
+.endbar .tk.hit .tks { color: var(--gold); transform: scale(1.25); filter: drop-shadow(0 0 6px rgba(255,209,102,0.9)); }
+.endbar { margin-top: 22px; }
+.endbar.daily .track i.goal { background: linear-gradient(90deg, #7ff5e2, #34cdb6); } .endbar.daily .tk.hit .tks { color: #7ff5e2; filter: drop-shadow(0 0 6px rgba(127,245,226,0.9)); }
 .endbar .tk span { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); font: 500 10px var(--mono); letter-spacing: 0.04em; color: rgba(255,255,255,0.45); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
 .endbar .tk.hit { background: #fff; }
 .endbar .tk.hit { background: #fff; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
@@ -174,9 +178,11 @@ body {
 .stars svg.on { color: var(--gold); animation: star 0.45s cubic-bezier(.2,.9,.3,1.6) backwards, shine 2.4s ease-in-out 1s infinite; filter: drop-shadow(0 2px 8px rgba(255, 209, 102, 0.6)); }
 @keyframes shine { 0%, 100% { filter: drop-shadow(0 2px 8px rgba(255,209,102,0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 16px rgba(255,226,120,1)) brightness(1.15); transform: scale(1.08); } }
 .stars { position: relative; }
-.stars .rays { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; margin: -130px 0 0 -130px; pointer-events: none; z-index: -1; opacity: 0;
+.stars .st { position: relative; display: grid; place-items: center; }
+.stars .rays { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; display: none; pointer-events: none; z-index: -1; opacity: 0;
   background: repeating-conic-gradient(rgba(255,214,90,0.28) 0 10deg, transparent 10deg 30deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
   animation: raysIn 0.6s ease-out 0.2s forwards, raysSpin 14s linear infinite; }
+.stars .st:has(svg.on) .rays { display: block; } .stars .sp { display: none; } .stars .st:has(svg.on) .sp { display: block; }
 @keyframes raysIn { to { opacity: 1; } } @keyframes raysSpin { to { transform: rotate(360deg); } }
 .stars .sp { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #fff6c2; box-shadow: 0 0 10px #ffd166; opacity: 0; animation: spark 1.6s ease-out infinite; }
 @keyframes spark { 0% { opacity: 0; transform: scale(0.2); } 30% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(0.2) translateY(-14px); } }
@@ -307,6 +313,11 @@ h2.shop { color: #ffd166; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
+.btn small.adt { display: flex; align-items: center; justify-content: center; gap: 4px; } .btn small.adt svg { width: 11px; height: 11px; }
+.big.rscore { color: #ffb48a; text-shadow: 0 0 24px rgba(255,140,80,0.4); }
+.rstats { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rstats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 18px; background: rgba(255,140,80,0.12); box-shadow: inset 0 0 0 1px rgba(255,160,110,0.3); }
+.rstats svg { width: 22px; height: 22px; color: #ffb48a; } .rstats b { font: 800 20px var(--display); } .rstats span { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -387,7 +398,15 @@ h2.shop { color: #ffd166; }
 .cal i { font-style: normal; color: var(--ink-soft); text-align: center; font-size: 12px; }
 .cal div { aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
 .cal div.done { background: var(--gold); color: #3a2a00; font-weight: 700; }
-.cal div.today { box-shadow: inset 0 0 0 2px #fff; }
+.cal div.today, .cal button.today { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); }
+.cal button { position: relative; font-weight: 700; }
+.cal button.done, .cal button.late { background: rgba(127,245,226,0.16); color: #fff; }
+.cal button .ok { position: absolute; inset: 3px; border-radius: 50%; border: 2.5px solid #7ff5e2; box-shadow: 0 0 8px rgba(127,245,226,0.5); }
+.cal button.late .ok { border-color: rgba(127,245,226,0.55); box-shadow: none; }
+.cal button.pick { background: #7ff5e2; color: #063b35; box-shadow: 0 0 0 2px #fff; } .cal button.pick .ok { border-color: #063b35; box-shadow: none; }
+.dchips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.dchips span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.08); font: 500 12px var(--mono); color: var(--ink-soft); }
+.dchips b { color: #fff; } .dchips svg { width: 16px; height: 16px; }
 .cal div.blank { background: none; }
 .hint { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; pointer-events: none;
   font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); transition: opacity 0.4s; }
@@ -2046,13 +2065,13 @@ window.Board = (function () {
   // ---------- level flow ----------
   document.body.insertAdjacentHTML('afterbegin', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4a8"/><stop offset=".5" stop-color="#ffc93a"/><stop offset="1" stop-color="#ff9500"/></linearGradient></defs></svg>');
   const STAR = '<svg class="ic-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3 6.2 6.8.9-5 4.7 1.3 6.8L12 17.1l-6.1 3.3 1.3-6.8-5-4.7L9 8z" fill="url(#gStar)" stroke="#8a4a00" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 5.2l1.6 3.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg>';
-  const starsSvg = (n, lazy) => '<div class="stars"><i class="rays"></i>' + [[-10, 4, 0], [104, 0, 0.5], [210, 8, 1], [40, 44, 0.8], [170, 46, 0.3]].map(([x, y, d]) => '<i class="sp" style="left:' + x + 'px;top:' + y + 'px;animation-delay:' + (1 + d) + 's"></i>').join('') + [0, 1, 2].map((k) => '<svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>').join('') + '</div>';
+  const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<span class="st"><i class="rays"></i><i class="sp" style="left:-6px;top:2px;animation-delay:' + (1 + k * 0.4) + 's"></i><i class="sp" style="right:-6px;bottom:4px;animation-delay:' + (1.6 + k * 0.3) + 's"></i><svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg></span>').join('') + '</div>'; // only the stars you earned shine
   let dailyBest = false, levelEnds = 0, continued = false, startShield = false;
   const fails = {}; // failed tries per level this session (Skip appears after 3)
   const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
   const withShield = (fn) => async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
   const SHIELD_I = '<svg class="bi" viewBox="0 0 24 24"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6z" fill="#7fdcff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4 4.8-4.8" fill="none" stroke="#0b3f8f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small>Watch ad</small>');
+  const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small class="adt"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>Watch ad</small>');
   // an interstitial between levels: never in the first 5 levels, every second level end, at most once per 90 seconds
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
   function levelClear() {
@@ -2085,7 +2104,7 @@ window.Board = (function () {
       const more = mode === 'daily' ? (dailyBest ? 'New best time: ' : 'Time ' + fmtClock(clockT, true) + ' · best ') + fmtClock(prog.daily[dailyKey].time, true) : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
       const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
       const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
-      const bar = fill ? '<div class="endbar"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><span>' + v + '%</span></div>').join('') + '</div>' : '';
+      const bar = fill ? '<div class="endbar ' + mode + '"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
@@ -2488,25 +2507,29 @@ window.Board = (function () {
     mode = 'daily'; const lv = dailyLevel(dailyKey); rng = seeded(lv.seed ^ 0x5bd1e995);
     begin(lv); mode = 'daily'; drawHud();
   }
-  function showDaily(mOff) {
-    toMenu(); mOff = typeof mOff === 'number' ? mOff : 0;
+  let dailyPick = null;
+  function showDaily(mOff, pick) {
+    toMenu(); mOff = typeof mOff === 'number' ? mOff : 0; dailyPick = pick || null;
     const now = new Date(), shown = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + mOff, 1)), y = shown.getUTCFullYear(), mo = shown.getUTCMonth(), first = new Date(Date.UTC(y, mo, 1)).getUTCDay(), days = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate(), today = todayKey(), done = prog.daily[today];
     let cal = '<div class="cal">' + ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => '<i>' + d + '</i>').join('');
     for (let k = 0; k < first; k++) cal += '<div class="blank"></div>';
+    const tail = 42 - first - days; // always six rows, so the card keeps its size from month to month
     for (let d = 1; d <= days; d++) { // past days can be played (after an ad); future days are dim
       const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key], cls = (e ? (e.late ? 'late' : 'done') : '') + (key === today ? ' today' : '');
-      cal += key > today ? '<div class="future">' + d + '</div>' : key === today ? '<div class="' + cls + '">' + (e ? STAR.repeat(e.stars) : d) + '</div>' : '<button type="button" class="' + cls + '" data-day="' + key + '">' + (e ? (e.saved && !e.stars ? '✓' : STAR.repeat(e.stars)) : d) + '</button>';
+      cal += key > today ? '<div class="future">' + d + '</div>' : '<button type="button" class="' + cls + (key === dailyPick || (!dailyPick && key === today) ? ' pick' : '') + '" data-day="' + key + '">' + d + (e && (e.stars || e.saved) ? '<i class="ok"></i>' : '') + '</button>';
     }
+    for (let k = 0; k < tail; k++) cal += '<div class="blank"></div>';
     cal += '</div>';
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
     // missed yesterday after a streak? one ad saves it
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
     const canSave = !prog.daily[yKey] && prog.daily[dayKey(y2)] && !prog.daily[dayKey(y2)].late;
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
-      '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><div class="dchips"><span><svg viewBox="0 0 24 24" fill="#ff8a3d"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg><b>' + streak() + '</b> day streak</span><span><svg viewBox="0 0 24 24" fill="none" stroke="#7ff5e2" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>New in <b>' + untilNext() + '</b></span></div>' + cal +
+      '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + (() => { const pk = dailyPick || today, lbl = pk === today ? 'today' : new Date(pk + 'T00:00:00Z').toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+        const free = pk === today && dailyFree(); return (prog.daily[pk] ? 'Replay ' : 'Play ') + lbl + (free ? '' : adTag()); })() + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.daily[yKey] = { stars: 0, saved: true }; saveProg(); flash('Streak saved', null, 1200); buzz('clear'); showDaily(mOff); },
-        play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
-    document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); playDaily(b.dataset.day); }));
+        play: () => playDaily(dailyPick || today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
+    document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); showDaily(mOff, b.dataset.day === today ? null : b.dataset.day); })); // pick a day; the big button plays it
   }
 
   // ---------- Rush: race the clock through as many boards as you can. 60s to start; each board you finish (50%) gives +10s; each board has one more monster ----------
@@ -2570,11 +2593,12 @@ window.Board = (function () {
     }, 1200);
   }
   function rushFinal() {
-    levelEnds++; const best = rushTotal > prog.rush; if (best) { prog.rush = rushTotal; prog.rushBoards = rushBoard; saveProg(); }
+    levelEnds++; const best = rushTotal > prog.rush, bestB = rushBoard > (prog.rushBoards || 0); if (best) prog.rush = rushTotal; if (bestB) prog.rushBoards = rushBoard; if (best || bestB) saveProg();
     window.Board.submit('rush', rushTotal);
     {
-      panel('<div class="kicker">Rush</div><h2>' + (best ? 'New best!' : 'Time!') + '</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared · best ' + prog.rush.toLocaleString('en-US') + '</p>' +
-        '<div class="btns"><button class="btn" type="button" data-act="again">Play again</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="home">Home</button></div>',
+      panel('<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush' + (best ? ' win' : '') + '">' + (best ? 'New best!' : 'Time!') + '</h2><div class="big rscore">' + rushTotal.toLocaleString('en-US') + '</div>' +
+        '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + rushBoard + '</b><span>' + (rushBoard === 1 ? 'board' : 'boards') + (bestB ? ' · best!' : '') + '</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div></div>' +
+        '<div class="btns"><button class="btn go-rush" type="button" data-act="again">Play again</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { again: adBreak(startRush), home: adBreak(showHome), lb: () => window.Board.show('rush') });
     }
   }
@@ -2683,8 +2707,11 @@ window.Board = (function () {
   function showPause() {
     if (state !== 'play') return;
     paused = true; flashHold(true); const sb = settingsButtons();
-    panel('<div class="kicker">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart</button><button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
-      Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: () => (mode === 'rush' ? startRush() : mode === 'daily' ? playDaily(dailyKey) : startLevel(cur)), home: showHome }, sb.acts));
+    panel('<div class="kicker">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      (mode === 'daily' ? '<button class="btn alt" type="button" data-act="cal">Calendar</button>' : mode === 'rush' ? '<button class="btn alt" type="button" data-act="rmenu">Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
+      '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
+      Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: showHome,
+        cal: () => showDaily(), rmenu: () => showRush(), lvls: () => showWorld(L.w) }, sb.acts));
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
@@ -2721,8 +2748,10 @@ window.Board = (function () {
       if (inkT[i] > 0.2 && !fuse) lightFuse(0); // ink lights the fuse at the start of your trail: race it to land
     } else if (c === LAND) {
       lastLand = [px, py];
-      if (drawing) { claim(); if (state !== 'play') return; if (!held()) { dir = null; queue = []; return; } } // still holding: keep moving
-      else if (!held() && !queue.length) { dir = null; return; } // let go on land: stop here
+      // A finger still on the screen means keep going, in whatever direction it points now (a turn made just before landing counts)
+      const want = touchHeld && touchDir && touchDir !== 'any' ? touchDir : [...keysHeld].map((k) => KEYS[k]).find(Boolean) || null;
+      if (drawing) { claim(); if (state !== 'play') return; }
+      if (!held() && !queue.length) { if (want) queue = [want]; else { dir = null; queue = []; return; } } // let go on land: stop here
     }
     if (window.__botNext) { const d = window.__botNext(px, py); if (d === 'stop') { dir = null; queue = []; return; } if (d) { queue = []; dir = d; } } // test bot only
     while (queue.length) { const q = queue.shift(); if (!(drawing && opposite(q, dir))) { dir = q; break; } }
