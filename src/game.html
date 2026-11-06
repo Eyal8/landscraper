@@ -256,6 +256,11 @@ body {
 .rrow { margin-top: 6px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; justify-items: center; }
 .rb { display: flex; flex-direction: column; align-items: center; gap: 6px; } .rb small { font: 800 13px var(--display); color: var(--ink-soft); } .rb small.on { color: #fff; }
 .tbody.rush { gap: 14px; }
+.drow3 { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); justify-items: center; }
+.drow3 .bdg .bin { width: 72%; height: 72%; }
+.mdots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.mdots i { font: 500 11px var(--mono); font-style: normal; aspect-ratio: 1; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--ink-soft); }
+.mdots i.on { background: #7ff5e2; color: #063b35; font-weight: 700; }
 #bview { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(6,10,28,0.78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: bvIn 0.3s ease-out; touch-action: none; cursor: grab; }
 #bview .bv-x { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; left: auto; }
 #bview.out { opacity: 0; transition: opacity 0.25s; }
@@ -2357,8 +2362,13 @@ window.Board = (function () {
       const now = new Date(), d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + troMonth, 1)), y = d0.getUTCFullYear(), mo = d0.getUTCMonth(), t = monthTrophy(y, mo);
       const first = Object.keys(prog.daily).sort()[0], minOff = first ? (Number(first.slice(0, 4)) - now.getUTCFullYear()) * 12 + Number(first.slice(5, 7)) - 1 - now.getUTCMonth() : 0;
       body = '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' +
-        [10, 20, t.days].map((n, k) => { const got = t.n >= n;
-          return '<div class="drow' + (got ? ' got' : '') + '">' + '<div class="bdg' + (got ? ' got' : '') + '" data-t="' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k] + ' of Daily" style="width:76px;height:76px">' + calBadge(k, got, k === 2 ? 'ALL' : String(n)) + '</div>' + '<div class="dinfo"><b>' + ['10 days', '20 days', 'Every day'][k] + '</b><div class="wbar"><i style="width:' + Math.min(100, t.n / n * 100) + '%;background:' + DAY_LOOK[k][0] + '"></i></div><small>' + (got ? 'Done' : t.n + ' / ' + n) + '</small></div></div>'; }).join('');
+        (() => { const goals = [10, 20, t.days], k = goals.findIndex((n) => t.n < n), nx = k < 0 ? null : goals[k];
+          const num = (k2, got) => { const [c1] = DAY_LOOK[k2], txt = k2 === 2 ? 'ALL' : String(goals[k2]);
+            return '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="4" rx="1.5" fill="' + (got ? 'rgba(255,255,255,0.85)' : c1) + '" opacity="' + (got ? 1 : 0.6) + '"/><text x="12" y="20" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (txt.length > 2 ? 7.5 : 10) + '" fill="' + (got ? '#fff' : c1) + '" stroke="' + (got ? 'rgba(20,20,50,0.35)' : 'none') + '" stroke-width="0.6" paint-order="stroke">' + txt + '</text></svg>'; };
+          return '<div class="rblock"><div class="rtop"><b>Days played</b><span>' + (nx ? t.n + ' / ' + nx + ' days' : 'All done') + '</span></div>' +
+            '<div class="wbar"><i style="width:' + Math.min(100, t.n / t.days * 100) + '%;background:linear-gradient(90deg,#7ff5e2,#9fc4ff,#ffe27a)"></i>' + [10, 20].map((n) => '<em style="left:' + (n / t.days * 100) + '%"></em>').join('') + '</div>' +
+            '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>' +
+            '<div class="rblock"><div class="rtop"><b>This month</b></div><div class="mdots">' + Array.from({ length: t.days }, (_, d) => { const e = prog.daily[y + '-' + pad2(mo + 1) + '-' + pad2(d + 1)]; return '<i class="' + (e && e.stars ? 'on' : '') + '">' + (d + 1) + '</i>'; }).join('') + '</div></div>'; })();
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
       const block = (title, list, looks, have, lab, unit) => { const k = list.findIndex((n) => have < n), nx = k < 0 ? null : list[k], prev = k <= 0 ? 0 : list[k - 1];
