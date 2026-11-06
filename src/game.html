@@ -247,6 +247,18 @@ body {
 .rrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; justify-items: center; }
 .rb { display: flex; flex-direction: column; align-items: center; gap: 6px; } .rb small { font: 800 13px var(--display); color: var(--ink-soft); } .rb small.on { color: #fff; }
 .tbody.rush .sect { margin-top: 6px; }
+#bview { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(6,10,28,0.78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: bvIn 0.3s ease-out; touch-action: none; cursor: grab; }
+#bview.out { opacity: 0; transition: opacity 0.25s; }
+@keyframes bvIn { from { opacity: 0; } }
+.bv-stage { perspective: 700px; width: 220px; height: 220px; animation: bvPop 0.5s cubic-bezier(.2,.9,.3,1.4); }
+@keyframes bvPop { from { transform: scale(0.3); } }
+.bv-spin { width: 100%; height: 100%; transform-style: preserve-3d; }
+.bv-spin .bdg { width: 100% !important; height: 100% !important; animation: none; filter: drop-shadow(0 0 30px rgba(255,230,140,0.45)); }
+.bv-spin .cal-b { width: 100%; height: 100%; }
+#bview b { font: 800 24px var(--display); color: #fff; margin-top: 18px; } #bview small { font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+#bview .bv-hint { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+.bdg.got[data-t] { cursor: pointer; }
+.drow .bdg .cal-b { width: 100%; height: 100%; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -2221,10 +2233,10 @@ window.Board = (function () {
   const BOSS_LOOK = { boss: ['hex', '#ffb35c', '#e8641a'], bstar: ['hex', '#ffe27a', '#e8a21a'], boct: ['hex', '#c79bff', '#6a2fd1'], bjelly: ['hex', '#ffa6e6', '#b04ddb'], beel: ['hex', '#9be86a', '#2f9a3a'] };
   const STAR_LOOK = [['shield', '#7ff5e2', '#1a9e8c', 'star'], ['gem', '#9fc4ff', '#3a5fd6', 'stars2'], ['burst', '#ffe27a', '#ff9a1f', 'crown']];
   let bid = 0;
-  function badge(look, got, inner, size) {
+  function badge(look, got, inner, size, title) {
     const [shape, c1, c2, ic] = look, id = 'bg' + (bid++), sz = size || 56;
     const icon = inner || '<svg viewBox="0 0 24 24"><path d="' + IC[ic] + '" fill="' + (got ? '#fff' : 'none') + '" stroke="' + (got ? 'rgba(20,20,50,0.45)' : c1) + '" stroke-width="' + (got ? 1.2 : 1.6) + '" stroke-linejoin="round" paint-order="stroke"/></svg>';
-    return '<div class="bdg' + (got ? ' got' : '') + '" style="width:' + sz + 'px;height:' + sz + 'px"><svg class="bsh" viewBox="0 0 100 100"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    return '<div class="bdg' + (got ? ' got' : '') + '"' + (title ? ' data-t="' + title + '"' : '') + ' style="width:' + sz + 'px;height:' + sz + 'px"><svg class="bsh" viewBox="0 0 100 100"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
       '<path d="' + SHAPE[shape] + '" fill="' + (got ? 'url(#' + id + ')' : 'rgba(255,255,255,0.05)') + '" stroke="' + (got ? 'rgba(255,255,255,0.7)' : c1) + '" stroke-width="' + (got ? 3 : 3.5) + '" stroke-opacity="' + (got ? 1 : 0.55) + '" stroke-linejoin="round"/>' +
       (got ? '<path d="' + SHAPE[shape] + '" fill="#fff" opacity=".22" transform="translate(50 50) scale(0.82 0.4) translate(-50 -88)"/>' : '') + '</svg><div class="bin">' + icon + '</div></div>';
   }
@@ -2250,6 +2262,18 @@ window.Board = (function () {
       '<rect x="28" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/><rect x="64" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/>' +
       '<text x="50" y="80" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (label.length > 2 ? 26 : 34) + '" fill="' + (got ? c2 : c1) + '" opacity="' + (got ? 1 : 0.7) + '">' + label + '</text></svg>';
   }
+  function showBadge(el) { // the trophy, big, turning slowly; swipe to spin it
+    const [a, b] = el.dataset.t.split('|'), ov = document.createElement('div'); ov.id = 'bview';
+    ov.innerHTML = '<div class="bv-stage"><div class="bv-spin">' + el.outerHTML.replace(/style="[^"]*"/, '') + '</div></div><b>' + a + '</b><small>' + b + '</small><span class="bv-hint">Tap to close</span>';
+    stage.append(ov); buzz('soft'); tone(988, 0.15, 'sine', 0.05, 1480);
+    const spin = ov.querySelector('.bv-spin'); let rot = 0, vel = 40, drag = null, last = performance.now(), raf = 0;
+    const tick = (now) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; if (!drag) { vel += (40 - vel) * Math.min(1, dt * 1.5); rot += vel * dt; } spin.style.transform = 'rotateY(' + rot + 'deg)'; raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    ov.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, r: rot, t: performance.now(), moved: false }; });
+    ov.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 6) drag.moved = true; const nr = drag.r + dx * 0.9, now = performance.now(); vel = (nr - rot) / Math.max(0.016, (now - drag.t) / 1000); drag.t = now; rot = nr; });
+    ov.addEventListener('pointerup', (e) => { e.stopPropagation(); const moved = drag && drag.moved; drag = null; vel = clamp(vel, -900, 900); if (!moved) { cancelAnimationFrame(raf); ov.classList.add('out'); setTimeout(() => ov.remove(), 250); } });
+    ov.addEventListener('click', (e) => e.stopPropagation());
+  }
   let troTab = 'worlds', troMonth = 0;
   function showTrophies(tab) {
     toMenu(); if (typeof tab === 'string') { if (tab !== troTab) troMonth = 0; troTab = tab; }
@@ -2258,16 +2282,16 @@ window.Board = (function () {
       body = worldTrophies().map((t) => { if (!bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss);
         const pctS = Math.min(100, t.st / 60 * 100);
         return '<div class="wcard" style="--wbg:' + WORLD_BG[t.w] + '"><div class="whead"><b>' + t.name + '</b><span>' + t.st + ' / 60 ' + STAR + '</span></div>' +
-          '<div class="wbadges">' + badge(BOSS_LOOK[t.boss], t.bossDone, bossThumbs[t.boss], 58) + '<i class="wsep"></i>' + t.stars.map((x) => badge(STAR_LOOK[x.k], x.got, null, 50)).join('') + '</div>' + '</div>'; }).join('');
+          '<div class="wbadges">' + badge(BOSS_LOOK[t.boss], t.bossDone, bossThumbs[t.boss], 58, t.name + ' boss|' + BOSSES[t.boss].name + ' trapped') + '<i class="wsep"></i>' + t.stars.map((x) => badge(STAR_LOOK[x.k], x.got, null, 50, t.name + '|' + x.need + ' stars')).join('') + '</div>' + '</div>'; }).join('');
     } else if (troTab === 'daily') {
       const now = new Date(), d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + troMonth, 1)), y = d0.getUTCFullYear(), mo = d0.getUTCMonth(), t = monthTrophy(y, mo);
       const first = Object.keys(prog.daily).sort()[0], minOff = first ? (Number(first.slice(0, 4)) - now.getUTCFullYear()) * 12 + Number(first.slice(5, 7)) - 1 - now.getUTCMonth() : 0;
       body = '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' +
         [10, 20, t.days].map((n, k) => { const got = t.n >= n;
-          return '<div class="drow' + (got ? ' got' : '') + '">' + calBadge(k, got, k === 2 ? 'ALL' : String(n)) + '<div class="dinfo"><b>' + ['10 days', '20 days', 'Every day'][k] + '</b><div class="wbar"><i style="width:' + Math.min(100, t.n / n * 100) + '%;background:' + DAY_LOOK[k][0] + '"></i></div><small>' + (got ? 'Done' : t.n + ' / ' + n) + '</small></div></div>'; }).join('');
+          return '<div class="drow' + (got ? ' got' : '') + '">' + '<div class="bdg' + (got ? ' got' : '') + '" data-t="' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k] + ' of Daily" style="width:76px;height:76px">' + calBadge(k, got, k === 2 ? 'ALL' : String(n)) + '</div>' + '<div class="dinfo"><b>' + ['10 days', '20 days', 'Every day'][k] + '</b><div class="wbar"><i style="width:' + Math.min(100, t.n / n * 100) + '%;background:' + DAY_LOOK[k][0] + '"></i></div><small>' + (got ? 'Done' : t.n + ' / ' + n) + '</small></div></div>'; }).join('');
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
-      const row = (title, list, looks, have, lab) => '<div class="sect">' + title + '</div><div class="rrow">' + list.map((n, k) => '<div class="rb">' + badge(looks[k], have >= n, null, 52) + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div>';
+      const row = (title, list, looks, have, lab) => '<div class="sect">' + title + '</div><div class="rrow">' + list.map((n, k) => '<div class="rb">' + badge(looks[k], have >= n, null, 52, 'Rush|' + lab(n) + ' ' + (title.startsWith('Boards') ? 'boards' : 'points') + ' in one run') + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div>';
       body = row('Boards in one run', RUSH_B, RUSH_BL, b, (n) => n) + row('Score in one run', RUSH_S, RUSH_SL, sc, kfmt) +
         '<p class="tnote">Best run: <b>' + b + '</b> boards · <b>' + kfmt(Math.floor(sc / 100) * 100) + '</b> points</p>';
     }
@@ -2275,6 +2299,7 @@ window.Board = (function () {
     panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
     $('card').classList.add('troc');
+    $('card').querySelectorAll('.bdg.got[data-t]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); showBadge(el); }));
     if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
       el.addEventListener('pointerdown', (e) => { sx = e.clientX; }); el.addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null;
         if (Math.abs(dx) > 50) { const btn = $('card').querySelector('[data-act=' + (dx > 0 ? 'mprev' : 'mnext') + ']'); if (btn && !btn.disabled) btn.click(); } }); }
