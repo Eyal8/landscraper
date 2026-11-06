@@ -264,6 +264,8 @@ body {
 #bview .bv-hint { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
 .bdg.got[data-t] { cursor: pointer; }
 .drow .bdg .cal-b { width: 100%; height: 100%; }
+.rbolt { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.05em; margin-right: 4px; }
+.rbolt.big { width: 46px; height: 46px; fill: #ffb48a; margin: 0 0 -6px; filter: drop-shadow(0 0 12px rgba(255,140,80,0.6)); }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -2176,7 +2178,7 @@ window.Board = (function () {
       '<div class="btns"><button class="btn go" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
       '<div class="modes">' +
       '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
-      '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
+      '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b><svg class="rbolt" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
       '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
       { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
@@ -2232,6 +2234,7 @@ window.Board = (function () {
     coin: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zm-1 4v1.2c-1.6.3-2.6 1.3-2.6 2.6 0 1.6 1.3 2.2 3 2.6 1.3.3 1.7.6 1.7 1.1s-.6.9-1.5.9c-1 0-1.7-.4-2-1.2l-1.5.6c.4 1.2 1.4 2 2.9 2.2V18h1.6v-1.2c1.7-.3 2.6-1.3 2.6-2.7 0-1.6-1.2-2.3-3.1-2.7-1.2-.3-1.6-.5-1.6-1s.5-.8 1.3-.8c.8 0 1.4.3 1.7 1l1.5-.6c-.4-1-1.3-1.7-2.5-1.9V7z',
     gem: 'M7 4h10l4 5-9 11L3 9z',
     trophy: 'M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm0 4H6v1a2 2 0 0 0 1 1.7zm11 0h-1v2.7A2 2 0 0 0 18 8z',
+    layers: 'M12 3 2.5 8 12 13l9.5-5zM4.6 11.3 2.5 12.4 12 17.4l9.5-5-2.1-1.1L12 15.2zM4.6 15.7l-2.1 1.1L12 21.8l9.5-5-2.1-1.1L12 19.6z',
     planet: 'M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12zM3 15c-1.5 2 .5 3.5 4.5 2.5M21 9c1.5-2-.5-3.5-4.5-2.5'
   };
   // [shape, light colour, dark colour]
@@ -2251,7 +2254,7 @@ window.Board = (function () {
       return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], k, need: n, got: st >= n })) }; });
   }
   const RUSH_B = [3, 6, 10, 15, 20], RUSH_S = [10000, 30000, 60000, 100000, 150000];
-  const RUSH_BL = METAL.map((m) => m.concat('bolt')), RUSH_SL = METAL.map((m) => m.concat('coin'));
+  const RUSH_BL = METAL.map((m) => m.concat('layers')), RUSH_SL = METAL.map((m) => m.concat('trophy'));
   const RUSH_NAMES = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Legend'];
   const kfmt = (n) => n >= 1000 ? Math.floor(n / 1000) + 'k' : String(n);
   const earned = () => trophyList().flatMap((t) => TIERS.filter((tr, k) => t.n >= [10, 20, t.days][k]).map((tr) => t.id + tr))
@@ -2442,7 +2445,7 @@ window.Board = (function () {
   }
   function showRush() {
     toMenu();
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="kicker rush">Rush</div><h2 class="rush">Beat the clock</h2><p>Clear as many boards as you can.<br>Each one gets harder.</p>' +
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Beat the clock</h2><p>Clear as many boards as you can.<br>Each one gets harder.</p>' +
       (prog.rush ? '<div class="rbest"><span>Best</span><b>' + prog.rush.toLocaleString('en-US') + '</b>' + (prog.rushBoards ? '<span>' + prog.rushBoards + (prog.rushBoards === 1 ? ' board' : ' boards') + '</span>' : '') + '</div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
