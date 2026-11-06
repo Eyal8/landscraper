@@ -262,7 +262,12 @@ body {
 .bv-stage { perspective: 700px; width: 220px; height: 220px; animation: bvPop 0.5s cubic-bezier(.2,.9,.3,1.4); }
 @keyframes bvPop { from { transform: scale(0.3); } }
 .bv-spin { width: 100%; height: 100%; transform-style: preserve-3d; }
-.bv-spin .bdg { width: 100% !important; height: 100% !important; animation: none; filter: drop-shadow(0 0 30px rgba(255,230,140,0.45)); }
+.bv-l { position: absolute; inset: 0; backface-visibility: visible; }
+.bv-l:not(.rim) { backface-visibility: hidden; }
+.bv-l.rim { filter: brightness(0.62) saturate(1.2); }
+.bv-spin .bdg { width: 100% !important; height: 100% !important; animation: none; }
+.bv-spin .bv-l:not(.rim) .bdg { filter: drop-shadow(0 0 24px rgba(255,230,140,0.35)); }
+.bv-spin .bv-l.rim .bdg { filter: none; }
 .bv-spin .cal-b { width: 100%; height: 100%; }
 #bview b { font: 800 24px var(--display); color: #fff; margin-top: 18px; } #bview small { font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
 #bview .bv-hint { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
@@ -2320,7 +2325,9 @@ window.Board = (function () {
   }
   function showBadge(el) { // the trophy, big, turning slowly; swipe to spin it
     const [a, b] = el.dataset.t.split('|'), ov = document.createElement('div'); ov.id = 'bview';
-    ov.innerHTML = '<div class="bv-stage"><div class="bv-spin">' + el.outerHTML.replace(/style="[^"]*"/, '') + '</div></div><b>' + a + '</b><small>' + b + '</small><span class="bv-hint">Tap to close</span>';
+    const face = el.outerHTML.replace(/style="[^"]*"/, ''), rim = face.replace(/<div class="bin[\s\S]*$/, '</div>'); // a coin with real thickness: front, back and a stack of edge layers
+    let layers = ''; for (let k = -8; k <= 8; k += 1.5) layers += '<div class="bv-l rim" style="transform:translateZ(' + k + 'px)">' + rim + '</div>';
+    ov.innerHTML = '<div class="bv-stage"><div class="bv-spin">' + layers + '<div class="bv-l" style="transform:translateZ(9px)">' + face + '</div><div class="bv-l back" style="transform:rotateY(180deg) translateZ(9px)">' + face + '</div></div></div><b>' + a + '</b><small>' + b + '</small><span class="bv-hint">Tap to close</span>';
     stage.append(ov); buzz('soft'); tone(988, 0.15, 'sine', 0.05, 1480);
     const spin = ov.querySelector('.bv-spin'); let rot = 0, vel = 40, drag = null, last = performance.now(), raf = 0;
     const tick = (now) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; if (!drag) { vel += (40 - vel) * Math.min(1, dt * 1.5); rot += vel * dt; } spin.style.transform = 'rotateY(' + rot + 'deg)'; raf = requestAnimationFrame(tick); };
