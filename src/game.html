@@ -226,7 +226,7 @@ body {
 .bdg.got .bsh { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
 .bdg .bin { position: relative; width: 52%; height: 52%; display: grid; place-items: center; }
 .bdg .bin svg { width: 100%; height: 100%; overflow: visible; }
-.bdg .bin img { width: 150%; height: 150%; max-width: none; }
+.bdg .bin img { width: 140%; height: 140%; max-width: none; clip-path: circle(42%); }
 .bdg:not(.got) .bin img { filter: grayscale(1) brightness(0.8); opacity: 0.45; }
 .bdg.got { animation: bdgIn 0.4s cubic-bezier(.2,.9,.3,1.5) backwards; }
 @keyframes bdgIn { from { transform: scale(0.6); } }
@@ -244,9 +244,12 @@ body {
 .drow .cal-b { width: 76px; height: 76px; flex: none; } .drow .cal-b.got { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35)); }
 .dinfo { flex: 1; display: flex; flex-direction: column; gap: 4px; } .dinfo b { font: 800 18px var(--display); } .dinfo small { font: 500 12px var(--mono); color: var(--ink-soft); } .dinfo .wbar { margin-top: 2px; }
 .drow:not(.got) .dinfo b { opacity: 0.8; }
-.rrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; justify-items: center; }
+.rblock { display: flex; flex-direction: column; gap: 12px; padding: 16px 12px; border-radius: 20px; background: rgba(255,255,255,0.06); }
+.rtop { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; } .rtop b { font: 800 16px var(--display); } .rtop span { font: 500 12px var(--mono); color: var(--ink-soft); }
+.rblock .wbar { margin: 0 4px; }
+.rrow { margin-top: 6px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; justify-items: center; }
 .rb { display: flex; flex-direction: column; align-items: center; gap: 6px; } .rb small { font: 800 13px var(--display); color: var(--ink-soft); } .rb small.on { color: #fff; }
-.tbody.rush .sect { margin-top: 6px; }
+.tbody.rush { gap: 14px; }
 #bview { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(6,10,28,0.78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: bvIn 0.3s ease-out; touch-action: none; cursor: grab; }
 #bview.out { opacity: 0; transition: opacity 0.25s; }
 @keyframes bvIn { from { opacity: 0; } }
@@ -2230,8 +2233,9 @@ window.Board = (function () {
     planet: 'M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12zM3 15c-1.5 2 .5 3.5 4.5 2.5M21 9c1.5-2-.5-3.5-4.5-2.5'
   };
   // [shape, light colour, dark colour]
-  const BOSS_LOOK = { boss: ['hex', '#ffb35c', '#e8641a'], bstar: ['hex', '#ffe27a', '#e8a21a'], boct: ['hex', '#c79bff', '#6a2fd1'], bjelly: ['hex', '#ffa6e6', '#b04ddb'], beel: ['hex', '#9be86a', '#2f9a3a'] };
-  const STAR_LOOK = [['shield', '#7ff5e2', '#1a9e8c', 'star'], ['gem', '#9fc4ff', '#3a5fd6', 'stars2'], ['burst', '#ffe27a', '#ff9a1f', 'crown']];
+  const BOSS_LOOK = { boss: ['round', '#ffb35c', '#e8641a'], bstar: ['round', '#ffe27a', '#e8a21a'], boct: ['round', '#c79bff', '#6a2fd1'], bjelly: ['round', '#ffa6e6', '#b04ddb'], beel: ['round', '#9be86a', '#2f9a3a'] };
+  const METAL = [['round', '#ffd2a8', '#c0682a'], ['round', '#ffffff', '#8f9bb3'], ['round', '#fff3a0', '#e0a000'], ['round', '#d6f8ff', '#3aa8d0'], ['round', '#ecd4ff', '#8a3fe0']]; // bronze, silver, gold, platinum, legend
+  const STAR_LOOK = [METAL[0].concat('star'), METAL[1].concat('stars2'), METAL[2].concat('crown')];
   let bid = 0;
   function badge(look, got, inner, size, title) {
     const [shape, c1, c2, ic] = look, id = 'bg' + (bid++), sz = size || 56;
@@ -2245,9 +2249,9 @@ window.Board = (function () {
       return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], k, need: n, got: st >= n })) }; });
   }
   const RUSH_B = [3, 6, 10, 15, 20], RUSH_S = [10000, 30000, 60000, 100000, 150000];
-  const RUSH_BL = [['round', '#ffc49e', '#ff7e4a', 'bolt'], ['shield', '#ffb0c8', '#e8457a', 'flame'], ['hex', '#c79bff', '#6a2fd1', 'rocket'], ['gem', '#7fe8ff', '#1a7fd6', 'planet'], ['burst', '#ffe27a', '#ff8a1f', 'crown']];
-  const RUSH_SL = [['round', '#ffe27a', '#e8a21a', 'coin'], ['square', '#9be86a', '#2f9a3a', 'gem'], ['shield', '#7ff5e2', '#1a9e8c', 'star'], ['hex', '#ffa6e6', '#b04ddb', 'trophy'], ['burst', '#fff2a8', '#ff6a3d', 'crown']];
-  const kfmt = (n) => n >= 1000 ? (n / 1000) + 'k' : String(n);
+  const RUSH_BL = METAL.map((m) => m.concat('bolt')), RUSH_SL = METAL.map((m) => m.concat('coin'));
+  const RUSH_NAMES = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Legend'];
+  const kfmt = (n) => n >= 1000 ? Math.floor(n / 1000) + 'k' : String(n);
   const earned = () => trophyList().flatMap((t) => TIERS.filter((tr, k) => t.n >= [10, 20, t.days][k]).map((tr) => t.id + tr))
     .concat(worldTrophies().flatMap((t) => (t.bossDone ? ['w' + t.w] : []).concat(t.stars.filter((x) => x.got).map((x) => x.id))))
     .concat(RUSH_B.map((n, k) => (prog.rushBoards || 0) >= n ? 'rb' + k : null).filter(Boolean), RUSH_S.map((n, k) => (prog.rush || 0) >= n ? 'rs' + k : null).filter(Boolean));
@@ -2291,9 +2295,11 @@ window.Board = (function () {
           return '<div class="drow' + (got ? ' got' : '') + '">' + '<div class="bdg' + (got ? ' got' : '') + '" data-t="' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k] + ' of Daily" style="width:76px;height:76px">' + calBadge(k, got, k === 2 ? 'ALL' : String(n)) + '</div>' + '<div class="dinfo"><b>' + ['10 days', '20 days', 'Every day'][k] + '</b><div class="wbar"><i style="width:' + Math.min(100, t.n / n * 100) + '%;background:' + DAY_LOOK[k][0] + '"></i></div><small>' + (got ? 'Done' : t.n + ' / ' + n) + '</small></div></div>'; }).join('');
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
-      const row = (title, list, looks, have, lab) => '<div class="sect">' + title + '</div><div class="rrow">' + list.map((n, k) => '<div class="rb">' + badge(looks[k], have >= n, null, 52, 'Rush|' + lab(n) + ' ' + (title.startsWith('Boards') ? 'boards' : 'points') + ' in one run') + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div>';
-      body = row('Boards in one run', RUSH_B, RUSH_BL, b, (n) => n) + row('Score in one run', RUSH_S, RUSH_SL, sc, kfmt) +
-        '<p class="tnote">Best run: <b>' + b + '</b> boards · <b>' + kfmt(Math.floor(sc / 100) * 100) + '</b> points</p>';
+      const block = (title, list, looks, have, lab, unit) => { const k = list.findIndex((n) => have < n), nx = k < 0 ? null : list[k], prev = k <= 0 ? 0 : list[k - 1];
+        return '<div class="rblock"><div class="rtop"><b>' + title + '</b><span>' + (nx ? lab(have) + ' / ' + lab(nx) + ' ' + unit : 'All done') + '</span></div>' +
+          '<div class="wbar"><i style="width:' + (nx ? Math.min(100, (have - prev) / (nx - prev) * 100) : 100) + '%;background:linear-gradient(90deg,' + (nx ? METAL[k][1] + ',' + METAL[k][2] : '#ecd4ff,#8a3fe0') + ')"></i></div>' +
+          '<div class="rrow">' + list.map((n, j) => '<div class="rb">' + badge(looks[j], have >= n, null, 54, 'Rush · ' + RUSH_NAMES[j] + '|' + lab(n) + ' ' + unit + ' in one run') + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div></div>'; };
+      body = block('Boards', RUSH_B, RUSH_BL, b, (n) => n, 'boards') + block('Score', RUSH_S, RUSH_SL, sc, kfmt, 'points') + '<p class="tnote">Best in a single Rush run</p>';
     }
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
     panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
