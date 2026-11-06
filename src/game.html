@@ -405,11 +405,16 @@ h2.shop { color: #ffd166; }
 .cal div.today, .cal button.today { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); }
 .cal button { position: relative; font-weight: 700; }
 .cal button.done, .cal button.late { background: rgba(127,245,226,0.16); color: #fff; }
-.cal button .ok { position: absolute; inset: 3px; border-radius: 50%; border: 2.5px solid #7ff5e2; box-shadow: 0 0 8px rgba(127,245,226,0.5); }
-.cal button.late .ok { border-color: rgba(127,245,226,0.55); box-shadow: none; }
+.cal button.done { background: linear-gradient(160deg, #4fe3cb, #1a9e8c); color: #fff; text-shadow: 0 1px 2px rgba(0,60,50,0.5); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+.cal button.late { background: linear-gradient(160deg, rgba(79,227,203,0.45), rgba(26,158,140,0.45)); color: #fff; }
+.cal button .ok { position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; border-radius: 50%; background: #fff; color: #1a9e8c; display: grid; place-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.cal button .ok svg { width: 12px; height: 12px; }
+.cal button .sd { position: absolute; bottom: 4px; left: 0; right: 0; display: flex; justify-content: center; gap: 2px; }
+.cal button .sd b { width: 4px; height: 4px; border-radius: 50%; background: #ffe27a; box-shadow: 0 0 3px rgba(255,210,80,0.9); }
 .cal button.pop { animation: dayPop 0.3s cubic-bezier(.2,.9,.3,1.6); }
 @keyframes dayPop { from { transform: scale(0.82); } }
-.cal button.pick { background: #7ff5e2; color: #063b35; box-shadow: 0 0 0 2px #fff; } .cal button.pick .ok { border-color: #063b35; box-shadow: none; }
+.cal button.pick { box-shadow: 0 0 0 2.5px #fff, 0 0 14px rgba(255,255,255,0.35); transform: scale(1.06); z-index: 1; }
+.cal button.pick:not(.done):not(.late) { background: rgba(255,255,255,0.22); }
 .dchips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .dchips span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.08); font: 500 12px var(--mono); color: var(--ink-soft); }
 .dchips b { color: #fff; } .dchips svg { width: 16px; height: 16px; }
@@ -2522,7 +2527,7 @@ window.Board = (function () {
     const tail = 42 - first - days; // always six rows, so the card keeps its size from month to month
     for (let d = 1; d <= days; d++) { // past days can be played (after an ad); future days are dim
       const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key], cls = (e ? (e.late ? 'late' : 'done') : '') + (key === today ? ' today' : '');
-      cal += key > today ? '<div class="future">' + d + '</div>' : '<button type="button" class="' + cls + (key === dailyPick || (!dailyPick && key === today) ? ' pick' : '') + '" data-day="' + key + '">' + d + (e && (e.stars || e.saved) ? '<i class="ok"></i>' : '') + '</button>';
+      cal += key > today ? '<div class="future">' + d + '</div>' : '<button type="button" class="' + cls + (key === dailyPick || (!dailyPick && key === today) ? ' pick' : '') + '" data-day="' + key + '">' + d + (e && (e.stars || e.saved) ? '<i class="ok"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>' + (e.stars ? '<i class="sd">' + '<b></b>'.repeat(e.stars) + '</i>' : '') : '') + '</button>';
     }
     for (let k = 0; k < tail; k++) cal += '<div class="blank"></div>';
     cal += '</div>';
