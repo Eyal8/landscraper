@@ -722,12 +722,18 @@ window.Board = (function () {
 
   // ---------- HUD helpers ----------
   let flashT = 0;
+  let flashLeft = 0, flashAt = 0;
+  function flashOut() { flashLeft = 0; const f = $('flash'); f.classList.add('out'); f.classList.remove('show'); }
+  function flashHold(on) { // the pause menu stops the banner too, and it carries on after
+    if (on) { if (flashLeft > 0) { clearTimeout(flashT); flashLeft = Math.max(0, flashLeft - (performance.now() - flashAt)); } }
+    else if (flashLeft > 0) { flashAt = performance.now(); clearTimeout(flashT); flashT = setTimeout(flashOut, flashLeft); }
+  }
   function flash(text, small, ms, bad) {
     const f = $('flash'); ms = Math.max(ms || 1000, small ? 1800 : 1200);
     f.innerHTML = ''; f.append(text); f.classList.toggle('bad', !!bad);
     if (small) { const s = document.createElement('small'); s.textContent = small; f.append(s); }
     f.classList.remove('show', 'out'); void f.offsetWidth; f.classList.add('show');
-    clearTimeout(flashT); flashT = setTimeout(() => { f.classList.add('out'); f.classList.remove('show'); }, ms || 1000); // drifts up and fades
+    clearTimeout(flashT); flashLeft = ms || 1000; flashAt = performance.now(); flashT = setTimeout(flashOut, flashLeft); // drifts up and fades
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   function panel(html, actions) {
@@ -1626,6 +1632,7 @@ window.Board = (function () {
     return true;
   }
   function build(lv) {
+    if (flashLeft > 0) { clearTimeout(flashT); flashOut(); }
     clearTrapHint(); trapHinted = false; inkT.fill(0); inkOn = false; magCd = 0; for (let i = 0; i < N; i++) maskData[i * 4 + 2] = 0;
     if (typeof lv === 'number') { cur = lv; L = LEVELS[lv]; } else { cur = -1; L = lv; }
     applyWorld(WORLDS[L.world]);
@@ -2165,7 +2172,7 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if (state === 'play' && !paused) showPause();
     else if (onHome && state === 'menu') AppPlugin.exitApp();
@@ -2598,9 +2605,9 @@ window.Board = (function () {
 
   function showPause() {
     if (state !== 'play') return;
-    paused = true; const sb = settingsButtons();
+    paused = true; flashHold(true); const sb = settingsButtons();
     panel('<div class="kicker">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart</button><button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
-      Object.assign({ resume: () => { hidePanel(); paused = false; }, retry: () => (mode === 'rush' ? startRush() : mode === 'daily' ? playDaily(dailyKey) : startLevel(cur)), home: showHome }, sb.acts));
+      Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: () => (mode === 'rush' ? startRush() : mode === 'daily' ? playDaily(dailyKey) : startLevel(cur)), home: showHome }, sb.acts));
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
