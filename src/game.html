@@ -221,6 +221,32 @@ body {
 .trow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tro.none.lk-bronze .medal { box-shadow: inset 0 0 0 2px rgba(217,138,74,0.55); } .tro.none.lk-silver .medal { box-shadow: inset 0 0 0 2px rgba(201,211,230,0.55); } .tro.none.lk-gold .medal { box-shadow: inset 0 0 0 2px rgba(255,201,40,0.6); }
 .tnote { font-size: 13px; } .mnav { margin-bottom: 4px; }
+.bdg { position: relative; flex: none; display: grid; place-items: center; }
+.bdg .bsh { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.bdg.got .bsh { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
+.bdg .bin { position: relative; width: 52%; height: 52%; display: grid; place-items: center; }
+.bdg .bin svg { width: 100%; height: 100%; overflow: visible; }
+.bdg .bin img { width: 150%; height: 150%; max-width: none; }
+.bdg:not(.got) .bin img { filter: grayscale(1) brightness(0.8); opacity: 0.45; }
+.bdg.got { animation: bdgIn 0.4s cubic-bezier(.2,.9,.3,1.5) backwards; }
+@keyframes bdgIn { from { transform: scale(0.6); } }
+.wcard { position: relative; border-radius: 20px; padding: 10px 12px 12px; overflow: hidden; background: rgba(255,255,255,0.06); }
+.wcard::before { content: ''; position: absolute; inset: 0; background: var(--wbg); opacity: 0.22; }
+.wcard > * { position: relative; }
+.whead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.whead b { font: 800 16px var(--display); } .whead span { font: 500 12px var(--mono); color: var(--ink-soft); } .whead .ic-star { width: 1.1em; height: 1.1em; }
+.wbadges { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.wsep { width: 1px; height: 36px; background: rgba(255,255,255,0.18); }
+.wbar { position: relative; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.25); margin-top: 8px; }
+.wbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #7ff5e2, #9fc4ff, #ffe27a); }
+.wbar em { position: absolute; top: -2px; width: 2px; height: 10px; background: rgba(255,255,255,0.35); }
+.drow { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-radius: 20px; background: rgba(255,255,255,0.06); text-align: left; }
+.drow .cal-b { width: 76px; height: 76px; flex: none; } .drow .cal-b.got { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35)); }
+.dinfo { flex: 1; display: flex; flex-direction: column; gap: 4px; } .dinfo b { font: 800 18px var(--display); } .dinfo small { font: 500 12px var(--mono); color: var(--ink-soft); } .dinfo .wbar { margin-top: 2px; }
+.drow:not(.got) .dinfo b { opacity: 0.8; }
+.rrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; justify-items: center; }
+.rb { display: flex; flex-direction: column; align-items: center; gap: 6px; } .rb small { font: 800 13px var(--display); color: var(--ink-soft); } .rb small.on { color: #fff; }
+.tbody.rush .sect { margin-top: 6px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -2169,44 +2195,84 @@ window.Board = (function () {
     }
     return out.reverse();
   }
-  // Trophies: every medal is on show from the start, locked ones faded in their own colour.
+  // Trophies: every badge is on show from the start. Each has its own shape, colours and icon; locked ones are dark with a coloured outline.
   const TIERS = ['bronze', 'silver', 'gold'];
+  const SHAPE = {
+    hex: 'M50 3 91 26.5v47L50 97 9 73.5v-47z',
+    shield: 'M50 4 88 17v30c0 25-16 42-38 50C28 89 12 72 12 47V17z',
+    burst: (() => { let d = ''; for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12 - Math.PI / 2, r = k % 2 ? 41 : 48; d += (k ? 'L' : 'M') + (50 + Math.cos(a) * r).toFixed(1) + ' ' + (50 + Math.sin(a) * r).toFixed(1); } return d + 'z'; })(),
+    round: 'M50 4a46 46 0 1 1 0 92a46 46 0 1 1 0-92z',
+    gem: 'M30 6h40l24 30-44 58L6 36z',
+    square: 'M26 6h48a20 20 0 0 1 20 20v48a20 20 0 0 1-20 20H26A20 20 0 0 1 6 74V26A20 20 0 0 1 26 6z'
+  };
+  const IC = {
+    star: 'M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z',
+    stars2: 'M8 3l1.9 3.9 4.3.6-3.1 3 .7 4.2L8 12.7l-3.8 2 .7-4.2-3.1-3 4.3-.6zM17 10l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z',
+    crown: 'M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z',
+    bolt: 'M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z',
+    flame: 'M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z',
+    rocket: 'M12 2c3.5 2.5 5 6.5 5 10l-2 3H9l-2-3c0-3.5 1.5-7.5 5-10zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM9 16h6l-1 4h-4zM7 12l-3 3v3l3-2zM17 12l3 3v3l-3-2z',
+    coin: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zm-1 4v1.2c-1.6.3-2.6 1.3-2.6 2.6 0 1.6 1.3 2.2 3 2.6 1.3.3 1.7.6 1.7 1.1s-.6.9-1.5.9c-1 0-1.7-.4-2-1.2l-1.5.6c.4 1.2 1.4 2 2.9 2.2V18h1.6v-1.2c1.7-.3 2.6-1.3 2.6-2.7 0-1.6-1.2-2.3-3.1-2.7-1.2-.3-1.6-.5-1.6-1s.5-.8 1.3-.8c.8 0 1.4.3 1.7 1l1.5-.6c-.4-1-1.3-1.7-2.5-1.9V7z',
+    gem: 'M7 4h10l4 5-9 11L3 9z',
+    trophy: 'M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm0 4H6v1a2 2 0 0 0 1 1.7zm11 0h-1v2.7A2 2 0 0 0 18 8z',
+    planet: 'M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12zM3 15c-1.5 2 .5 3.5 4.5 2.5M21 9c1.5-2-.5-3.5-4.5-2.5'
+  };
+  // [shape, light colour, dark colour]
+  const BOSS_LOOK = { boss: ['hex', '#ffb35c', '#e8641a'], bstar: ['hex', '#ffe27a', '#e8a21a'], boct: ['hex', '#c79bff', '#6a2fd1'], bjelly: ['hex', '#ffa6e6', '#b04ddb'], beel: ['hex', '#9be86a', '#2f9a3a'] };
+  const STAR_LOOK = [['shield', '#7ff5e2', '#1a9e8c', 'star'], ['gem', '#9fc4ff', '#3a5fd6', 'stars2'], ['burst', '#ffe27a', '#ff9a1f', 'crown']];
+  let bid = 0;
+  function badge(look, got, inner, size) {
+    const [shape, c1, c2, ic] = look, id = 'bg' + (bid++), sz = size || 56;
+    const icon = inner || '<svg viewBox="0 0 24 24"><path d="' + IC[ic] + '" fill="' + (got ? '#fff' : 'none') + '" stroke="' + (got ? 'rgba(20,20,50,0.45)' : c1) + '" stroke-width="' + (got ? 1.2 : 1.6) + '" stroke-linejoin="round" paint-order="stroke"/></svg>';
+    return '<div class="bdg' + (got ? ' got' : '') + '" style="width:' + sz + 'px;height:' + sz + 'px"><svg class="bsh" viewBox="0 0 100 100"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+      '<path d="' + SHAPE[shape] + '" fill="' + (got ? 'url(#' + id + ')' : 'rgba(255,255,255,0.05)') + '" stroke="' + (got ? 'rgba(255,255,255,0.7)' : c1) + '" stroke-width="' + (got ? 3 : 3.5) + '" stroke-opacity="' + (got ? 1 : 0.55) + '" stroke-linejoin="round"/>' +
+      (got ? '<path d="' + SHAPE[shape] + '" fill="#fff" opacity=".22" transform="translate(50 50) scale(0.82 0.4) translate(-50 -88)"/>' : '') + '</svg><div class="bin">' + icon + '</div></div>';
+  }
   function worldTrophies() {
     return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w);
-      return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], tier: TIERS[k], need: n, got: st >= n })) }; });
+      return { w, name: wd.name, boss: BOSS_OF[wd.id], st, bossDone: !!(prog.done[boss.id] && !prog.skipped[boss.id]), stars: [30, 45, 60].map((n, k) => ({ id: 'p' + w + TIERS[k], k, need: n, got: st >= n })) }; });
   }
-  const RUSH_B = [3, 6, 10], RUSH_S = [10000, 30000, 60000];
+  const RUSH_B = [3, 6, 10, 15, 20], RUSH_S = [10000, 30000, 60000, 100000, 150000];
+  const RUSH_BL = [['round', '#ffc49e', '#ff7e4a', 'bolt'], ['shield', '#ffb0c8', '#e8457a', 'flame'], ['hex', '#c79bff', '#6a2fd1', 'rocket'], ['gem', '#7fe8ff', '#1a7fd6', 'planet'], ['burst', '#ffe27a', '#ff8a1f', 'crown']];
+  const RUSH_SL = [['round', '#ffe27a', '#e8a21a', 'coin'], ['square', '#9be86a', '#2f9a3a', 'gem'], ['shield', '#7ff5e2', '#1a9e8c', 'star'], ['hex', '#ffa6e6', '#b04ddb', 'trophy'], ['burst', '#fff2a8', '#ff6a3d', 'crown']];
   const kfmt = (n) => n >= 1000 ? (n / 1000) + 'k' : String(n);
   const earned = () => trophyList().flatMap((t) => TIERS.filter((tr, k) => t.n >= [10, 20, t.days][k]).map((tr) => t.id + tr))
     .concat(worldTrophies().flatMap((t) => (t.bossDone ? ['w' + t.w] : []).concat(t.stars.filter((x) => x.got).map((x) => x.id))))
     .concat(RUSH_B.map((n, k) => (prog.rushBoards || 0) >= n ? 'rb' + k : null).filter(Boolean), RUSH_S.map((n, k) => (prog.rush || 0) >= n ? 'rs' + k : null).filter(Boolean));
   let bossThumbs = {};
   const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
-  const BOLT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>';
-  const STARI = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>';
-  const CUP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm0 4H6v1a2 2 0 0 0 1 1.7zm11 0h-1v2.7A2 2 0 0 0 18 8z"/></svg>';
+  const DAY_LOOK = [['#7ff5e2', '#1a9e8c'], ['#9fc4ff', '#3a5fd6'], ['#ffe27a', '#ff8a1f']];
+  function calBadge(k, got, label) { // a calendar page
+    const [c1, c2] = DAY_LOOK[k], id = 'cb' + (bid++);
+    return '<svg class="cal-b' + (got ? ' got' : '') + '" viewBox="0 0 100 100"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+      '<rect x="10" y="16" width="80" height="78" rx="14" fill="' + (got ? '#fff' : 'rgba(255,255,255,0.06)') + '" stroke="' + c1 + '" stroke-width="3.5" stroke-opacity="' + (got ? 0 : 0.6) + '"/>' +
+      '<path d="M10 30a14 14 0 0 1 14-14h52a14 14 0 0 1 14 14v8H10z" fill="' + (got ? 'url(#' + id + ')' : c1) + '" opacity="' + (got ? 1 : 0.35) + '"/>' +
+      '<rect x="28" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/><rect x="64" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/>' +
+      '<text x="50" y="80" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (label.length > 2 ? 26 : 34) + '" fill="' + (got ? c2 : c1) + '" opacity="' + (got ? 1 : 0.7) + '">' + label + '</text></svg>';
+  }
   let troTab = 'worlds', troMonth = 0;
   function showTrophies(tab) {
     toMenu(); if (typeof tab === 'string') { if (tab !== troTab) troMonth = 0; troTab = tab; }
-    const md = (tier, got, inner, label, sub) => '<div class="tro ' + (got ? tier : 'none lk-' + tier) + '"><div class="medal">' + inner + '</div>' + (label ? '<b>' + label + '</b>' : '') + '<small>' + sub + '</small></div>';
     let body = '';
     if (troTab === 'worlds') {
-      body = '<div class="trow head"><span></span><i>Boss</i><i>30</i><i>45</i><i>60</i></div>' + worldTrophies().map((t) => { if (!bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss);
-        return '<div class="trow"><span><b>' + t.name + '</b><small>' + t.st + ' / 60 ' + STAR + '</small></span>' + md('gold', t.bossDone, bossThumbs[t.boss], '', t.bossDone ? 'Trapped' : 'Trap it') +
-          t.stars.map((x) => md(x.tier, x.got, STARI, '', x.got ? 'Done' : Math.max(0, x.need - t.st) + ' more')).join('') + '</div>'; }).join('');
+      body = worldTrophies().map((t) => { if (!bossThumbs[t.boss]) bossThumbs[t.boss] = foeIcon(t.boss);
+        const pctS = Math.min(100, t.st / 60 * 100);
+        return '<div class="wcard" style="--wbg:' + WORLD_BG[t.w] + '"><div class="whead"><b>' + t.name + '</b><span>' + t.st + ' / 60 ' + STAR + '</span></div>' +
+          '<div class="wbadges">' + badge(BOSS_LOOK[t.boss], t.bossDone, bossThumbs[t.boss], 58) + '<i class="wsep"></i>' + t.stars.map((x) => badge(STAR_LOOK[x.k], x.got, null, 50)).join('') + '</div>' + '</div>'; }).join('');
     } else if (troTab === 'daily') {
       const now = new Date(), d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + troMonth, 1)), y = d0.getUTCFullYear(), mo = d0.getUTCMonth(), t = monthTrophy(y, mo);
       const first = Object.keys(prog.daily).sort()[0], minOff = first ? (Number(first.slice(0, 4)) - now.getUTCFullYear()) * 12 + Number(first.slice(5, 7)) - 1 - now.getUTCMonth() : 0;
       body = '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' +
-        '<div class="trow3">' + [10, 20, t.days].map((n, k) => md(TIERS[k], t.n >= n, t.icon, n === t.days ? 'All ' + n : n + ' days', t.n >= n ? 'Done' : t.n + ' / ' + n)).join('') + '</div>' +
-        '<p class="tnote">Days played this month: <b>' + t.n + '</b></p>';
+        [10, 20, t.days].map((n, k) => { const got = t.n >= n;
+          return '<div class="drow' + (got ? ' got' : '') + '">' + calBadge(k, got, k === 2 ? 'ALL' : String(n)) + '<div class="dinfo"><b>' + ['10 days', '20 days', 'Every day'][k] + '</b><div class="wbar"><i style="width:' + Math.min(100, t.n / n * 100) + '%;background:' + DAY_LOOK[k][0] + '"></i></div><small>' + (got ? 'Done' : t.n + ' / ' + n) + '</small></div></div>'; }).join('');
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
-      body = '<div class="sect">Boards in one run</div><div class="trow3">' + RUSH_B.map((n, k) => md(TIERS[k], b >= n, BOLT, n + ' boards', b >= n ? 'Done' : b + ' / ' + n)).join('') + '</div>' +
-        '<div class="sect">Score in one run</div><div class="trow3">' + RUSH_S.map((n, k) => md(TIERS[k], sc >= n, CUP, kfmt(n), sc >= n ? 'Done' : kfmt(Math.floor(sc / 100) * 100) + ' / ' + kfmt(n))).join('') + '</div>';
+      const row = (title, list, looks, have, lab) => '<div class="sect">' + title + '</div><div class="rrow">' + list.map((n, k) => '<div class="rb">' + badge(looks[k], have >= n, null, 52) + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div>';
+      body = row('Boards in one run', RUSH_B, RUSH_BL, b, (n) => n) + row('Score in one run', RUSH_S, RUSH_SL, sc, kfmt) +
+        '<p class="tnote">Best run: <b>' + b + '</b> boards · <b>' + kfmt(Math.floor(sc / 100) * 100) + '</b> points</p>';
     }
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
-    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody">' + body + '</div>',
+    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
     $('card').classList.add('troc');
     if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
