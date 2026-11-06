@@ -257,6 +257,7 @@ body {
 .rb { display: flex; flex-direction: column; align-items: center; gap: 6px; } .rb small { font: 800 13px var(--display); color: var(--ink-soft); } .rb small.on { color: #fff; }
 .tbody.rush { gap: 14px; }
 #bview { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(6,10,28,0.78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: bvIn 0.3s ease-out; touch-action: none; cursor: grab; }
+#bview .bv-x { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; left: auto; }
 #bview.out { opacity: 0; transition: opacity 0.25s; }
 @keyframes bvIn { from { opacity: 0; } }
 .bv-stage { perspective: 700px; width: 220px; height: 220px; animation: bvPop 0.5s cubic-bezier(.2,.9,.3,1.4); }
@@ -2217,8 +2218,9 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
+    if (badgeClose) { badgeClose(); return; }
     if (state === 'play' && !paused) showPause();
     else if (onHome && state === 'menu') AppPlugin.exitApp();
     else showHome();
@@ -2323,19 +2325,24 @@ window.Board = (function () {
       '<rect x="28" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/><rect x="64" y="6" width="8" height="20" rx="4" fill="' + c2 + '"/>' +
       '<text x="50" y="80" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (label.length > 2 ? 26 : 34) + '" fill="' + (got ? c2 : c1) + '" opacity="' + (got ? 1 : 0.7) + '">' + label + '</text></svg>';
   }
+  let badgeClose = null;
   function showBadge(el) { // the trophy, big, turning slowly; swipe to spin it
     const [a, b] = el.dataset.t.split('|'), ov = document.createElement('div'); ov.id = 'bview';
     const face = el.outerHTML.replace(/style="[^"]*"/, ''), rim = face.replace(/<div class="bin[\s\S]*$/, '</div>'); // a coin with real thickness: front, back and a stack of edge layers
     let layers = ''; for (let k = -8; k <= 8; k += 1.5) layers += '<div class="bv-l rim" style="transform:translateZ(' + k + 'px)">' + rim + '</div>';
-    ov.innerHTML = '<div class="bv-stage"><div class="bv-spin">' + layers + '<div class="bv-l" style="transform:translateZ(9px)">' + face + '</div><div class="bv-l back" style="transform:rotateY(180deg) translateZ(9px)">' + face + '</div></div></div><b>' + a + '</b><small>' + b + '</small><span class="bv-hint">Tap to close</span>';
+    ov.innerHTML = '<div class="bv-stage"><div class="bv-spin">' + layers + '<div class="bv-l" style="transform:translateZ(9px)">' + face + '</div><div class="bv-l back" style="transform:rotateY(180deg) translateZ(9px)">' + face + '</div></div></div><b>' + a + '</b><small>' + b + '</small><span class="bv-hint">Tap to close</span><button class="bv-x home-x" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
     stage.append(ov); buzz('soft'); tone(988, 0.15, 'sine', 0.05, 1480);
     const spin = ov.querySelector('.bv-spin'); let rot = 0, vel = 40, drag = null, last = performance.now(), raf = 0;
     const tick = (now) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; if (!drag) { vel += (40 - vel) * Math.min(1, dt * 1.5); rot += vel * dt; } spin.style.transform = 'rotateY(' + rot + 'deg)'; raf = requestAnimationFrame(tick); };
     raf = requestAnimationFrame(tick);
-    ov.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, r: rot, t: performance.now(), moved: false }; });
-    ov.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 6) drag.moved = true; const nr = drag.r + dx * 0.9, now = performance.now(); vel = (nr - rot) / Math.max(0.016, (now - drag.t) / 1000); drag.t = now; rot = nr; });
-    ov.addEventListener('pointerup', (e) => { e.stopPropagation(); const moved = drag && drag.moved; drag = null; vel = clamp(vel, -900, 900); if (!moved) { cancelAnimationFrame(raf); ov.classList.add('out'); setTimeout(() => ov.remove(), 250); } });
+    const close = () => { if (!ov.isConnected) return; cancelAnimationFrame(raf); badgeClose = null; ov.classList.add('out'); setTimeout(() => ov.remove(), 250); };
+    badgeClose = close;
+    ov.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); drag = { x: e.clientX, r: rot, t: performance.now(), moved: false }; try { ov.setPointerCapture(e.pointerId); } catch (err) {} });
+    ov.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 8) drag.moved = true; const nr = drag.r + dx * 0.9, now = performance.now(); vel = (nr - rot) / Math.max(0.016, (now - drag.t) / 1000); drag.t = now; rot = nr; });
+    const up = (e) => { e.stopPropagation(); const moved = drag && drag.moved; drag = null; vel = clamp(vel, -900, 900); if (!moved) close(); };
+    ov.addEventListener('pointerup', up); ov.addEventListener('pointercancel', () => { drag = null; });
     ov.addEventListener('click', (e) => e.stopPropagation());
+    ov.querySelector('.bv-x').addEventListener('pointerup', (e) => { e.stopPropagation(); drag = null; close(); });
   }
   let troTab = 'worlds', troMonth = 0;
   function showTrophies(tab) {
@@ -3161,7 +3168,7 @@ window.Board = (function () {
   let dShown = null;
   function dpadVisible() { const v = useButtons() && (state === 'play' || state === 'intro') && !paused; if (v !== dShown) { dpad.hidden = !v; dShown = v; } if (dpId !== null && touchDir && dir !== touchDir) steer(touchDir); }
   stage.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('#panel') || e.target.closest('#pauseBtn') || e.target.closest('#dpad') || e.target.closest('#adSim')) return;
+    if (e.target.closest('#panel') || e.target.closest('#pauseBtn') || e.target.closest('#dpad') || e.target.closest('#adSim') || e.target.closest('#bview')) return;
     if (state === 'play' && !$('hud').hidden && e.clientY < $('hud').getBoundingClientRect().bottom + 6) return; // the HUD strip at the top is not a steering area
     e.preventDefault(); sw = { x: e.clientX, y: e.clientY }; touchHeld = true; touchDir = null;
     try { window.focus(); stage.focus({ preventScroll: true }); } catch (err) {} // preventDefault blocks the normal focus, so take it back for the arrow keys
