@@ -211,6 +211,7 @@ body {
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
 .card.troc { width: min(420px, 100%); height: min(640px, 100%); overflow: hidden; }
+.card.troc .tbody > * { flex-shrink: 0; }
 .card.troc .tbody { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; box-sizing: border-box; }
 .trow { display: grid; grid-template-columns: 1.25fr repeat(4, 1fr); align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: rgba(255,255,255,0.06); }
 .trow.head { background: none; padding: 0 6px; } .trow.head i { font: 500 11px var(--mono); font-style: normal; color: var(--gold); letter-spacing: 0.1em; }
@@ -226,7 +227,8 @@ body {
 .bdg.got .bsh { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
 .bdg .bin { position: relative; width: 52%; height: 52%; display: grid; place-items: center; }
 .bdg .bin svg { width: 100%; height: 100%; overflow: visible; }
-.bdg .bin img { width: 140%; height: 140%; max-width: none; clip-path: circle(42%); }
+.bdg .bin.pic { position: absolute; inset: 6%; width: auto; height: auto; border-radius: 50%; overflow: hidden; }
+.bdg .bin img { width: 100%; height: 100%; object-fit: contain; transform: scale(1.18); }
 .bdg:not(.got) .bin img { filter: grayscale(1) brightness(0.8); opacity: 0.45; }
 .bdg.got { animation: bdgIn 0.4s cubic-bezier(.2,.9,.3,1.5) backwards; }
 @keyframes bdgIn { from { transform: scale(0.6); } }
@@ -2235,14 +2237,14 @@ window.Board = (function () {
   // [shape, light colour, dark colour]
   const BOSS_LOOK = { boss: ['round', '#ffb35c', '#e8641a'], bstar: ['round', '#ffe27a', '#e8a21a'], boct: ['round', '#c79bff', '#6a2fd1'], bjelly: ['round', '#ffa6e6', '#b04ddb'], beel: ['round', '#9be86a', '#2f9a3a'] };
   const METAL = [['round', '#ffd2a8', '#c0682a'], ['round', '#ffffff', '#8f9bb3'], ['round', '#fff3a0', '#e0a000'], ['round', '#d6f8ff', '#3aa8d0'], ['round', '#ecd4ff', '#8a3fe0']]; // bronze, silver, gold, platinum, legend
-  const STAR_LOOK = [METAL[0].concat('star'), METAL[1].concat('stars2'), METAL[2].concat('crown')];
+  const STAR_LOOK = [METAL[0].concat('star'), METAL[1].concat('star'), METAL[2].concat('star')];
   let bid = 0;
   function badge(look, got, inner, size, title) {
     const [shape, c1, c2, ic] = look, id = 'bg' + (bid++), sz = size || 56;
     const icon = inner || '<svg viewBox="0 0 24 24"><path d="' + IC[ic] + '" fill="' + (got ? '#fff' : 'none') + '" stroke="' + (got ? 'rgba(20,20,50,0.45)' : c1) + '" stroke-width="' + (got ? 1.2 : 1.6) + '" stroke-linejoin="round" paint-order="stroke"/></svg>';
     return '<div class="bdg' + (got ? ' got' : '') + '"' + (title ? ' data-t="' + title + '"' : '') + ' style="width:' + sz + 'px;height:' + sz + 'px"><svg class="bsh" viewBox="0 0 100 100"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
       '<path d="' + SHAPE[shape] + '" fill="' + (got ? 'url(#' + id + ')' : 'rgba(255,255,255,0.05)') + '" stroke="' + (got ? 'rgba(255,255,255,0.7)' : c1) + '" stroke-width="' + (got ? 3 : 3.5) + '" stroke-opacity="' + (got ? 1 : 0.55) + '" stroke-linejoin="round"/>' +
-      (got ? '<path d="' + SHAPE[shape] + '" fill="#fff" opacity=".22" transform="translate(50 50) scale(0.82 0.4) translate(-50 -88)"/>' : '') + '</svg><div class="bin">' + icon + '</div></div>';
+      (got ? '<path d="' + SHAPE[shape] + '" fill="#fff" opacity=".22" transform="translate(50 50) scale(0.82 0.4) translate(-50 -88)"/>' : '') + '</svg><div class="bin' + (inner ? ' pic' : '') + '">' + icon + '</div></div>';
   }
   function worldTrophies() {
     return WORLDS.map((wd, w) => { const boss = LEVELS.find((x) => x.w === w && x.boss), st = worldStars(w);
