@@ -227,8 +227,8 @@ body {
 .bdg.got .bsh { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
 .bdg .bin { position: relative; width: 52%; height: 52%; display: grid; place-items: center; }
 .bdg .bin svg { width: 100%; height: 100%; overflow: visible; }
-.bdg .bin.pic { position: absolute; inset: 6%; width: auto; height: auto; border-radius: 50%; overflow: hidden; }
-.bdg .bin img { width: 100%; height: 100%; object-fit: contain; transform: scale(1.18); }
+.bdg .bin.pic { position: absolute; inset: 5%; width: auto; height: auto; border-radius: 50%; overflow: hidden; }
+.bdg .bin img { width: 100%; height: 100%; object-fit: contain; transform: scale(0.98); }
 .bdg:not(.got) .bin img { filter: grayscale(1) brightness(0.8); opacity: 0.45; }
 .bdg.got { animation: bdgIn 0.4s cubic-bezier(.2,.9,.3,1.5) backwards; }
 @keyframes bdgIn { from { transform: scale(0.6); } }
@@ -236,7 +236,8 @@ body {
 .wcard::before { content: ''; position: absolute; inset: 0; background: var(--wbg); opacity: 0.22; }
 .wcard > * { position: relative; }
 .whead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-.whead b { font: 800 16px var(--display); } .whead span { font: 500 12px var(--mono); color: var(--ink-soft); } .whead .ic-star { width: 1.1em; height: 1.1em; }
+.whead b { font: 800 16px var(--display); } .whead span { font: 500 12px var(--mono); color: var(--ink-soft); } .whead .ic-star { width: 1.5em; height: 1.5em; vertical-align: -0.38em; }
+.whead span { display: inline-flex; align-items: center; gap: 4px; }
 .wbadges { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .wsep { width: 1px; height: 36px; background: rgba(255,255,255,0.18); }
 .wbar { position: relative; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.25); margin-top: 8px; }
@@ -265,6 +266,7 @@ body {
 .bdg.got[data-t] { cursor: pointer; }
 .drow .bdg .cal-b { width: 100%; height: 100%; }
 .rbolt { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.05em; margin-right: 4px; }
+.rbolt.big.cal { fill: #7ff5e2; width: 38px; height: 38px; filter: drop-shadow(0 0 12px rgba(80,240,210,0.5)); }
 .rbolt.big { width: 46px; height: 46px; fill: #ffb48a; margin: 0 0 -6px; filter: drop-shadow(0 0 12px rgba(255,140,80,0.6)); }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
@@ -2184,7 +2186,7 @@ window.Board = (function () {
     panel('<div class="hbar"><button class="corner l shop" type="button" data-act="shop" aria-label="Shop"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></button><button class="corner r" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div><h1>Landscraper</h1>' +
       '<div class="btns"><button class="btn go" type="button" data-act="play">Play ' + lv.name + '<br><small style="opacity:.6;letter-spacing:.1em">' + WORLDS[lv.w].name + '</small></button></div>' +
       '<div class="modes">' +
-      '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
+      '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b><svg class=\"rbolt\" viewBox=\"0 0 24 24\"><path d=\"M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z\"/></svg>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b><svg class="rbolt" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
       '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
@@ -2426,7 +2428,7 @@ window.Board = (function () {
     // missed yesterday after a streak? one ad saves it
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
     const canSave = !prog.daily[yKey] && prog.daily[dayKey(y2)] && !prog.daily[dayKey(y2)].late;
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><h2 class="daily">Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
+    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><p>Streak: ' + streak() + (streak() === 1 ? ' day' : ' days') + best + '<br>New level in ' + untilNext() + '</p>' + cal +
       '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + (dailyFree() ? 'Play today' : 'Try again' + adTag()) + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.daily[yKey] = { stars: 0, saved: true }; saveProg(); flash('Streak saved', null, 1200); buzz('clear'); showDaily(mOff); },
         play: () => playDaily(today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
