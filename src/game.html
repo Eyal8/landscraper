@@ -232,7 +232,7 @@ body {
 .trow .tro small { font-size: 10px; letter-spacing: 0; }
 .trow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tro.none.lk-bronze .medal { box-shadow: inset 0 0 0 2px rgba(217,138,74,0.55); } .tro.none.lk-silver .medal { box-shadow: inset 0 0 0 2px rgba(201,211,230,0.55); } .tro.none.lk-gold .medal { box-shadow: inset 0 0 0 2px rgba(255,201,40,0.6); }
-.tnote { font-size: 13px; } .mnav { margin-bottom: 4px; }
+.tnote { font-size: 13px; } .mnav { margin: -4px 0 2px; }
 .bdg { position: relative; flex: none; display: grid; place-items: center; }
 .bdg .bsh { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .bdg.got .bsh { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
@@ -2402,11 +2402,11 @@ window.Board = (function () {
     } else if (troTab === 'daily') {
       const now = new Date(), d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + troMonth, 1)), y = d0.getUTCFullYear(), mo = d0.getUTCMonth(), t = monthTrophy(y, mo);
       const first = Object.keys(prog.daily).sort()[0], minOff = first ? (Number(first.slice(0, 4)) - now.getUTCFullYear()) * 12 + Number(first.slice(5, 7)) - 1 - now.getUTCMonth() : 0;
-      body = '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' +
+      body = '' +
         (() => { const goals = [10, 20, t.days], k = goals.findIndex((n) => t.n < n), nx = k < 0 ? null : goals[k];
           const num = (k2, got) => { const [c1] = DAY_LOOK[k2], txt = k2 === 2 ? 'ALL' : String(goals[k2]);
             return '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="4" rx="1.5" fill="' + (got ? 'rgba(255,255,255,0.85)' : c1) + '" opacity="' + (got ? 1 : 0.6) + '"/><text x="12" y="20" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (txt.length > 2 ? 7.5 : 10) + '" fill="' + (got ? '#fff' : c1) + '" stroke="' + (got ? 'rgba(20,20,50,0.35)' : 'none') + '" stroke-width="0.6" paint-order="stroke">' + txt + '</text></svg>'; };
-          return '<div class="rblock"><div class="rtop"><b>Days played</b><span>' + (nx ? t.n + ' / ' + nx + ' days' : 'All done') + '</span></div>' +
+          return '<div class="rblock">' + '<div class="calnav mnav"><button type="button" data-act="mprev"' + (troMonth <= Math.min(0, minOff) ? ' disabled' : '') + '>‹</button><span class="kicker daily">' + d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="mnext"' + (troMonth >= 0 ? ' disabled' : '') + '>›</button></div>' + '<div class="rtop"><b>Days played</b><span>' + (nx ? t.n + ' / ' + nx + ' days' : 'All done') + '</span></div>' +
             '<div class="wbar"><i style="width:' + Math.min(100, t.n / t.days * 100) + '%;background:linear-gradient(90deg,#7ff5e2,#9fc4ff,#ffe27a)"></i>' + [10, 20].map((n) => '<em style="left:' + (n / t.days * 100) + '%"></em>').join('') + '</div>' +
             '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>' +
             (() => { const all = Object.values(prog.daily).filter((e) => e && (e.stars || e.saved)), st = all.reduce((a, e) => a + (e.stars || 0), 0);
