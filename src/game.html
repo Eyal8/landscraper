@@ -78,6 +78,7 @@ body {
 }
 #flash.show { opacity: 1; transform: translate(-50%, -6px) scale(1); }
 #flash.out { opacity: 0; transform: translate(-50%, -22px) scale(0.96); filter: blur(3px); transition: opacity 0.45s ease-in, transform 0.45s ease-in, filter 0.45s ease-in; }
+#flash small + small { margin-top: 5px; color: #7cf3c4; }
 #flash small { display: block; margin-top: 8px; font: 500 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(10,20,50,0.5); }
 #flash.bad { color: #ffe0e6; }
 #flash { padding: 12px 24px 14px; border-radius: 24px; background: rgba(14, 20, 52, 0.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 6px 24px rgba(10, 16, 40, 0.3); }
@@ -817,7 +818,7 @@ window.Board = (function () {
   function flash(text, small, ms, bad) {
     const f = $('flash'); ms = Math.max(ms || 1000, small ? 1800 : 1200);
     f.innerHTML = ''; f.append(text); f.classList.toggle('bad', !!bad);
-    if (small) { const s = document.createElement('small'); s.textContent = small; f.append(s); }
+    if (small) for (const t of [].concat(small)) { const s = document.createElement('small'); s.textContent = t; f.append(s); } // a second line is a bonus, in green
     f.classList.remove('show', 'out'); void f.offsetWidth; f.classList.add('show');
     clearTimeout(flashT); flashLeft = ms || 1000; flashAt = performance.now(); flashT = setTimeout(flashOut, flashLeft); // drifts up and fades
   }
@@ -2030,7 +2031,7 @@ window.Board = (function () {
   function newBossRound(spawn) { // the sea floods back in a wave from the trap, the boat drops in again, the boss returns a little faster
     if (state !== 'play') return;
     state = 'round'; trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; dir = null; queue = [];
-    flash('Round ' + bossRoundNo() + ' / 3', spawn.some((o) => o.kind === 'bstar') ? '3 babies broke off · +20s' : 'the sea is back · +20s', 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
+    flash('Round ' + bossRoundNo() + ' / 3', [spawn.some((o) => o.kind === 'bstar') ? '3 babies broke off' : 'the sea is back', '+20 seconds'], 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
     const [cx, cy] = [W / 2, Hh / 2];
     total = 0;
     for (let i = 0; i < N; i++) { // back to the board as it was built: your land goes, eaten obstacles grow back
