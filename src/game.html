@@ -331,12 +331,13 @@ h2.shop { color: #ffd166; }
 .btn.alt.m-rush { color: #ffb48a; box-shadow: inset 0 0 0 1.5px rgba(255,150,100,0.6); background: rgba(255,130,80,0.12); }
 .btn.alt.m-daily { color: #7ff5e2; box-shadow: inset 0 0 0 1.5px rgba(110,240,220,0.55); background: rgba(80,230,200,0.1); }
 .btn.dplay { min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; } /* same height with or without the ad line, text centred */
-.btn.cdb { padding-left: 64px; padding-right: 64px; }
-.cdr { position: absolute; left: 12px; top: 50%; width: 44px; height: 44px; margin-top: -22px; display: grid; place-items: center; }
+.btn.cdb { display: flex; align-items: center; justify-content: center; gap: 14px; padding-left: 18px; padding-right: 18px; }
+.cdt { display: flex; flex-direction: column; align-items: center; }
+.cdr { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; }
 .cdr svg { position: absolute; inset: 0; transform: rotate(-90deg); } .cdr circle { fill: none; stroke: rgba(29,42,99,0.15); stroke-width: 4; }
 .cdr .cdp { stroke: #ffb21e; stroke-linecap: round; stroke-dasharray: 107; stroke-dashoffset: 0; animation: cdRing 10s linear forwards; }
 @keyframes cdRing { to { stroke-dashoffset: 107; } }
-.cdr b { font: 800 20px var(--display); color: #1d2a63; }
+.cdr b { font: 800 20px/1 var(--display); color: #1d2a63; display: block; letter-spacing: 0; text-indent: 0; }
 .cdr.tk b { animation: cdTick 0.35s ease-out; } @keyframes cdTick { from { transform: scale(1.35); } }
 .cdr.low b { color: #e8405a; } .cdr.low .cdp { stroke: #e8405a; }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
@@ -2214,7 +2215,7 @@ window.Board = (function () {
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
     panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
-      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span>Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt" type="button" data-act="retryS">' + SHIELD_I + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
