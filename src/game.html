@@ -1521,7 +1521,7 @@ window.Board = (function () {
   // Each world ends with a big, crowned version of one of its monsters. Trap it 3 times to win.
   const BOSSES = {
     boss: { base: 'bouncer', name: 'King Puffer', text: 'Trap it 3 times to win.', size: 1.9, color: 0xff8c2a },
-    bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it 3 times. Each time, little ones break off.', size: 1.8 },
+    bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it 3 times. Each trap breaks off 3 babies.', size: 1.8 },
     boct: { base: 'inker', name: 'Giant Octopus', text: 'Big ink clouds. Trap it 3 times.', size: 1.7 },
     bjelly: { base: 'jelly', name: 'Jellyfish Queen', text: 'Bolts both ways. Trap it 3 times.', size: 1.6 },
     beel: { base: 'eel', name: 'Giant Eel', text: 'Very long. Trap it 3 times.', size: 1.45 }
@@ -2030,7 +2030,7 @@ window.Board = (function () {
   function newBossRound(spawn) { // the sea floods back in a wave from the trap, the boat drops in again, the boss returns a little faster
     if (state !== 'play') return;
     state = 'round'; trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; dir = null; queue = [];
-    flash('Round ' + bossRoundNo() + ' / 3', 'the sea is back · +20s', 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
+    flash('Round ' + bossRoundNo() + ' / 3', spawn.some((o) => o.kind === 'bstar') ? '3 babies broke off · +20s' : 'the sea is back · +20s', 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
     const [cx, cy] = [W / 2, Hh / 2];
     total = 0;
     for (let i = 0; i < N; i++) { // back to the board as it was built: your land goes, eaten obstacles grow back
@@ -2048,7 +2048,7 @@ window.Board = (function () {
         if (o.k !== 1) { nb.mesh.userData.s *= o.k; nb.mesh.scale.setScalar(nb.mesh.userData.s); nb.sz *= o.k; nb.shadow.scale.multiplyScalar(o.k); }
         const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 50, 5, 7); }
       for (const c of L.mon) if (c === 'crab') spawnMonster('crab');
-      if (spawn.some((o) => o.kind === 'bstar')) for (let k = 0; k < 2; k++) { const mm = spawnMonster('mini', [W / 2 + (k ? 4 : -4), Hh / 2 + 3]); mm.pop = 1; } // the giant starfish stays whole; two little ones break off each round
+      if (spawn.some((o) => o.kind === 'bstar')) for (let k = 0; k < 3; k++) { const mm = spawnMonster('mini', [W / 2 + (k - 1) * 4, Hh / 2 + 3]); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } // each trap breaks 3 babies off the giant starfish; they stay for the rest of the fight
       tone(180, 0.4, 'sawtooth', 0.06, 90); state = 'play'; sawsHome(); pct = percent(); clockT += 20; drawHud();
     }, 1300);
   }
