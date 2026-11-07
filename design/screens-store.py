@@ -10,7 +10,7 @@ w, h, store = DEVICES[name]
 out = root / 'store' / store / 'screenshots'; out.mkdir(parents=True, exist_ok=True)
 for old in out.glob(f'{name}-*.png'): old.unlink()
 url = f'file://{root}/www/index.html'
-SEEN = "['rush','bouncer','eater','saw','zipper','splitter','hunter','inker','magnet','jelly','crab','eel','urchin','boss','bstar','boct','bjelly','beel','p-life','p-slow','p-freeze','p-shield','p-bomb','p-lure','p-time','p-boost','trap']"
+SEEN = "['rush','bouncer','eater','saw','zipper','splitter','hunter','inker','magnet','jelly','crab','eel','urchin','boss','bstar','boct','bjelly','beel','p-life','p-slow','p-freeze','p-shield','p-bomb','p-iron','p-time','p-boost','trap']"
 
 def rect_up(x0, y0, x1, bottom=35):
     """Trail from the bottom border up column x0, across row y0, down column x1."""
@@ -47,6 +47,7 @@ with sync_playwright() as p:
     T(pg, rect_up(2, 23, 7), True); pg.wait_for_timeout(1300)
     T(pg, [[12, y] for y in range(2, 9)] + [[x, 8] for x in range(11, 1, -1)], True); pg.wait_for_timeout(1300)
     T(pg, [[15, y] for y in range(35, 26, -1)] + [[x, 27] for x in range(16, 20)], False); pg.evaluate("__game.setLives(2)")
+    pg.evaluate("__game.power('shield', 9, 14); __game.power('boost', 17, 15)")
     pg.wait_for_timeout(900); save(pg, '1-draw')
     # 2: a boss: the King Puffer in the meadow, the camera a little closer
     pg = level(20, [('boss', 12.5, 13.5), ('bouncer', 6.5, 7.5), ('bouncer', 17.5, 21.5)])
