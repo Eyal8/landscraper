@@ -387,7 +387,7 @@ h2.shop { color: #ffd166; }
 .have { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
 .have .ic-star { width: 22px; height: 22px; vertical-align: middle; }
 .have b { font: 800 20px var(--display); color: var(--gold); letter-spacing: 0; }
-.sprev { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 6px; border-radius: 22px; background: radial-gradient(circle at 25% 50%, var(--pk, #ff8fb1) 0, transparent 62%), rgba(255,255,255,0.1); box-sizing: border-box; }
+.sprev { width: 100%; display: grid; grid-template-columns: 128px minmax(0, 1fr); grid-template-rows: 148px 44px; align-items: center; gap: 8px 12px; padding: 10px 14px 10px 6px; border-radius: 22px; background: radial-gradient(circle at 25% 50%, var(--pk, #ff8fb1) 0, transparent 62%), rgba(255,255,255,0.1); box-sizing: border-box; }
 .sprev img { width: 128px; height: 128px; flex: none; filter: drop-shadow(0 8px 10px rgba(0,0,20,0.35)); }
 .sprev .info { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; flex: 1; min-width: 0; }
 .sprev .info b { font: 800 22px/1.05 var(--display); }
@@ -396,9 +396,27 @@ h2.shop { color: #ffd166; }
 .sprev .info .tag { display: inline-flex; align-items: center; gap: 6px; }
 .sprev .info .tag .ic-star { width: 22px; height: 22px; flex: none; }
 .sprev .pvh.silhouette { filter: brightness(0) opacity(0.35); }
-.sprev .info .tag.prem { color: #d2b1ff; }
+.sprev .info .tag.prem { color: var(--pack-label, #d2b1ff); }
+.sprev .tag .type-icon, .sprev .tag .type-icon svg { display: inline-block; width: 22px; height: 22px; flex: none; }
 .sprev .btn { padding: 11px 12px; font-size: 12px; letter-spacing: 0.08em; box-shadow: 0 3px 0 rgba(10,20,60,0.35); }
 .sprev .btn.alt { background: rgba(255,255,255,0.14); color: var(--ink); }
+.sprev .skin-actions { grid-column: 1 / -1; display: flex; align-items: stretch; gap: 8px; height: 44px; }
+.sprev .skin-actions .btn { flex: 1; min-width: 0; width: auto; display: flex; flex-wrap: wrap; align-items: center; align-content: center; justify-content: center; gap: 3px 6px; padding: 6px 10px; font-size: 11px; line-height: 1.25; letter-spacing: 0.03em; }
+.sprev .skin-actions .adt { display: inline-flex; margin: 0; font-size: 10px; }
+.sprev[data-pack="sea"] { --buy-start: #285ac3; --buy-end: #0e739d; --pack-label: #bfeaff; }
+.sprev[data-pack="space"] { --buy-start: #6931ae; --buy-end: #92318c; --pack-label: #e1c9ff; }
+.sprev[data-pack="pool"] { --buy-start: #b32666; --buy-end: #08766d; --pack-label: #ffc9e6; }
+.sprev .btn.skin-buy { background: linear-gradient(115deg, var(--buy-start), var(--buy-end)); color: #fff; box-shadow: 0 3px 0 rgba(8,18,55,.5), inset 0 1px 0 rgba(255,255,255,.25); }
+.btn.skin-all { background: linear-gradient(115deg, #2452c0, #126fba); color: #fff; box-shadow: 0 4px 0 #153c80, inset 0 1px 0 rgba(255,255,255,.2); }
+.btn.skin-all small { opacity: .9; }
+@media (max-width: 360px) {
+  .sprev { grid-template-columns: 96px minmax(0, 1fr); }
+  #card .sprev .pvh, .sprev .pvh img, #stage .sprev .pvh canvas { width: 96px; height: 96px; }
+  .sprev .info { gap: 4px; }
+  .sprev .info b { font-size: 18px; }
+  .sprev .info > span:not(.tag) { font-size: 11px; }
+}
+
 .skins { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 34vh; overflow-y: auto; padding: 2px; }
 .skin.view { box-shadow: inset 0 0 0 2px var(--gold); }
 .skin { cursor: pointer; border: 0; border-radius: 16px; padding: 6px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
@@ -2909,19 +2927,21 @@ window.Board = (function () {
   function skinInfo(sk) {
     const have = totalStars(), open = skinOpen(sk), on = prog.skin === sk.id;
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
-    const tag = sk.pack ? '<span class="tag prem">' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + (sk.stars ? STAR + sk.stars + ' stars' : 'Free') + '</span>';
+    const tag = sk.pack ? '<span class="tag prem"><span class="type-icon" aria-hidden="true">' + GROUP_ICON[sk.pack] + '</span>' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + STAR + (sk.stars ? sk.stars + ' stars' : 'Free') + '</span>';
     const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
-      sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + window.Store.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
+      sk.pack ? '<button class="btn skin-buy" type="button" data-act="buy"><span>Get the pack</span> <strong>' + window.Store.price(sk.pack) + '</strong></button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
       '<button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>';
-    return tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act;
+    return { html: tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : ''), actions: act };
   }
   function updateSkinView(id) {
     const sk = SKINS.find((k) => k.id === id) || SKINS[0], preview = document.querySelector('#card .sprev');
     if (!preview) return;
     const changed = skinView !== sk.id; skinView = sk.id;
     preview.style.setProperty('--pk', sk.pack ? PACK_TINT[sk.pack] : '#ffb547');
-    preview.querySelector('.info').innerHTML = skinInfo(sk);
+    preview.dataset.pack = sk.pack || 'prog';
+    const details = skinInfo(sk); preview.querySelector('.info').innerHTML = details.html;
+    preview.querySelector('.skin-actions').innerHTML = details.actions;
     const holder = preview.querySelector('.pvh'), silhouette = !sk.pack && !skinOpen(sk);
     holder.classList.toggle('silhouette', silhouette);
     holder.setAttribute('role', 'img'); holder.setAttribute('aria-label', sk.name + (silhouette ? ' locked silhouette' : ' 3D preview'));
@@ -2950,12 +2970,12 @@ window.Board = (function () {
     const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
       return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
     panel(HOME_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
-      '<div class="sprev"><div class="pvh"></div><div class="info"></div></div>' +
-      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
+      '<div class="sprev"><div class="pvh"></div><div class="info"></div><div class="skin-actions"></div></div>' +
+      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn skin-all" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
       { back: showHome, all: () => buyIt('allSkins', () => updateSkinView(skinView)) });
     updateSkinView(sk.id);
     // One listener survives changes to the chosen skin's info and action buttons.
-    document.querySelector('#card .sprev .info').addEventListener('click', async (e) => {
+    document.querySelector('#card .sprev').addEventListener('click', async (e) => {
       const button = e.target.closest('[data-act]'); if (!button) return;
       e.stopPropagation(); buzz('select'); const viewed = SKINS.find((k) => k.id === skinView);
       if (button.dataset.act === 'use') chooseSkin(viewed);
