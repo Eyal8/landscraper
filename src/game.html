@@ -1790,6 +1790,7 @@ window.Board = (function () {
   };
   const WAVE = [1, 2, 2.5, 3, 4, 3, 3.5, 4.5, 5, 6, 4.5, 5, 6, 6.5, 7.5, 6, 6.5, 7.5, 8, 9]; // the sawtooth
   const KIND = { j: 'jelly', c: 'crab', l: 'eel', u: 'urchin', b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
+  const STAR_THRESHOLDS = [75, 85, 90]; // shared by campaign and Daily scoring and results
   const LEVELS = [];
   WORLDS.forEach((wd, w) => {
     const boards = BOARDS[wd.id], lineup = LINEUPS[wd.id], bo = BOOSTERS[wd.id];
@@ -1799,7 +1800,7 @@ window.Board = (function () {
       const pool = bo.pool.filter((k) => !bo.intro[k] || bo.intro[k] - 1 <= l);
       LEVELS.push({
         id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
-        mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
+        mon, speed: 3.5 + d * 0.16, goal: lineup[l].includes('B') ? Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)) : STAR_THRESHOLDS[0],
         board: lineup[l].includes('B') && BOSS_BOARD[wd.id] ? BOSS_BOARD[wd.id] : firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
         time: Math.round(Math.min(130, 50 + 5 * mon.length + l * 1.5 + (lineup[l].includes('B') ? 25 : 0)) / 5) * 5, // about 40% tighter after real play: the clock should push
         powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
@@ -2279,7 +2280,7 @@ window.Board = (function () {
     if (state !== 'play' || mode === 'rush') return;
     levelEnds++; const had = earned(), starsBefore = totalStars(), clearedLevel = cur, clearedMode = mode;
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; $('power').innerHTML = '';
-    const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
+    const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= STAR_THRESHOLDS[1] ? 1 : 0) + (pct >= STAR_THRESHOLDS[2] ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
     flash(L.boss ? 'World clear!' : 'Level clear!', mode === 'daily' ? fmtClock(clockT, true) : pct + '% claimed', 1600);
@@ -2305,10 +2306,10 @@ window.Board = (function () {
       if (state !== 'clear' || cur !== clearedLevel || mode !== clearedMode) return;
       $('hud').hidden = true;
       const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
-      const need = L.goal + (stars === 1 ? 7 : 14) - pct;
+      const need = STAR_THRESHOLDS[Math.min(stars, STAR_THRESHOLDS.length - 1)] - pct;
       const more = mode === 'daily' ? (dailyBest ? 'New best time: ' : 'Time ' + fmtClock(clockT, true) + ' · best ') + fmtClock(prog.daily[dailyKey].time, true) : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
-      const fill = !L.boss, th = [L.goal, L.goal + 7, L.goal + 14];
-      const lo = L.goal - 15, hi = Math.min(100, L.goal + 21), pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
+      const fill = !L.boss, th = STAR_THRESHOLDS;
+      const lo = th[0] - 15, hi = 100, pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
       const bar = fill ? '<div class="endbar ' + mode + '"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
@@ -2727,7 +2728,7 @@ window.Board = (function () {
     let h = 2166136261; for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
     const r = seeded(h), w = Math.floor(r() * 3), wd = WORLDS[w], boards = BOARDS[wd.id], lu = LINEUPS[wd.id];
     const line = lu[6 + Math.floor(r() * 12)].replace('B', 'b');
-    return { id: 'daily-' + key, name: 'Daily', w, l: 0, world: w, mon: line.split('').map((c) => KIND[c]), speed: 3.5 + (5 + w * 2.6) * 0.16, goal: 78, board: boards[Math.floor(r() * boards.length)], powers: BOOSTERS[wd.id].pool.filter((k) => k !== 'time'), newPower: null, boss: false, seed: h, time: 0 };
+    return { id: 'daily-' + key, name: 'Daily', w, l: 0, world: w, mon: line.split('').map((c) => KIND[c]), speed: 3.5 + (5 + w * 2.6) * 0.16, goal: STAR_THRESHOLDS[0], board: boards[Math.floor(r() * boards.length)], powers: BOOSTERS[wd.id].pool.filter((k) => k !== 'time'), newPower: null, boss: false, seed: h, time: 0 };
   }
   let dailyKey = '';
   const untilNext = () => { const now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1), m = Math.max(1, Math.round((next - now) / 60000)); return (m >= 60 ? Math.floor(m / 60) + 'h ' : '') + (m % 60) + 'm'; };
@@ -3063,7 +3064,7 @@ window.Board = (function () {
   function tutorialStep(ev) { // called by the game on events; each tip shows once and goes when done
     if (!tut) return;
     if (tut === 'swipe' && ev === 'draw') { dbtn.up.classList.remove('hint'); tut = 'back'; coach('Back to land', false); }
-    else if (tut === 'back' && ev === 'claim') { tut = 'line'; coach(''); setTimeout(() => flash('Yours!', 'claim 75% to win', 1300), 150); }
+    else if (tut === 'back' && ev === 'claim') { tut = 'line'; coach(''); setTimeout(() => flash('Yours!', 'claim ' + STAR_THRESHOLDS[0] + '% to win', 1300), 150); }
     else if (tut === 'line' && ev === 'near') { tut = 'trap'; coach("Don't let it touch your line", false); tutT = 2.6; }
   }
 
@@ -3631,6 +3632,7 @@ window.Board = (function () {
 
   // Test hook (headless checks and store screenshots)
   window.__game = {
+    get levelGoals() { return LEVELS.map(({ id, goal, boss }) => ({ id, goal, boss })); },
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, boss: m.boss || null, gen: m.gen || 0, x: m.x, y: m.y, dead: !!m.dead })); },
