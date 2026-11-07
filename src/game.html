@@ -410,8 +410,9 @@ h2.shop { color: #ffd166; }
 .cal button.late { background: linear-gradient(160deg, rgba(79,227,203,0.45), rgba(26,158,140,0.45)); color: #fff; }
 .cal button .ok { position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; border-radius: 50%; background: #fff; color: #1a9e8c; display: grid; place-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
 .cal button .ok svg { width: 12px; height: 12px; }
-.cal button .sd { position: absolute; bottom: 4px; left: 0; right: 0; display: flex; justify-content: center; gap: 2px; }
-.cal button .sd b { width: 4px; height: 4px; border-radius: 50%; background: #ffe27a; box-shadow: 0 0 3px rgba(255,210,80,0.9); }
+.cal button .sd { position: absolute; bottom: 2px; left: 0; right: 0; display: flex; justify-content: center; gap: 0; }
+.cal button .sd svg { width: 10px; height: 10px; fill: #ffe27a; stroke: #7a4a00; stroke-width: 2; paint-order: stroke; filter: drop-shadow(0 0 2px rgba(255,210,80,0.8)); }
+.cal button:has(.sd) { padding-bottom: 6px; box-sizing: border-box; }
 .cal button.pop { animation: dayPop 0.3s cubic-bezier(.2,.9,.3,1.6); }
 @keyframes dayPop { from { transform: scale(0.82); } }
 .cal button.pick { box-shadow: 0 0 0 2.5px #fff, 0 0 14px rgba(255,255,255,0.35); transform: scale(1.06); z-index: 1; }
@@ -2530,7 +2531,7 @@ window.Board = (function () {
     const tail = 42 - first - days; // always six rows, so the card keeps its size from month to month
     for (let d = 1; d <= days; d++) { // past days can be played (after an ad); future days are dim
       const key = y + '-' + pad2(mo + 1) + '-' + pad2(d), e = prog.daily[key], cls = (e ? (e.late ? 'late' : 'done') : '') + (key === today ? ' today' : '');
-      cal += key > today ? '<div class="future">' + d + '</div>' : '<button type="button" class="' + cls + (key === dailyPick || (!dailyPick && key === today) ? ' pick' : '') + '" data-day="' + key + '">' + d + (e && (e.stars || e.saved) ? '<i class="ok"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>' + (e.stars ? '<i class="sd">' + '<b></b>'.repeat(e.stars) + '</i>' : '') : '') + '</button>';
+      cal += key > today ? '<div class="future">' + d + '</div>' : '<button type="button" class="' + cls + (key === dailyPick || (!dailyPick && key === today) ? ' pick' : '') + '" data-day="' + key + '">' + d + (e && (e.stars || e.saved) ? '<i class="ok"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>' + (e.stars ? '<i class="sd">' + '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg>'.repeat(e.stars) + '</i>' : '') : '') + '</button>';
     }
     for (let k = 0; k < tail; k++) cal += '<div class="blank"></div>';
     cal += '</div>';
