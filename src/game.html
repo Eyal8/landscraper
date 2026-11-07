@@ -195,10 +195,13 @@ body {
 .eps { width: 100%; display: flex; flex-direction: column; gap: 18px; text-align: left; }
 .ep h3 { margin: 0 0 8px; font: 800 15px var(--display); display: flex; justify-content: space-between; align-items: baseline; }
 .ep h3 small { font: 500 11px var(--mono); letter-spacing: 0.14em; color: var(--ink-soft); }
-.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.grid { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .lvl { cursor: pointer; aspect-ratio: 1; border-radius: 14px; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: rgba(255,255,255,0.14); color: var(--ink); font: 800 16px var(--display); }
-.lvl small { font: 500 11px var(--mono); letter-spacing: 0; color: var(--gold); min-height: 13px; }
+.lvl { font-size: 24px !important; border-radius: 16px; position: relative; }
+.lvl small { font: 500 13px var(--mono); letter-spacing: 0; color: var(--gold); min-height: 15px; }
+.lvl .crown { position: absolute; top: -7px; right: -5px; width: 20px; height: 20px; color: #ffd166; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+.lvl.boss { box-shadow: inset 0 0 0 2px rgba(255,209,102,0.7); }
 .lvl.cur { background: #fff; color: #1d2a63; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -2451,7 +2454,7 @@ window.Board = (function () {
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, open = isOpen(i);
-      html += '<button class="lvl' + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.boss ? 'B' : x.l + 1) + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
+      html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
     html += '</div>';
     panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
