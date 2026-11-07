@@ -1647,7 +1647,7 @@ window.Board = (function () {
     meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bess'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzess'],
     glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhzzpss'],
-    reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhzzppicc'],
+    reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhzzpic'],
     volcano: ['bbl', 'bbzl', 'bzjl', 'bbzjlc', 'bbzpjlc', 'bzlw', 'bbzjlw', 'bzhjlc', 'bbzpjlc', 'bbzphjlc', 'bbu', 'bbzu', 'bzhju', 'bbzpluc', 'bbzphjluc', 'bzlu', 'bbzpjluc', 'bzhpiluc', 'bbzphijluc', 'Bbhzpjcuc']
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
@@ -1756,7 +1756,7 @@ window.Board = (function () {
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
-    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = L.newPower ? 3 : 6; powersSeen = false;
+    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = L.newPower || L.boss ? 3 : 6; powersSeen = false;
     clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
@@ -2052,6 +2052,7 @@ window.Board = (function () {
         const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 50, 5, 7); }
       for (const c of L.mon) if (c === 'crab') spawnMonster('crab');
       if (spawn.some((o) => o.kind === 'bstar')) for (let k = 0; k < 3; k++) { const mm = spawnMonster('mini', [W / 2 + (k - 1) * 4, Hh / 2 + 3]); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } // each trap breaks 3 babies off the giant starfish; they stay for the rest of the fight
+      if (L.powers.length && powers.filter((p) => !p.taken).length < 2) spawnPower(); // a fresh booster for every round
       tone(180, 0.4, 'sawtooth', 0.06, 90); state = 'play'; sawsHome(); pct = percent(); clockT += 20; drawHud();
     }, 1300);
   }
@@ -2920,7 +2921,7 @@ window.Board = (function () {
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED * (boostT > 0 ? 1.6 : 1)); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
-      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 1) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.newPower ? 12 : 18; } }
+      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < (L.boss ? 2 : 1)) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.boss ? 9 : L.newPower ? 12 : 18; } }
       if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
     const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
