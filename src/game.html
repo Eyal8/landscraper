@@ -322,7 +322,7 @@ h2.shop { color: #ffd166; }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
 .btn small.adt { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .btn small.adt svg { width: 12px; height: 12px; padding: 2px 5px; border-radius: 4px; background: currentColor; box-sizing: content-box; }
-.btn small.adt svg path { fill: #1d2a63; } .btn.alt small.adt svg path { fill: #2a3560; } .btn.go-daily small.adt svg path { fill: #9ffbe9; } .btn.go-rush small.adt svg path { fill: #ffc49e; }
+.btn small.adt svg path { fill: #fff; } .btn.alt small.adt svg path { fill: #2a3560; } .btn.go-daily small.adt svg path { fill: #9ffbe9; } .btn.go-rush small.adt svg path { fill: #ffc49e; }
 .big.rscore { color: #ffb48a; text-shadow: 0 0 24px rgba(255,140,80,0.4); }
 .rstats { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rstats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 18px; background: rgba(255,140,80,0.12); box-shadow: inset 0 0 0 1px rgba(255,160,110,0.3); }
@@ -1513,7 +1513,7 @@ window.Board = (function () {
   // Each world ends with a big, crowned version of one of its monsters. Trap it 3 times to win.
   const BOSSES = {
     boss: { base: 'bouncer', name: 'King Puffer', text: 'Trap it 3 times to win.', size: 1.9, color: 0xff8c2a },
-    bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it, it splits. Trap all 3.', size: 1.8 },
+    bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it 3 times. Each time, little ones break off.', size: 1.8 },
     boct: { base: 'inker', name: 'Giant Octopus', text: 'Big ink clouds. Trap it 3 times.', size: 1.7 },
     bjelly: { base: 'jelly', name: 'Jellyfish Queen', text: 'Bolts both ways. Trap it 3 times.', size: 1.6 },
     beel: { base: 'eel', name: 'Giant Eel', text: 'Very long. Trap it 3 times.', size: 1.45 }
@@ -1999,7 +1999,6 @@ window.Board = (function () {
       if (bossT.length) {
         bossHp -= bossT.length;
         const spawn = [];
-        for (const b of bossT) if (b.boss === 'bstar' && !b.gen) spawn.push({ kind: 'bstar', gen: 1, k: 0.62 }, { kind: 'bstar', gen: 1, k: 0.62 }); // splits into two small ones
         const alive = monsters.filter((m) => m.boss && !m.dead && !trapped.includes(m)).length;
         
         const bossRound = bossHp > 0 && alive === 0;
@@ -2035,6 +2034,7 @@ window.Board = (function () {
         if (o.k !== 1) { nb.mesh.userData.s *= o.k; nb.mesh.scale.setScalar(nb.mesh.userData.s); nb.sz *= o.k; nb.shadow.scale.multiplyScalar(o.k); }
         const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 50, 5, 7); }
       for (const c of L.mon) if (c === 'crab') spawnMonster('crab');
+      if (spawn.some((o) => o.kind === 'bstar')) for (let k = 0; k < 2; k++) { const mm = spawnMonster('mini', [W / 2 + (k ? 4 : -4), Hh / 2 + 3]); mm.pop = 1; } // the giant starfish stays whole; two little ones break off each round
       tone(180, 0.4, 'sawtooth', 0.06, 90); state = 'play'; sawsHome(); pct = percent(); clockT += 20; drawHud();
     }, 1300);
   }
