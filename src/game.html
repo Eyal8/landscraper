@@ -472,7 +472,7 @@ h2.shop { color: #ffd166; }
 
 .trial-ready, .trial-reminder { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 18px; background: rgba(90,175,255,.14); border: 1px solid rgba(140,200,255,.35); overflow-wrap: anywhere; flex-shrink: 0; }
 .trial-ready b, .trial-reminder b { display: block; font: 800 14px/1.3 var(--display); }
-.trial-ready span, .trial-reminder p, .pack-note { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
+.trial-ready span, .trial-reminder p { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
 .trial-reminder { display: flex; flex-direction: column; gap: 8px; }
 .trial-reminder button { min-height: 44px; box-sizing: border-box; }
 .trial-reminder .btn { padding: 12px; font-size: 11px; letter-spacing: .05em; }
@@ -2700,7 +2700,7 @@ window.Board = (function () {
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
-      '</div><p class="pack-note">Star reward skins are earned by playing.</p><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
+      '</div><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
         restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
   }
@@ -2986,7 +2986,7 @@ window.Board = (function () {
     const have = totalStars(), open = skinOpen(sk), on = prog.skin === sk.id, waiting = pendingTrialSkin();
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
     const tag = sk.pack ? '<span class="tag prem"><span class="type-icon" aria-hidden="true">' + GROUP_ICON[sk.pack] + '</span>' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + STAR + (sk.stars ? sk.stars + ' stars' : 'Free') + '</span>';
-    const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
+    const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' in Campaign to unlock.';
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
       sk.pack ? '<button class="btn skin-buy" type="button" data-act="buy"><span>Get the pack</span> <strong>' + window.Store.price(sk.pack) + '</strong></button>' +
         (waiting ? '<button class="btn alt" type="button" data-act="trialReady">Trial ready · choose a mode</button>' : '<button class="btn alt" type="button" data-act="try">Try for 1 game' + adTag() + '</button>') :
@@ -3030,7 +3030,7 @@ window.Board = (function () {
       return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
     panel(HOME_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
       '<div class="sprev"><div class="pvh"></div><div class="info"></div><div class="skin-actions"></div></div>' +
-      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn skin-all" type="button" data-act="all">All Skin Packs · ' + st.price('allSkins') + '<small>Includes future packs<br>Star rewards earned by playing</small></button>') + '</div>',
+      '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn skin-all" type="button" data-act="all">All Skin Packs · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
       { back: showHome, all: () => buyIt('allSkins', () => updateSkinView(skinView)) });
     updateSkinView(sk.id);
     // One listener survives changes to the chosen skin's info and action buttons.
