@@ -2078,9 +2078,12 @@ window.Board = (function () {
   function spawnPower(force) {
     const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
     const [x, y] = free[(rng() * free.length) | 0];
-    let pool = L.powers.filter((k) => k !== 'life' || lives < 5); if (!pool.length) pool = L.powers;
+    // lives are rare: never two on the board, none at 4+ lives, about 1 in 12 normally and 1 in 3 when you're nearly out
     const low = lives <= 1 || (L.boss && lives <= 2), lifeOut = powers.some((p) => !p.taken && p.kind === 'life');
-    const kind = force || (low && L.powers.includes('life') && !lifeOut ? 'life' : pool[(rng() * pool.length) | 0]); // running out of lives: the next booster is a life
+    let pool = L.powers.filter((k) => k !== 'life' || (lives < 4 && !lifeOut)); if (!pool.length && !force) return;
+    const wt = (k) => (k === 'life' ? (low ? (pool.length - 1) / 2 : (pool.length - 1) / 11) : 1);
+    let r = rng() * pool.reduce((t, k) => t + wt(k), 0), kind = force || pool[pool.length - 1];
+    if (!force) for (const k of pool) { r -= wt(k); if (r <= 0) { kind = k; break; } }
     powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
   }
 
