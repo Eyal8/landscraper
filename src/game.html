@@ -1614,7 +1614,7 @@ window.Board = (function () {
     freeze: { label: 'Freeze', color: 0x6ff4ff, secs: 4, text: 'Monsters stop.' },
     life: { label: '+1 Life', color: 0xff3355, secs: 0, text: 'One more life.' },
     shield: { label: 'Shield', color: 0x3ee05a, secs: 0, text: 'Blocks the next hit.' },
-    bomb: { label: 'Bomb', color: 0xff7a1a, secs: 0, text: 'Claims the area around it.' },
+    bomb: { label: 'Island', color: 0xff7a1a, secs: 0, text: 'Raises land around it.' },
     iron: { label: 'Iron Line', color: 0xb8c6dc, secs: 8, text: 'Monsters bounce off your line.' },
     time: { label: '+8 Seconds', color: 0xff4fd8, secs: 0, text: 'More time on the clock.' },
     boost: { label: 'Speed', color: 0xffd60a, secs: 6, text: 'You move much faster.' }
@@ -1625,14 +1625,17 @@ window.Board = (function () {
     g.add(ring); const disc = new THREE.Mesh(new THREE.CircleGeometry(0.3, 28), new THREE.MeshBasicMaterial({ color: POWERS[kind].color, transparent: true, opacity: 0.45, depthWrite: false })); disc.position.z = -0.04; g.add(disc); // its colour fills the ring, so you can tell them apart by colour alone
     let icon;
     if (kind === 'life') { const s = new THREE.Shape(); s.moveTo(0, -0.16); s.bezierCurveTo(-0.3, 0.05, -0.12, 0.26, 0, 0.1); s.bezierCurveTo(0.12, 0.26, 0.3, 0.05, 0, -0.16); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xff5a7a })); icon.position.z = -0.03; }
-    else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 }), d = new THREE.MeshBasicMaterial({ color: 0x1d2a63 }); // a snail
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 10), m); body.scale.set(2.1, 0.55, 0.8); body.position.set(0.01, -0.1, 0);
-      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.115, 18, 14), m); shell.scale.z = 0.6; shell.position.set(-0.04, 0.02, 0.01);
-      const sp = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.016, 8, 20, Math.PI * 1.6), d); sp.position.set(-0.04, 0.02, 0.08); sp.rotation.z = 0.6; const sc = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), d); sc.position.set(-0.035, 0.025, 0.085);
-      icon.add(body, shell, sp, sc);
-      for (const a of [0.25, 0.6]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.13, 6), m); st.position.set(0.17 + a * 0.04, -0.02, 0); st.rotation.z = -a; const tip = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), m); tip.position.set(0.17 + a * 0.04 + Math.sin(a) * 0.065, -0.02 + Math.cos(a) * 0.065, 0); icon.add(st, tip); } }
+    else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 }), d = new THREE.MeshBasicMaterial({ color: 0x1d6a8a }); // a sea turtle, seen from above
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 14), m); shell.scale.set(0.85, 1, 0.45); shell.position.y = -0.02;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), m); head.position.set(0, 0.15, 0); icon.add(shell, head);
+      for (const [x, y, r] of [[-0.12, 0.06, 0.7], [0.12, 0.06, -0.7], [-0.09, -0.13, -0.6], [0.09, -0.13, 0.6]]) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), m); f.scale.set(1, 0.45, 0.35); f.position.set(x, y, 0); f.rotation.z = r; icon.add(f); }
+      for (const [x, y] of [[0, 0.01], [-0.055, 0.045], [0.055, 0.045], [-0.055, -0.05], [0.055, -0.05], [0, -0.085]]) { const sp = new THREE.Mesh(new THREE.CircleGeometry(0.026, 6), d); sp.position.set(x, y - 0.02, 0.06); icon.add(sp); } }
     else if (kind === 'shield') { const sh = new THREE.Shape(); sh.moveTo(0, 0.2); sh.lineTo(0.16, 0.13); sh.lineTo(0.13, -0.06); sh.quadraticCurveTo(0.06, -0.17, 0, -0.21); sh.quadraticCurveTo(-0.06, -0.17, -0.13, -0.06); sh.lineTo(-0.16, 0.13); sh.closePath(); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xffd166, shininess: 120 })); icon.position.z = -0.03; }
-    else if (kind === 'bomb') { icon = new THREE.Group(); const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 12), new THREE.MeshPhongMaterial({ color: 0x2a2a3a, shininess: 120 })); const fu = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6), new THREE.MeshPhongMaterial({ color: 0xc9a27a })); fu.position.set(0.06, 0.16, 0); fu.rotation.z = -0.5; const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb340 })); sp.position.set(0.1, 0.21, 0); icon.add(b, fu, sp); }
+    else if (kind === 'bomb') { icon = new THREE.Group(); // an island with a palm tree
+      const sand = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0xffe08a })); sand.rotation.x = Math.PI / 2; sand.scale.set(1, 0.5, 0.42); sand.position.y = -0.1; sand.rotation.x = 0; sand.scale.set(1.05, 0.55, 0.5);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.026, 0.24, 8), new THREE.MeshPhongMaterial({ color: 0x9a6236 })); trunk.position.set(0.02, 0.03, 0.03); trunk.rotation.z = -0.25;
+      const lm = new THREE.MeshPhongMaterial({ color: 0x3ee05a, shininess: 40 }); icon.add(sand, trunk);
+      for (const a of [-2.6, -1.9, -1.2, -0.5]) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), lm); l.scale.set(1, 0.28, 0.4); l.position.set(0.05 + Math.cos(a + Math.PI) * -0.08, 0.15 + Math.sin(-a) * 0.03 - 0.02, 0.04); l.rotation.z = a + Math.PI / 2 + 1.57; icon.add(l); } }
     else if (kind === 'time') { icon = new THREE.Group(); const gm = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 120 }), sand = new THREE.MeshPhongMaterial({ color: 0xffd166 }); // an hourglass
       const top = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); top.rotation.x = Math.PI; top.position.y = 0.08; const bot = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); bot.position.y = -0.08;
       const sd = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.07, 12), sand); sd.position.y = -0.11; for (const y of [0.17, -0.17]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.03, 14), sand); cap.position.y = y; icon.add(cap); } icon.add(top, bot, sd); icon.rotation.x = 0.5; }
@@ -1957,7 +1960,7 @@ window.Board = (function () {
   }
   // Timed boosters in the HUD: the booster's icon in its colour, with a ring that drains as time runs out
   const PW_IC = {
-    slow: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12" r="6"/><path d="M9.5 12a2 2 0 1 0 2-2M2 19h15.5a3 3 0 0 0 3-3v-4M20.5 12l-1.5-4M20.5 12l2-3.5"/></g></svg>',
+    slow: '<svg class="ic" viewBox="0 0 24 24"><g fill="currentColor"><ellipse cx="12" cy="13.5" rx="5.6" ry="6.6"/><circle cx="12" cy="4.4" r="2.3"/><ellipse cx="5.4" cy="9.6" rx="2.6" ry="1.4" transform="rotate(-35 5.4 9.6)"/><ellipse cx="18.6" cy="9.6" rx="2.6" ry="1.4" transform="rotate(35 18.6 9.6)"/><ellipse cx="6.6" cy="19.2" rx="2.2" ry="1.2" transform="rotate(35 6.6 19.2)"/><ellipse cx="17.4" cy="19.2" rx="2.2" ry="1.2" transform="rotate(-35 17.4 19.2)"/></g></svg>',
     freeze: '<svg class="ic" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></g></svg>',
     boost: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2 4 14h7l-1.5 8L19 10h-7z"/></svg>',
     iron: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.6"><rect x="1.8" y="7.5" width="11.5" height="9" rx="4.5"/><rect x="10.7" y="7.5" width="11.5" height="9" rx="4.5"/></g></svg>'
@@ -2105,7 +2108,7 @@ window.Board = (function () {
     if (p.kind === 'bomb') { // claim everything within 3 squares, then settle the board like a normal claim
       const bx = Math.round(p.fx), by = Math.round(p.fy);
       for (let y = by - 3; y <= by + 3; y++) for (let x = bx - 3; x <= bx + 3; x++) if (inside(x, y) && Math.hypot(x - bx, y - by) <= 3.2 && cells[idx(x, y)] === SEA) cells[idx(x, y)] = LAND;
-      burst(wx, 0.8, wz, 0xff8a3d, 60, 7, 6); burst(wx, 0.8, wz, 0xffffff, 30, 5, 7); shake = 0.4; tone(90, 0.5, 'sawtooth', 0.12, 40);
+      burst(wx, 0.8, wz, 0xffe08a, 50, 6, 6); burst(wx, 0.8, wz, 0x3ee05a, 24, 5, 6); burst(wx, 0.4, wz, 0xffffff, 24, 4, 5); shake = 0.15; tone(160, 0.35, 'triangle', 0.1, 420); // an island rises
       if (!drawing) setTimeout(() => { if (state === 'play' && !drawing) claim(); }, 0);
     }
     setTimeout(() => flash(POWERS[p.kind].label, POWERS[p.kind].secs ? POWERS[p.kind].secs + ' seconds' : null, 1000), 250);
