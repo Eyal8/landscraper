@@ -1643,11 +1643,11 @@ window.Board = (function () {
   // one outside boss levels), i Octopus, w Whirlpool, B Big Puffer (boss). New monsters arrive on levels 1,
   // 6 and 11 of a world, nearly alone; each world climbs in four waves of five (see the game plan doc).
   const LINEUPS = {
-    meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bbes'],
+    meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bess'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzess'],
-    glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzpiss'],
-    reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhhjjzpicc'],
-    volcano: ['bbl', 'bbzl', 'bzjl', 'bbzjlc', 'bbzpjlc', 'bzlw', 'bbzjlw', 'bzhjlc', 'bbzpjlc', 'bbzphjlc', 'bbu', 'bbzu', 'bzhju', 'bbzpluc', 'bbzphjluc', 'bzlu', 'bbzpjluc', 'bzhpiluc', 'bbzphijluc', 'Bbhzpjluc']
+    glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzzpss'],
+    reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhhzzppicc'],
+    volcano: ['bbl', 'bbzl', 'bzjl', 'bbzjlc', 'bbzpjlc', 'bzlw', 'bbzjlw', 'bzhjlc', 'bbzpjlc', 'bbzphjlc', 'bbu', 'bbzu', 'bzhju', 'bbzpluc', 'bbzphjluc', 'bzlu', 'bbzpjluc', 'bzhpiluc', 'bbzphijluc', 'Bbhzpjcuc']
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
