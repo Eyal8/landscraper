@@ -320,7 +320,7 @@ h2.shop { color: #ffd166; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
-.btn small.adt { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn small.adt { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
 .btn small.adt svg { width: 12px; height: 12px; padding: 2px 5px; border-radius: 4px; background: currentColor; box-sizing: content-box; }
 .btn small.adt svg path { fill: #fff; } .btn.alt small.adt svg path { fill: #2a3560; } .btn.go-daily small.adt svg path { fill: #9ffbe9; } .btn.go-rush small.adt svg path { fill: #ffc49e; }
 .big.rscore { color: #ffb48a; text-shadow: 0 0 24px rgba(255,140,80,0.4); }
@@ -330,6 +330,14 @@ h2.shop { color: #ffd166; }
 .btn.alt.m-rush { color: #ffb48a; box-shadow: inset 0 0 0 1.5px rgba(255,150,100,0.6); background: rgba(255,130,80,0.12); }
 .btn.alt.m-daily { color: #7ff5e2; box-shadow: inset 0 0 0 1.5px rgba(110,240,220,0.55); background: rgba(80,230,200,0.1); }
 .btn.dplay { min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; } /* same height with or without the ad line, text centred */
+.btn.cdb { padding-left: 64px; padding-right: 64px; }
+.cdr { position: absolute; left: 12px; top: 50%; width: 44px; height: 44px; margin-top: -22px; display: grid; place-items: center; }
+.cdr svg { position: absolute; inset: 0; transform: rotate(-90deg); } .cdr circle { fill: none; stroke: rgba(29,42,99,0.15); stroke-width: 4; }
+.cdr .cdp { stroke: #ffb21e; stroke-linecap: round; stroke-dasharray: 107; stroke-dashoffset: 0; animation: cdRing 10s linear forwards; }
+@keyframes cdRing { to { stroke-dashoffset: 107; } }
+.cdr b { font: 800 20px var(--display); color: #1d2a63; }
+.cdr.tk b { animation: cdTick 0.35s ease-out; } @keyframes cdTick { from { transform: scale(1.35); } }
+.cdr.low b { color: #e8405a; } .cdr.low .cdp { stroke: #e8405a; }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
@@ -2198,8 +2206,8 @@ window.Board = (function () {
     const canGo = !continued;
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
-    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + pct + '%</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
-      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont">Continue +1 life · <span id="cdN">10</span>' + adTag() + '<i class="cd"></i></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
+      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span>Continue +1 life' + adTag() + '</button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt" type="button" data-act="retryS">' + SHIELD_I + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
@@ -2208,7 +2216,7 @@ window.Board = (function () {
     contCountdown();
   }
   function contCountdown() { // the Continue offer goes away after 10 seconds
-    let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e) { clearInterval(tick); return; } n--; e.textContent = n;
+    let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e) { clearInterval(tick); return; } n--; e.textContent = n; e.parentNode.classList.remove('tk'); void e.offsetWidth; e.parentNode.classList.add('tk'); if (n <= 3) { e.parentNode.classList.add('low'); tone(880, 0.06, 'sine', 0.04); }
       if (n <= 0) { clearInterval(tick); const b = e.closest('button'); const nx = b.nextElementSibling; b.remove(); if (nx) nx.classList.remove('alt'); } }, 1000);
   }
   async function keepGoing() { // the rewarded Continue: one more life (and 15 seconds on the clock), once per level
