@@ -2098,7 +2098,7 @@ window.Board = (function () {
     let newWorld = false;
     if (mode === 'campaign') { const bonus = stars === 3 && lives < 5; if (bonus) { lives++; setTimeout(() => { flash('Bonus life!', 'for a perfect clear', 1300); tone(988, 0.15, 'sine', 0.06, 1480); }, 2300); } prog.lives = lives; }
     if (mode === 'daily' && dailyKey === todayKey()) window.Board.submit('daily', clockT);
-    if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && (!was.stars || was.late) }; }
+    if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && !(savingStreak === d) && (!was.stars || was.late) }; savingStreak = null; }
     else {
       if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
       delete prog.skipped[L.id];
@@ -2265,6 +2265,7 @@ window.Board = (function () {
     else showHome();
   }); } catch (e) {}
   function showHome() {
+    savingStreak = null;
     toMenu(); onHome = true;
     const nx = nextLevel(), lv = LEVELS[nx], done = prog.daily[todayKey()];
     panel('<div class="hbar"><button class="corner l shop" type="button" data-act="shop" aria-label="Shop"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></button><button class="corner r" type="button" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M19.38 10.17 L22.48 10.42 L22.48 13.58 L19.38 13.83 L18.51 15.92 L20.53 18.30 L18.30 20.53 L15.92 18.51 L13.83 19.38 L13.58 22.48 L10.42 22.48 L10.17 19.38 L8.08 18.51 L5.70 20.53 L3.47 18.30 L5.49 15.92 L4.62 13.83 L1.52 13.58 L1.52 10.42 L4.62 10.17 L5.49 8.08 L3.47 5.70 L5.70 3.47 L8.08 5.49 L10.17 4.62 L10.42 1.52 L13.58 1.52 L13.83 4.62 L15.92 5.49 L18.30 3.47 L20.53 5.70 L18.51 8.08Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button></div><h1>Landscraper</h1>' +
@@ -2519,8 +2520,9 @@ window.Board = (function () {
     mode = 'daily'; const lv = dailyLevel(dailyKey); rng = seeded(lv.seed ^ 0x5bd1e995);
     begin(lv); mode = 'daily'; drawHud();
   }
-  let dailyPick = null;
+  let dailyPick = null, savingStreak = null; // the day being saved: clearing it counts as played on time
   function showDaily(mOff, pick) {
+    savingStreak = null;
     toMenu(); mOff = typeof mOff === 'number' ? mOff : 0; dailyPick = pick || null;
     const now = new Date(), shown = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + mOff, 1)), y = shown.getUTCFullYear(), mo = shown.getUTCMonth(), first = new Date(Date.UTC(y, mo, 1)).getUTCDay(), days = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate(), today = todayKey(), done = prog.daily[today];
     let cal = '<div class="cal">' + ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => '<i>' + d + '</i>').join('');
@@ -2537,10 +2539,10 @@ window.Board = (function () {
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
     // missed yesterday after a streak? one ad saves it
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
-    const canSave = !prog.daily[yKey] && prog.daily[dayKey(y2)] && !prog.daily[dayKey(y2)].late;
+    const d2 = prog.daily[dayKey(y2)], canSave = (!prog.daily[yKey] || prog.daily[yKey].late) && d2 && d2.stars > 0 && !d2.late;
     panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= -3 ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><div class="dchips"><span><svg viewBox="0 0 24 24" fill="#ff8a3d"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg><b>' + streak() + '</b> day streak</span><span><svg viewBox="0 0 24 24" fill="none" stroke="#7ff5e2" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>New in <b>' + untilNext() + '</b></span></div>' + cal +
       '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn dplay' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + playLbl() + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
-      { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } prog.daily[yKey] = { stars: 0, saved: true }; saveProg(); flash('Streak saved', null, 1200); buzz('clear'); showDaily(mOff); },
+      { save: async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } savingStreak = yKey; startDaily(yKey); flash('Save your streak', 'clear yesterday\'s level', 2000); },
         play: () => playDaily(dailyPick || today), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
     document.querySelectorAll('#card [data-day]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); buzz('select'); dailyPick = b.dataset.day === today ? null : b.dataset.day; // pick a day: only the day and the button change
       document.querySelectorAll('#card [data-day].pick').forEach((x) => x.classList.remove('pick')); b.classList.add('pick'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
