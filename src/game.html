@@ -219,7 +219,9 @@ body {
 .rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
-.card.troc { width: min(400px, 100%); height: min(640px, 100%); overflow: hidden; }
+.card.troc { width: min(400px, 100%); height: min(640px, 100%); overflow: hidden; align-self: flex-start; }
+.card.troc.short { height: auto; max-height: min(640px, 100%); } /* Daily and Rush: only as tall as they need, top edge where Worlds has it */
+#panel:has(.card.troc) { align-items: flex-start; }
 .card.troc .tbody > * { flex-shrink: 0; }
 .card.troc .tbody { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; box-sizing: border-box; }
 .trow { display: grid; grid-template-columns: 1.25fr repeat(4, 1fr); align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: rgba(255,255,255,0.06); }
@@ -812,7 +814,7 @@ window.Board = (function () {
     const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // one way home everywhere: the house in the corner
     if (html.includes(HB)) html = HOME_X.replace('data-act="back"', 'data-act="home"') + html.replace(HB, '');
     const c = $('card'), was = !$('panel').hidden && !reduceMotion ? c.getBoundingClientRect() : null;
-    c.className = 'card'; c.innerHTML = html; $('panel').hidden = false;
+    c.className = 'card'; c.style.marginTop = ''; c.innerHTML = html; $('panel').hidden = false;
     if (was && was.height > 0) {
       c.classList.add('swap'); cancelAnimationFrame(swapRaf); c.style.transition = 'none'; c.style.height = was.height + 'px'; // hold the old size until the new one is known
       swapRaf = requestAnimationFrame(() => {
@@ -2404,8 +2406,7 @@ window.Board = (function () {
             return '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="4" rx="1.5" fill="' + (got ? 'rgba(255,255,255,0.85)' : c1) + '" opacity="' + (got ? 1 : 0.6) + '"/><text x="12" y="20" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (txt.length > 2 ? 7.5 : 10) + '" fill="' + (got ? '#fff' : c1) + '" stroke="' + (got ? 'rgba(20,20,50,0.35)' : 'none') + '" stroke-width="0.6" paint-order="stroke">' + txt + '</text></svg>'; };
           return '<div class="rblock"><div class="rtop"><b>Days played</b><span>' + (nx ? t.n + ' / ' + nx + ' days' : 'All done') + '</span></div>' +
             '<div class="wbar"><i style="width:' + Math.min(100, t.n / t.days * 100) + '%;background:linear-gradient(90deg,#7ff5e2,#9fc4ff,#ffe27a)"></i>' + [10, 20].map((n) => '<em style="left:' + (n / t.days * 100) + '%"></em>').join('') + '</div>' +
-            '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>' +
-            '<div class="rblock"><div class="rtop"><b>This month</b></div><div class="mdots">' + Array.from({ length: t.days }, (_, d) => { const e = prog.daily[y + '-' + pad2(mo + 1) + '-' + pad2(d + 1)]; return '<i class="' + (e && e.stars ? 'on' : '') + '">' + (d + 1) + '</i>'; }).join('') + '</div></div>'; })();
+            '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>'; })();
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
       const block = (title, list, looks, have, lab, unit) => { const k = list.findIndex((n) => have < n), nx = k < 0 ? null : list[k], prev = k <= 0 ? 0 : list[k - 1];
@@ -2417,7 +2418,8 @@ window.Board = (function () {
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
     panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
-    $('card').classList.add('troc');
+    $('card').classList.add('troc'); if (troTab !== 'worlds') $('card').classList.add('short');
+    { const pn = $('panel'), cs = getComputedStyle(pn), inner = pn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); $('card').style.marginTop = Math.max(0, (inner - Math.min(640, inner)) / 2) + 'px'; }
     $('card').querySelectorAll('.bdg.got[data-t]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); showBadge(el); }));
     if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
       el.addEventListener('pointerdown', (e) => { sx = e.clientX; }); el.addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null;
@@ -2576,7 +2578,7 @@ window.Board = (function () {
   function showRush() {
     toMenu();
     panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Clear as many boards as you can.</p>' +
-      (prog.rush ? '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + (prog.rushBoards || '–') + '</b><span>best boards</span></div></div>' : '') +
+      (prog.rush ? '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + (prog.rushBoards || '–') + '</b><span>most boards</span></div></div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
   }
