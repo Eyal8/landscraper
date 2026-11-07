@@ -69,7 +69,11 @@ body {
 .lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
 .lives svg.off { opacity: 0.28; }
 #power { position: absolute; top: calc(66px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
-#power span { padding: 5px 10px; border-radius: 999px; background: var(--shade); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+#power .pw { display: flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
+#power .pw i { position: relative; width: 30px; height: 30px; display: grid; place-items: center; }
+#power .pr { position: absolute; inset: 0; transform: rotate(-90deg); } #power .pr circle { fill: none; stroke: rgba(255,255,255,0.14); stroke-width: 4; } #power .pr .pp { stroke: var(--c); stroke-dasharray: 107; stroke-linecap: round; }
+#power.tight .pw { font-size: 0; gap: 0; padding: 4px; } /* four at once: icons only */
+#power .ic { width: 15px; height: 15px; color: var(--c); }
 
 #flash {
   position: absolute; left: 50%; top: 20%; transform: translate(-50%, 0) scale(0.9); text-align: center; pointer-events: none;
@@ -1336,6 +1340,7 @@ window.Board = (function () {
   const trailCol = new THREE.Color(), fuseCol = new THREE.Color(0xff3355);
   const dashGeo = new THREE.BoxGeometry(0.38, 0.08, 0.15);
   const dashes = new THREE.InstancedMesh(dashGeo, new THREE.MeshBasicMaterial({ color: trailCol }), DMAX);
+  const dashBase = dashes.material.color.clone(), ironCol = new THREE.Color(0xc59bff);
   dashes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); dashes.count = 0; dashes.frustumCulled = false; scene.add(dashes);
   // burnt dashes share the same matrices, drawn slightly larger in red over the part the fuse has passed
   const burnt = new THREE.InstancedMesh(dashGeo.clone().scale(1.12, 1.3, 1.3), new THREE.MeshBasicMaterial({ color: fuseCol }), DMAX);
@@ -1511,11 +1516,17 @@ window.Board = (function () {
     for (let arm = 0; arm < 4; arm++) { x.lineWidth = 3.2; x.beginPath(); for (let k = 0; k <= 40; k++) { const t = k / 40, r = 6 + t * 54, a = arm * Math.PI / 2 + t * 4.2; const px2 = 64 + Math.cos(a) * r, py2 = 64 + Math.sin(a) * r; k ? x.lineTo(px2, py2) : x.moveTo(px2, py2); } x.stroke(); }
     const tex = new THREE.CanvasTexture(c);
     const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.75, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
-    swirl.position.y = -0.44; body.add(swirl);
+    swirl.position.y = -0.355; body.add(swirl); // just above the sea floor, or it hides under it
     const funnel = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.5, 28, 1, true), new THREE.MeshPhongMaterial({ color: 0x3f9fe0, transparent: true, opacity: 0.55, side: THREE.DoubleSide, shininess: 120 }));
     funnel.rotation.x = Math.PI; funnel.position.y = -0.2; body.add(funnel);
-    const field = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9fdcff, transparent: true, opacity: 0.5, depthWrite: false }));
-    field.position.y = -0.42; g.add(field);
+    const zc = document.createElement('canvas'); zc.width = zc.height = 256; const z = zc.getContext('2d'); // its pull zone: a dashed rim with arms that seem to flow inward as it turns
+    const zg = z.createRadialGradient(128, 128, 20, 128, 128, 126); zg.addColorStop(0, 'rgba(20,70,150,0.35)'); zg.addColorStop(0.85, 'rgba(60,150,230,0.16)'); zg.addColorStop(1, 'rgba(120,200,255,0.3)');
+    z.fillStyle = zg; z.beginPath(); z.arc(128, 128, 124, 0, Math.PI * 2); z.fill();
+    z.strokeStyle = 'rgba(225,245,255,0.55)'; z.lineCap = 'round'; z.lineWidth = 4;
+    for (let arm = 0; arm < 6; arm++) { z.beginPath(); for (let k = 0; k <= 40; k++) { const t2 = k / 40, r = 28 + t2 * 90, a = arm * Math.PI / 3 + t2 * 2.6; const qx = 128 + Math.cos(a) * r, qy = 128 + Math.sin(a) * r; k ? z.lineTo(qx, qy) : z.moveTo(qx, qy); } z.stroke(); }
+    z.strokeStyle = 'rgba(255,255,255,0.95)'; z.lineWidth = 7; z.setLineDash([16, 11]); z.beginPath(); z.arc(128, 128, 121, 0, Math.PI * 2); z.stroke();
+    const field = new THREE.Mesh(new THREE.CircleGeometry(1.0, 56).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(zc), transparent: true, opacity: 0.8, depthWrite: false }));
+    field.position.y = -0.37; g.add(field);
     g.userData.fish = { body, fins: [], tail: null, skin: funnel.material, base: 0x3f9fe0, swirl };
     g.userData.field = field;
     return g;
@@ -1586,7 +1597,7 @@ window.Board = (function () {
     splitter: { name: 'Starfish', text: 'Trap it, it splits in two.' },
     hunter: { name: 'Shark', text: 'Hunts you while you draw.' },
     inker: { name: 'Octopus', text: 'Glowing means ink. Avoid ink.' },
-    magnet: { name: 'Whirlpool', text: 'Pulls you in when you draw nearby.' },
+    magnet: { name: 'Whirlpool', text: 'Keep your lines out of its ring. It pulls you in.' },
     mini: { name: 'Baby starfish', text: 'Small and quick.' },
     jelly: { name: 'Jellyfish', text: 'Glows, then fires a bolt. Land blocks it.' },
     crab: { name: 'Crab', text: 'Walks the shore. Don\'t touch.' },
@@ -1604,7 +1615,7 @@ window.Board = (function () {
     life: { label: '+1 Life', color: 0xff5a7a, secs: 0, text: 'One more life.' },
     shield: { label: 'Shield', color: 0xffd166, secs: 0, text: 'Blocks the next hit.' },
     bomb: { label: 'Bomb', color: 0xff8a3d, secs: 0, text: 'Claims the area around it.' },
-    lure: { label: 'Lure', color: 0xc59bff, secs: 10, text: 'Boosters come to you.' },
+    iron: { label: 'Iron Line', color: 0xc59bff, secs: 8, text: 'Monsters bounce off your line.' },
     time: { label: '+8 Seconds', color: 0x7cf3c4, secs: 0, text: 'More time on the clock.' },
     boost: { label: 'Speed', color: 0xa6ff4d, secs: 6, text: 'You move much faster.' }
   };
@@ -1621,7 +1632,7 @@ window.Board = (function () {
       const top = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); top.rotation.x = Math.PI; top.position.y = 0.08; const bot = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 14), gm); bot.position.y = -0.08;
       const sd = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.07, 12), sand); sd.position.y = -0.11; for (const y of [0.17, -0.17]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.03, 14), sand); cap.position.y = y; icon.add(cap); } icon.add(top, bot, sd); icon.rotation.x = 0.5; }
     else if (kind === 'boost') { const b = new THREE.Shape(); b.moveTo(0.03, 0.22); b.lineTo(-0.12, -0.02); b.lineTo(-0.01, -0.02); b.lineTo(-0.05, -0.22); b.lineTo(0.13, 0.04); b.lineTo(0.02, 0.04); b.lineTo(0.03, 0.22); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(b, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.015, bevelSegments: 2 }), new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 120 })); icon.position.z = -0.03; }
-    else if (kind === 'lure') { icon = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.04, 8, 18, Math.PI * 1.4), new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 100 })); icon.rotation.z = 0.8; }
+    else if (kind === 'iron') { icon = new THREE.Group(); const cm = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 140, specular: 0xffffff }); for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.032, 8, 20), cm); l.scale.x = 1.35; l.position.x = sx * 0.08; if (sx > 0) l.rotation.x = Math.PI / 2; icon.add(l); } } // two chain links
     else { icon = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x88ddff, emissiveIntensity: 0.4, shininess: 100 })); }
     g.add(icon); scene.add(g); return g;
   }
@@ -1656,7 +1667,7 @@ window.Board = (function () {
     dunes: { pool: ['life', 'slow', 'freeze', 'time', 'boost'], intro: { boost: 6, freeze: 16 } },
     glacier: { pool: ['life', 'slow', 'freeze', 'shield', 'time', 'boost'], intro: { shield: 6 } },
     reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'time', 'boost'], intro: { bomb: 6 } },
-    volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'lure', 'time', 'boost'], intro: { lure: 6 } }
+    volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'iron', 'time', 'boost'], intro: { iron: 6 } }
   };
   const WAVE = [1, 2, 2.5, 3, 4, 3, 3.5, 4.5, 5, 6, 4.5, 5, 6, 6.5, 7.5, 6, 6.5, 7.5, 8, 9]; // the sawtooth
   const KIND = { j: 'jelly', c: 'crab', l: 'eel', u: 'urchin', b: 'bouncer', e: 'eater', s: 'saw', z: 'zipper', p: 'splitter', h: 'hunter', i: 'inker', w: 'magnet', B: 'boss' };
@@ -1715,7 +1726,7 @@ window.Board = (function () {
   let clockT = 0, timePending = 0;
   const fmtClock = (t, tenths) => { t = Math.max(0, t); const m = Math.floor(t / 60), sec = t - m * 60; return m + ':' + (tenths ? sec.toFixed(1).padStart(4, '0') : String(Math.ceil(sec - 1e-9) === 60 ? 59 : Math.floor(sec)).padStart(2, '0')); };
   const clockOn = () => (mode === 'campaign' && L.time && !tutorialSafe()) || mode === 'daily';
-  let powersSeen = false, fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false, shieldOn = false, lureT = 0, bossHp = 0, mode = 'campaign';
+  let powersSeen = false, fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false, shieldOn = false, ironT = 0, bossHp = 0, mode = 'campaign';
   const trailIdx = new Int32Array(N).fill(-1);
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   const CORNER = 0.45; // a turn this late into a step still turns at the cell you just left
@@ -1757,10 +1768,27 @@ window.Board = (function () {
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = L.newPower || L.boss ? 3 : 6; powersSeen = false;
-    clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; lureT = 0; bossHp = L.boss ? 3 : 0; drawHud();
+    clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; ironT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
+  const glowGeo = new THREE.RingGeometry(0.76, 1.12, 40).rotateX(-Math.PI / 2), glowMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending });
+  const lockMat = (() => { // a gold badge with a padlock, floating over a monster your line would trap
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+    x.fillStyle = '#ffd166'; x.strokeStyle = '#1d2a63'; x.lineWidth = 7; x.beginPath(); x.arc(64, 64, 56, 0, Math.PI * 2); x.fill(); x.stroke();
+    x.lineWidth = 9; x.lineCap = 'round'; x.beginPath(); x.arc(64, 54, 17, Math.PI, 0); x.lineTo(81, 62); x.moveTo(47, 54); x.lineTo(47, 62); x.stroke();
+    x.fillStyle = '#1d2a63'; x.fillRect(36, 60, 56, 40); x.fillStyle = '#ffd166'; x.beginPath(); x.arc(64, 78, 6, 0, Math.PI * 2); x.fill(); x.fillRect(61, 80, 6, 11);
+    return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true });
+  })();
+  const locks = [];
+  function trapFx(t) { // the trap hint pulses, glows and carries a lock
+    const p = Math.sin(t * 10); ringMat.opacity = 0.75 + 0.25 * p; glowMat.opacity = 0.22 + 0.16 * p; let n = 0;
+    for (const m of monsters) if (m.ring && m.ring.visible && !m.dead) {
+      let sp = locks[n]; if (!sp) { sp = locks[n] = new THREE.Sprite(lockMat); sp.renderOrder = 6; scene.add(sp); }
+      sp.position.copy(m.mesh.position); sp.position.y += 0.95 + 0.45 * m.sz + 0.06 * p; sp.scale.setScalar(0.9); sp.visible = true; n++;
+    }
+    for (let k = n; k < locks.length; k++) locks[k].visible = false;
+  }
   // While you draw: if you kept going straight to land now, which monsters would be trapped?
   // Their area shimmers gold and they get a gold ring.
   let trapHinted = false, trapShown = false;
@@ -1916,7 +1944,7 @@ window.Board = (function () {
     const m = { kind, x, y, vx: (rng() < 0.5 ? -1 : 1) * sp, vy: (rng() < 0.5 ? -1 : 1) * sp, mesh: makeBall(bk || kind), shadow: blob(1.1 * sz), boss: bk, sz, eatCd: 0, t: rand(0, 6), hT: rand(2.5, 4), mode: 'roam', inkCd: 0, puff: 0 };
     if (m.mesh.userData.field) m.mesh.userData.field.scale.setScalar(MAG_R / 1.22);
     if (kind === 'saw') { m.warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ color: 0xff3048, transparent: true, opacity: 0, depthWrite: false })); m.warn.renderOrder = 3; scene.add(m.warn); m.emerge = SAW_EMERGE; }
-    m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.shadow.add(m.ring);
+    m.ring = new THREE.Mesh(ringGeo, ringMat); m.ring.visible = false; m.ring.scale.setScalar(1 / m.shadow.scale.x); m.ring.position.y = 0.03; m.ring.add(new THREE.Mesh(glowGeo, glowMat)); m.shadow.add(m.ring);
     if (kind === 'jelly') { // the bolt: a child of the shadow, so it goes away with the jellyfish
       m.zap = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbff8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
       m.zap.renderOrder = 4; m.zap.visible = false; m.shadow.add(m.zap);
@@ -1934,8 +1962,21 @@ window.Board = (function () {
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); if (i >= 3) s.firstChild.setAttribute('fill', '#ffc93a'); l.append(s.firstChild); }
-    const pw = []; if (slowT > 0) pw.push('Slow ' + Math.ceil(slowT)); if (frozenT > 0) pw.push('Freeze ' + Math.ceil(frozenT)); if (boostT > 0) pw.push('Speed ' + Math.ceil(boostT)); if (lureT > 0) pw.push('Lure ' + Math.ceil(lureT));
-    $('power').innerHTML = pw.map((t) => '<span class="ts">' + t + '</span>').join('');
+  }
+  // Timed boosters in the HUD: the booster's icon in its colour, with a ring that drains as time runs out
+  const PW_IC = {
+    slow: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM11 7h2v4.4l3.2 1.9-1 1.7L11 12.6z"/></svg>',
+    freeze: '<svg class="ic" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></g></svg>',
+    boost: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2 4 14h7l-1.5 8L19 10h-7z"/></svg>',
+    iron: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.6"><rect x="1.8" y="7.5" width="11.5" height="9" rx="4.5"/><rect x="10.7" y="7.5" width="11.5" height="9" rx="4.5"/></g></svg>'
+  };
+  let pwKey = '';
+  function powerHud() {
+    const on = [['slow', slowT], ['freeze', frozenT], ['boost', boostT], ['iron', ironT]].filter((o) => o[1] > 0), el = $('power');
+    const key = on.map((o) => o[0]).join();
+    if (key !== pwKey) { pwKey = key; el.classList.toggle('tight', on.length > 3); el.innerHTML = on.map(([k]) => '<div class="pw" style="--c:#' + POWERS[k].color.toString(16).padStart(6, '0') + '"><i><svg class="pr" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="pp" cx="20" cy="20" r="17"/></svg>' + PW_IC[k] + '</i>' + POWERS[k].label + '</div>').join(''); }
+    on.forEach(([k, t], j) => { const c = el.children[j] && el.children[j].querySelector('.pp'); if (c) c.style.strokeDashoffset = (107 * (1 - Math.min(1, t / POWERS[k].secs))).toFixed(1); });
+    dashes.material.color.copy(ironT > 0 ? ironCol : dashBase);
   }
   function percent() { let n = 0; for (let i = 0; i < N; i++) if (!fixed[i] && cells[i] === LAND) n++; return Math.floor(n / total * 100); }
   function cellAt(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return inside(cx, cy) ? cells[idx(cx, cy)] : LAND; }
@@ -2063,7 +2104,7 @@ window.Board = (function () {
     if (p.kind === 'slow') slowT = POWERS.slow.secs;
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
     if (p.kind === 'shield') { shieldOn = true; bubbleK = 0; }
-    if (p.kind === 'lure') lureT = POWERS.lure.secs;
+    if (p.kind === 'iron') { ironT = POWERS.iron.secs; fuse = null; burnt.count = 0; spark.visible = false; } // a lit fuse goes out too
     if (p.kind === 'boost') boostT = POWERS.boost.secs;
     if (p.kind === 'time') { const [sx, sy] = toScreen(wx, 1, wz); timeBonus(8, sx, sy); }
     if (p.kind === 'bomb') { // claim everything within 3 squares, then settle the board like a normal claim
@@ -2122,7 +2163,7 @@ window.Board = (function () {
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
   function levelClear() {
     levelEnds++; const had = earned();
-    state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = lureT = boostT = 0; $('power').innerHTML = '';
+    state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; $('power').innerHTML = '';
     const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
@@ -2827,7 +2868,7 @@ window.Board = (function () {
       const nudge = horiz ? (side > 0 ? 'down' : 'up') : (side > 0 ? 'right' : 'left');
       const [ndx, ndy] = DIRS[nudge], nx2 = px + ndx, ny2 = py + ndy;
       if (!inside(nx2, ny2) || cells[idx(nx2, ny2)] === TRAIL) continue;
-      queue = [dir]; dir = nudge; magCd = 1.4;
+      queue = [dir]; dir = nudge; magCd = 0.3 + 0.6 * Math.hypot(mx, my) / MAG_R; // the closer you are, the harder it pulls
       tone(300, 0.25, 'sine', 0.07, 600); buzz('tick');
       const [wx, wz] = W2(px, py); burst(wx, 0.6, wz, 0x7fb3ff, 12, 2, 2);
       if (!magHinted) { magHinted = true; flash('Pulled!', 'the whirlpool drags you in', 900); }
@@ -2850,7 +2891,12 @@ window.Board = (function () {
     }
     dashes.count = trail.length * 2; dashes.instanceMatrix.needsUpdate = true;
   }
+  let ironFx = 0;
   function lightFuse(k) {
+    if (ironT > 0) { // Iron Line: the hit just clangs off
+      if (ironFx <= 0 && trail[k] !== undefined) { ironFx = 0.18; const [wx, wz] = W2(trail[k] % W, (trail[k] / W) | 0); burst(wx, 0.4, wz, 0xe6d6ff, 10, 2, 4); tone(1700, 0.06, 'square', 0.035, 2400); }
+      return;
+    }
     if (!fuse) { fuse = { pos: k }; hiss(0.7, 0.07, 4200); tone(1400, 0.12, 'triangle', 0.04, 1800); flash('Fuse!', 'get back to land', 800, true); buzz('warn'); }
     else if (k > fuse.pos) fuse.pos = k;
   }
@@ -2890,6 +2936,7 @@ window.Board = (function () {
   const zero = new THREE.Vector3();
   function update(dt, t) {
     floorMat.uniforms.uTime.value = t;
+    powerHud(); trapFx(t);
     if (shake > 0) shake = Math.max(0, shake - dt);
     if (state === 'clear') clearT += dt;
     // tiles: a springy rise
@@ -2911,7 +2958,7 @@ window.Board = (function () {
     if (live) {
       if (invuln > 0) invuln -= dt;
       const ticking = !(hideT > 0 || enterT > 0); // booster timers wait while the boat drops back in, so a hit doesn't waste them
-      if (ticking) { if (slowT > 0) slowT = Math.max(0, slowT - dt); if (frozenT > 0) frozenT = Math.max(0, frozenT - dt); if (lureT > 0) lureT = Math.max(0, lureT - dt); if (boostT > 0) boostT = Math.max(0, boostT - dt); }
+      if (ticking) { if (slowT > 0) slowT = Math.max(0, slowT - dt); if (frozenT > 0) frozenT = Math.max(0, frozenT - dt); if (ironT > 0) ironT = Math.max(0, ironT - dt); if (ironFx > 0) ironFx -= dt; if (boostT > 0) boostT = Math.max(0, boostT - dt); }
       if (tut === 'line' && drawing) for (const m of monsters) { if (m.dead) continue; if (trail.some((c) => Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < 3.5)) { tutorialStep('near'); break; } }
       if (tutT > 0) { tutT -= dt; if (tutT <= 0) coach(''); }
       if (clockOn() && hideT <= 0 && enterT <= 0) {
@@ -3104,7 +3151,7 @@ window.Board = (function () {
         if (m.kind === 'saw') { m.stuckT = (m.stuckT || 0) + dt; if (m.stuckT > 0.6) { m.stuckT = 0; if (landRegionSize(idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), SAW_MIN) < SAW_MIN) resetSaw(m); } }
         if (m.kind !== 'saw' && !m.under) { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
         if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 * Math.max(1, m.sz * 0.7) && !m.under) {
-          if (m.kind !== 'saw' && !onLand) die('a monster caught you');
+          if (m.kind !== 'saw' && !onLand) die(m.kind === 'magnet' ? 'the whirlpool pulled you under' : 'a monster caught you');
           if (m.kind === 'saw' && onLand) die('a buzzsaw caught you on land');
         }
         if (m.hist) { // the eel's body follows the head's path; every part of it touches your line and bites
@@ -3192,7 +3239,7 @@ window.Board = (function () {
         if (fishU.star) { fishU.star.rotation.z = Math.sin(m.t * 3) * 0.12; fishU.body.scale.set(pf * (1 + Math.sin(m.t * 6) * 0.04), pf, pf * (1 - Math.sin(m.t * 6) * 0.04)); } // a slow crawl-wiggle
         if (m.kind === 'hunter') { const glowOn = m.mode === 'aim' ? 0.55 + 0.45 * Math.sin(t * 30) : m.mode === 'dash' ? 0.7 : 0; fishU.skin.emissive.setRGB(glowOn, glowOn * 0.05, 0); }
       }
-      if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y += dt; f.material.opacity = 0.25 + 0.2 * Math.sin(t * 4); }
+      if (m.mesh.userData.field) { const f = m.mesh.userData.field; f.rotation.y -= dt * 1.3; f.material.opacity = 0.7 + 0.15 * Math.sin(t * 3); }
       if (fishU && fishU.swirl) { fishU.swirl.rotation.y -= dt * 4; m.mesh.rotation.y = 0; }
       if (m.pop > 0) { m.pop = Math.max(0, m.pop - dt * 3); const q = 1 - m.pop; m.mesh.scale.setScalar(m.mesh.userData.s * (q < 0.7 ? q / 0.7 * 1.25 : 1.25 - (q - 0.7) / 0.3 * 0.25)); }
       if (m.mesh.userData.wheel) { // face the way it rolls, spin the wheel
@@ -3206,7 +3253,6 @@ window.Board = (function () {
     // power-ups
     for (const p of powers) {
       p.t += dt;
-      if (lureT > 0 && !p.taken && live) { const ddx = fx - p.fx, ddy = fy - p.fy, l2 = Math.hypot(ddx, ddy) || 1; p.fx += ddx / l2 * dt * 6; p.fy += ddy / l2 * dt * 6; p.x = Math.round(p.fx); p.y = Math.round(p.fy); }
       const [wx, wz] = W2(p.fx, p.fy);
       if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
       if (live && Math.hypot(p.fx - fx, p.fy - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
