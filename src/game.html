@@ -312,6 +312,8 @@ h2.shop { color: #ffd166; }
 .pcard.p-all .pprice { background: #ffe27a; color: #4a2a00; font-size: 15px; }
 .pcard .ribbon { position: absolute; top: -9px; right: 18px; padding: 4px 10px; border-radius: 999px; background: #fff; color: #c2185b; font: 500 10px var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
+.rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
+.tbody.daily .sect { margin-top: 4px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
 .tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
 .tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
@@ -2406,7 +2408,12 @@ window.Board = (function () {
             return '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="4" rx="1.5" fill="' + (got ? 'rgba(255,255,255,0.85)' : c1) + '" opacity="' + (got ? 1 : 0.6) + '"/><text x="12" y="20" text-anchor="middle" font-family="Unbounded, system-ui, sans-serif" font-weight="800" font-size="' + (txt.length > 2 ? 7.5 : 10) + '" fill="' + (got ? '#fff' : c1) + '" stroke="' + (got ? 'rgba(20,20,50,0.35)' : 'none') + '" stroke-width="0.6" paint-order="stroke">' + txt + '</text></svg>'; };
           return '<div class="rblock"><div class="rtop"><b>Days played</b><span>' + (nx ? t.n + ' / ' + nx + ' days' : 'All done') + '</span></div>' +
             '<div class="wbar"><i style="width:' + Math.min(100, t.n / t.days * 100) + '%;background:linear-gradient(90deg,#7ff5e2,#9fc4ff,#ffe27a)"></i>' + [10, 20].map((n) => '<em style="left:' + (n / t.days * 100) + '%"></em>').join('') + '</div>' +
-            '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>'; })();
+            '<div class="drow3">' + goals.map((n, k2) => '<div class="rb">' + badge(['square', DAY_LOOK[k2][0], DAY_LOOK[k2][1]], t.n >= n, num(k2, t.n >= n), 92, d0.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '|' + ['10 days', '20 days', 'Every day'][k2] + ' of Daily') + '<small' + (t.n >= n ? ' class="on"' : '') + '>' + ['10 days', '20 days', 'Every day'][k2] + '</small></div>').join('') + '</div></div>' +
+            (() => { const all = Object.values(prog.daily).filter((e) => e && (e.stars || e.saved)), st = all.reduce((a, e) => a + (e.stars || 0), 0);
+              const FIRE = '<svg viewBox="0 0 24 24"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z" fill="#ff8a3d"/></svg>';
+              const CAL = '<svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z" fill="#7ff5e2"/></svg>';
+              const STR = '<svg viewBox="0 0 24 24"><path d="' + IC.star + '" fill="#ffd166"/></svg>';
+              return '<div class="sect">All time</div><div class="rstats d3">' + [[FIRE, bestStreak(), 'best streak'], [CAL, all.length, 'days played'], [STR, st, 'daily stars']].map(([ic, n, l]) => '<div>' + ic + '<b>' + n + '</b><span>' + l + '</span></div>').join('') + '</div>'; })(); })();
     } else {
       const b = prog.rushBoards || 0, sc = prog.rush || 0;
       const block = (title, list, looks, have, lab, unit) => { const k = list.findIndex((n) => have < n), nx = k < 0 ? null : list[k], prev = k <= 0 ? 0 : list[k - 1];
@@ -2418,7 +2425,7 @@ window.Board = (function () {
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
     panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
-    $('card').classList.add('troc'); if (troTab !== 'worlds') $('card').classList.add('short');
+    $('card').classList.add('troc');
     { const pn = $('panel'), cs = getComputedStyle(pn), inner = pn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); $('card').style.marginTop = Math.max(0, (inner - Math.min(640, inner)) / 2) + 'px'; }
     $('card').querySelectorAll('.bdg.got[data-t]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); showBadge(el); }));
     if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
@@ -2493,9 +2500,12 @@ window.Board = (function () {
   const pad2 = (n) => String(n).padStart(2, '0');
   const dayKey = (d) => d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()); // the day changes at 00:00 UTC for everyone
   const todayKey = () => dayKey(new Date());
-  function streak() { // consecutive days played, one missed day a week forgiven
+  function bestStreak() { // the longest streak ever: the streak as it stood on each day you played
+    let b = 0; for (const k in prog.daily) if (prog.daily[k] && !prog.daily[k].late) b = Math.max(b, streak(k)); return b;
+  }
+  function streak(from) { // consecutive days played, one missed day a week forgiven
     const on = (key) => prog.daily[key] && !prog.daily[key].late; // days played later (after an ad) don't count for the streak
-    let n = 0, gaps = [], d = new Date(); if (!on(dayKey(d))) d.setUTCDate(d.getUTCDate() - 1);
+    let n = 0, gaps = [], d = from ? new Date(from + 'T00:00:00Z') : new Date(); if (!from && !on(dayKey(d))) d.setUTCDate(d.getUTCDate() - 1);
     for (let k = 0; k < 400; k++) {
       const key = dayKey(d);
       if (on(key)) n++;
