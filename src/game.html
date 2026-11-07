@@ -833,7 +833,7 @@ window.Board = (function () {
     const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // one way home everywhere: the house in the corner
     if (html.includes(HB)) html = HOME_X.replace('data-act="back"', 'data-act="home"') + html.replace(HB, '');
     const c = $('card'), was = !$('panel').hidden && !reduceMotion ? c.getBoundingClientRect() : null;
-    c.className = 'card'; c.style.marginTop = ''; c.innerHTML = html; $('panel').hidden = false;
+    c.className = 'card'; c.style.marginTop = ''; c.style.marginBottom = ''; c.innerHTML = html; $('panel').hidden = false;
     if (was && was.height > 0) {
       c.classList.add('swap'); cancelAnimationFrame(swapRaf); c.style.transition = 'none'; c.style.height = was.height + 'px'; // hold the old size until the new one is known
       swapRaf = requestAnimationFrame(() => {
@@ -1340,7 +1340,7 @@ window.Board = (function () {
   const trailCol = new THREE.Color(), fuseCol = new THREE.Color(0xff3355);
   const dashGeo = new THREE.BoxGeometry(0.38, 0.08, 0.15);
   const dashes = new THREE.InstancedMesh(dashGeo, new THREE.MeshBasicMaterial({ color: trailCol }), DMAX);
-  const dashBase = dashes.material.color.clone(), ironCol = new THREE.Color(0xc59bff);
+  const dashBase = dashes.material.color.clone(), ironCol = new THREE.Color(0xb46bff);
   dashes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); dashes.count = 0; dashes.frustumCulled = false; scene.add(dashes);
   // burnt dashes share the same matrices, drawn slightly larger in red over the part the fuse has passed
   const burnt = new THREE.InstancedMesh(dashGeo.clone().scale(1.12, 1.3, 1.3), new THREE.MeshBasicMaterial({ color: fuseCol }), DMAX);
@@ -1610,19 +1610,19 @@ window.Board = (function () {
 
   // ---------- power-ups ----------
   const POWERS = {
-    slow: { label: 'Slow', color: 0x4fd2ff, secs: 7, text: 'Monsters slow down.' },
-    freeze: { label: 'Freeze', color: 0xb8f0ff, secs: 4, text: 'Monsters stop.' },
-    life: { label: '+1 Life', color: 0xff5a7a, secs: 0, text: 'One more life.' },
-    shield: { label: 'Shield', color: 0xffd166, secs: 0, text: 'Blocks the next hit.' },
-    bomb: { label: 'Bomb', color: 0xff8a3d, secs: 0, text: 'Claims the area around it.' },
-    iron: { label: 'Iron Line', color: 0xc59bff, secs: 8, text: 'Monsters bounce off your line.' },
-    time: { label: '+8 Seconds', color: 0x7cf3c4, secs: 0, text: 'More time on the clock.' },
-    boost: { label: 'Speed', color: 0xa6ff4d, secs: 6, text: 'You move much faster.' }
+    slow: { label: 'Slow', color: 0x2f8bff, secs: 7, text: 'Monsters slow down.' },
+    freeze: { label: 'Freeze', color: 0x6ff4ff, secs: 4, text: 'Monsters stop.' },
+    life: { label: '+1 Life', color: 0xff3355, secs: 0, text: 'One more life.' },
+    shield: { label: 'Shield', color: 0xffc21a, secs: 0, text: 'Blocks the next hit.' },
+    bomb: { label: 'Bomb', color: 0xff7a1a, secs: 0, text: 'Claims the area around it.' },
+    iron: { label: 'Iron Line', color: 0xb46bff, secs: 8, text: 'Monsters bounce off your line.' },
+    time: { label: '+8 Seconds', color: 0x2ee6a0, secs: 0, text: 'More time on the clock.' },
+    boost: { label: 'Speed', color: 0xff4fd8, secs: 6, text: 'You move much faster.' }
   };
   function makePower(kind) {
     const g = new THREE.Group();
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.07, 10, 28), new THREE.MeshPhongMaterial({ color: POWERS[kind].color, emissive: POWERS[kind].color, emissiveIntensity: 0.35, shininess: 80 }));
-    g.add(ring);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.07, 10, 28), new THREE.MeshPhongMaterial({ color: POWERS[kind].color, emissive: POWERS[kind].color, emissiveIntensity: 0.55, shininess: 80 }));
+    g.add(ring); const disc = new THREE.Mesh(new THREE.CircleGeometry(0.3, 28), new THREE.MeshBasicMaterial({ color: POWERS[kind].color, transparent: true, opacity: 0.45, depthWrite: false })); disc.position.z = -0.04; g.add(disc); // its colour fills the ring, so you can tell them apart by colour alone
     let icon;
     if (kind === 'life') { const s = new THREE.Shape(); s.moveTo(0, -0.16); s.bezierCurveTo(-0.3, 0.05, -0.12, 0.26, 0, 0.1); s.bezierCurveTo(0.12, 0.26, 0.3, 0.05, 0, -0.16); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xff5a7a })); icon.position.z = -0.03; }
     else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff }); const face = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), m); face.rotation.x = Math.PI / 2; const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshBasicMaterial({ color: 0x1d2a63 })); h.position.set(0, 0.06, 0.04); const h2 = h.clone(); h2.rotation.z = -1.2; h2.position.set(0.05, 0, 0.04); icon.add(face, h, h2); }
@@ -1773,21 +1773,8 @@ window.Board = (function () {
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
   const glowGeo = new THREE.RingGeometry(0.76, 1.12, 40).rotateX(-Math.PI / 2), glowMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending });
-  const lockMat = (() => { // a gold badge with a padlock, floating over a monster your line would trap
-    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
-    x.fillStyle = '#ffd166'; x.strokeStyle = '#1d2a63'; x.lineWidth = 7; x.beginPath(); x.arc(64, 64, 56, 0, Math.PI * 2); x.fill(); x.stroke();
-    x.lineWidth = 9; x.lineCap = 'round'; x.beginPath(); x.arc(64, 54, 17, Math.PI, 0); x.lineTo(81, 62); x.moveTo(47, 54); x.lineTo(47, 62); x.stroke();
-    x.fillStyle = '#1d2a63'; x.fillRect(36, 60, 56, 40); x.fillStyle = '#ffd166'; x.beginPath(); x.arc(64, 78, 6, 0, Math.PI * 2); x.fill(); x.fillRect(61, 80, 6, 11);
-    return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true });
-  })();
-  const locks = [];
-  function trapFx(t) { // the trap hint pulses, glows and carries a lock
-    const p = Math.sin(t * 10); ringMat.opacity = 0.75 + 0.25 * p; glowMat.opacity = 0.22 + 0.16 * p; let n = 0;
-    for (const m of monsters) if (m.ring && m.ring.visible && !m.dead) {
-      let sp = locks[n]; if (!sp) { sp = locks[n] = new THREE.Sprite(lockMat); sp.renderOrder = 6; scene.add(sp); }
-      sp.position.copy(m.mesh.position); sp.position.y += 0.95 + 0.45 * m.sz + 0.06 * p; sp.scale.setScalar(0.9); sp.visible = true; n++;
-    }
-    for (let k = n; k < locks.length; k++) locks[k].visible = false;
+  function trapFx(t) { // the trap hint pulses and glows
+    const p = Math.sin(t * 10); ringMat.opacity = 0.75 + 0.25 * p; glowMat.opacity = 0.22 + 0.16 * p;
   }
   // While you draw: if you kept going straight to land now, which monsters would be trapped?
   // Their area shimmers gold and they get a gold ring.
@@ -2116,6 +2103,7 @@ window.Board = (function () {
     setTimeout(() => flash(POWERS[p.kind].label, POWERS[p.kind].secs ? POWERS[p.kind].secs + ' seconds' : null, 1000), 250);
     arp([880, 1175, 1568], 60, 0.14, 'sine'); buzz('pickup');
   }
+  const POWER_LIFE = 25; // seconds a booster waits on the board
   function spawnPower(force) {
     const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
     const [x, y] = free[(rng() * free.length) | 0];
@@ -2126,6 +2114,7 @@ window.Board = (function () {
     let r = rng() * pool.reduce((t, k) => t + wt(k), 0), kind = force || pool[pool.length - 1];
     if (!force) for (const k of pool) { r -= wt(k); if (r <= 0) { kind = k; break; } }
     powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
+    const [sx, sz] = W2(x, y); burst(sx, 0.2, sz, POWERS[kind].color, 16, 2.5, 4); burst(sx, 0.2, sz, 0xffffff, 10, 2, 3); // it pops up out of the water
   }
 
   // ---------- eaters bite land ----------
@@ -2272,7 +2261,15 @@ window.Board = (function () {
   }
   function contCountdown() { // the Continue offer goes away after 10 seconds
     let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e) { clearInterval(tick); return; } n--; e.textContent = n; e.parentNode.classList.remove('tk'); void e.offsetWidth; e.parentNode.classList.add('tk'); if (n <= 3) { e.parentNode.classList.add('low'); tone(880, 0.06, 'sine', 0.04); }
-      if (n <= 0) { clearInterval(tick); const b = e.closest('button'); const nx = b.nextElementSibling; b.remove(); if (nx) nx.classList.remove('alt'); } }, 1000);
+      if (n <= 0) { clearInterval(tick); const b = e.closest('button'); const nx = b.nextElementSibling; if (nx) nx.classList.remove('alt'); collapse(b, nx); } }, 1000);
+  }
+  function collapse(b, nx) { // remove a button from an open card: the card shrinks from the bottom and its top stays where it was
+    const c = $('card'), bh = b.offsetHeight, h = nx ? nx.getBoundingClientRect().top - b.getBoundingClientRect().top : bh, m0 = parseFloat(c.style.marginBottom) || 0; // the card is centred, so space below it holds its top in place
+    if (reduceMotion) { b.remove(); c.style.marginBottom = (m0 + h) + 'px'; return; }
+    Object.assign(b.style, { height: bh + 'px', overflow: 'hidden', pointerEvents: 'none' }); void b.offsetHeight;
+    Object.assign(b.style, { transition: 'height .3s cubic-bezier(.3,.8,.3,1), margin .3s cubic-bezier(.3,.8,.3,1), padding .3s, opacity .18s', height: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: '0', marginBottom: -(h - bh) + 'px' });
+    c.style.transition = 'margin-bottom .3s cubic-bezier(.3,.8,.3,1)'; c.style.marginBottom = (m0 + h) + 'px';
+    setTimeout(() => { b.remove(); c.style.transition = ''; }, 320);
   }
   async function keepGoing() { // the rewarded Continue: one more life (and 15 seconds on the clock), once per level
     const ok = await window.Ads.showRewarded('continue');
@@ -3256,8 +3253,10 @@ window.Board = (function () {
       const [wx, wz] = W2(p.fx, p.fy);
       if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
       if (live && Math.hypot(p.fx - fx, p.fy - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
-      p.mesh.position.set(wx, Math.max(0, hNow[idx(clamp(p.x, 0, W - 1), clamp(p.y, 0, Hh - 1))]) + 0.55 + Math.sin(p.t * 3) * 0.1, wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5, 0); // faces the camera, gently swaying
-      p.mesh.scale.setScalar(1.5 * Math.min(1, p.t * 3));
+      if (p.t > POWER_LIFE) { p.taken = true; continue; } // left alone too long: it shrinks away
+      const rise = Math.min(1, p.t / 0.55), pop = rise < 1 ? 1 - Math.pow(1 - rise, 3) * Math.cos(rise * 9) : 1; // rises from under the water, overshoots a little, settles
+      p.mesh.position.set(wx, Math.max(0, hNow[idx(clamp(p.x, 0, W - 1), clamp(p.y, 0, Hh - 1))]) - 0.6 + 1.15 * pop + (rise < 1 ? 0 : Math.sin(p.t * 3) * 0.1), wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5 + (1 - rise) * 6, 0); // faces the camera, gently swaying
+      p.mesh.scale.setScalar(1.5 * Math.min(1, p.t * 2.5)); p.mesh.visible = p.t < POWER_LIFE - 3 || Math.sin(p.t * (p.t > POWER_LIFE - 1 ? 40 : 22)) > -0.3; // blinks in its last 3 seconds
     }
     powers = powers.filter((p) => { if (p.taken && p.mesh.scale.x < 0.02) { scene.remove(p.mesh); return false; } return true; });
     drawParticles(dt);
