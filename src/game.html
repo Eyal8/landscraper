@@ -1632,6 +1632,7 @@ window.Board = (function () {
   // Boards: obstacles are land blocks [x0, y0, x1, y1] inside the field (x 2..21, y 2..35); 'shape' trims
   // the field to a round, heart or diamond outline (the land outside it is never eaten or counted).
   const B = (shape, ...obst) => ({ shape, obst });
+  const BOSS_BOARD = { glacier: B('round', [6, 10, 8, 12], [15, 10, 17, 12], [10, 17, 13, 20], [6, 25, 8, 27], [15, 25, 17, 27]) }; // a boss fight that needs more footholds
   const BOARDS = {
     meadow: [B('rect'), B('rect', [10, 17, 13, 20]), B('rect', [6, 10, 8, 13], [15, 24, 17, 27]), B('rect', [5, 6, 7, 8], [16, 6, 18, 8], [5, 29, 7, 31], [16, 29, 18, 31]), B('rect', [10, 15, 13, 22]), B('rect', [2, 18, 7, 19], [16, 18, 21, 19])],
     dunes: [B('rect', [2, 18, 9, 19], [14, 18, 21, 19]), B('rect', [11, 8, 12, 29]), B('rect', [2, 12, 14, 13], [9, 24, 21, 25]), B('rect', [6, 6, 7, 31], [16, 6, 17, 31]), B('rect', [8, 16, 15, 17], [11, 12, 12, 21]), B('rect', [2, 11, 15, 12], [8, 25, 21, 26])],
@@ -1645,7 +1646,7 @@ window.Board = (function () {
   const LINEUPS = {
     meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bess'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzess'],
-    glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhhzzpss'],
+    glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhzzpss'],
     reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhhzzppicc'],
     volcano: ['bbl', 'bbzl', 'bzjl', 'bbzjlc', 'bbzpjlc', 'bzlw', 'bbzjlw', 'bzhjlc', 'bbzpjlc', 'bbzphjlc', 'bbu', 'bbzu', 'bzhju', 'bbzpluc', 'bbzphjluc', 'bzlu', 'bbzpjluc', 'bzhpiluc', 'bbzphijluc', 'Bbhzpjcuc']
   };
@@ -1669,7 +1670,7 @@ window.Board = (function () {
       LEVELS.push({
         id: wd.id + '-' + String(l + 1).padStart(2, '0'), name: (w + 1) + '-' + (l + 1), w, l, world: w,
         mon, speed: 3.5 + d * 0.16, goal: Math.min(82, [75, 76, 78, 79, 80][w] + (l % 5 === 4 ? 1 : 0)),
-        board: firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
+        board: lineup[l].includes('B') && BOSS_BOARD[wd.id] ? BOSS_BOARD[wd.id] : firstOfWave && l < 10 ? boards[0] : boards[(l * 7 + w) % boards.length],
         time: Math.round(Math.min(130, 50 + 5 * mon.length + l * 1.5 + (lineup[l].includes('B') ? 25 : 0)) / 5) * 5, // about 40% tighter after real play: the clock should push
         powers: w > 0 || l >= 2 ? pool : [], newPower: Object.keys(bo.intro).find((k) => bo.intro[k] - 1 === l) || null,
         boss: lineup[l].includes('B')
