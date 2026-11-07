@@ -393,6 +393,9 @@ h2.shop { color: #ffd166; }
 .sprev .info b { font: 800 22px/1.05 var(--display); }
 .sprev .info span { font: 500 12px/1.4 var(--mono); letter-spacing: 0.04em; color: var(--ink-soft); }
 .sprev .info .tag { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sprev .info .tag { display: inline-flex; align-items: center; gap: 6px; }
+.sprev .info .tag .ic-star { width: 22px; height: 22px; flex: none; }
+.sprev .pvh.silhouette { filter: brightness(0) opacity(0.35); }
 .sprev .info .tag.prem { color: #d2b1ff; }
 .sprev .btn { padding: 11px 12px; font-size: 12px; letter-spacing: 0.08em; box-shadow: 0 3px 0 rgba(10,20,60,0.35); }
 .sprev .btn.alt { background: rgba(255,255,255,0.14); color: var(--ink); }
@@ -2903,34 +2906,71 @@ window.Board = (function () {
     el.querySelector('.unlock-use').focus({ preventScroll: true });
     arp([659, 831, 988, 1319, 1661], 100, 0.28, 'sine'); buzz('clear');
   }
-  function showSkins(viewId) {
-    toMenu(); const th = skinThumbs(), have = totalStars(), st = window.Store, all = st.allSkins();
-    const prevScroll = document.querySelector('.skins') ? document.querySelector('.skins').scrollTop : 0;
-    skinView = typeof viewId === 'string' ? viewId : prog.skin; const sk = SKINS.find((k) => k.id === skinView) || SKINS[0];
-    const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
-      return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
-    const open = skinOpen(sk), on = prog.skin === sk.id;
+  function skinInfo(sk) {
+    const have = totalStars(), open = skinOpen(sk), on = prog.skin === sk.id;
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
-    const tag = sk.pack ? '<span class="tag prem">' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + (sk.stars ? STAR + ' ' + sk.stars + ' stars' : 'Free') + '</span>';
+    const tag = sk.pack ? '<span class="tag prem">' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + (sk.stars ? STAR + sk.stars + ' stars' : 'Free') + '</span>';
     const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' to unlock.';
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
-      sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + st.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
+      sk.pack ? '<button class="btn" type="button" data-act="buy">Get the pack · ' + window.Store.price(sk.pack) + '</button><button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>' :
       '<button class="btn alt" type="button" data-act="try">Try 1 level' + adTag() + '</button>';
-    const big = th[sk.id];
+    return tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act;
+  }
+  function updateSkinView(id) {
+    const sk = SKINS.find((k) => k.id === id) || SKINS[0], preview = document.querySelector('#card .sprev');
+    if (!preview) return;
+    const changed = skinView !== sk.id; skinView = sk.id;
+    preview.style.setProperty('--pk', sk.pack ? PACK_TINT[sk.pack] : '#ffb547');
+    preview.querySelector('.info').innerHTML = skinInfo(sk);
+    const holder = preview.querySelector('.pvh'), silhouette = !sk.pack && !skinOpen(sk);
+    holder.classList.toggle('silhouette', silhouette);
+    holder.setAttribute('role', 'img'); holder.setAttribute('aria-label', sk.name + (silhouette ? ' locked silhouette' : ' 3D preview'));
+    if (changed || !holder.querySelector('canvas')) {
+      const big = skinThumbs()[sk.id]; holder.innerHTML = big ? '<img alt="" src="' + big + '">' : '';
+      livePreview(sk, holder);
+    }
+    // Keep the grid, scroll position and focus; only changed markers and labels are updated.
+    document.querySelectorAll('#card [data-skin]').forEach((button) => {
+      const k = SKINS.find((x) => x.id === button.dataset.skin), open = skinOpen(k), on = prog.skin === k.id;
+      for (const [cls, value] of [['on', on], ['view', k.id === sk.id && !on], ['locked', !open]]) if (button.classList.contains(cls) !== value) button.classList.toggle(cls, value);
+      const label = on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars';
+      if (button.querySelector('small').textContent !== label) button.querySelector('small').textContent = label;
+      const lock = button.querySelector('.lk'); if (open && lock) lock.remove(); else if (!open && !lock) button.insertAdjacentHTML('afterbegin', LOCK);
+    });
+    const all = document.querySelector('#card [data-act="all"]'); if (all && window.Store.allSkins()) all.parentElement.remove();
+  }
+  function chooseSkin(sk) {
+    if (!skinOpen(sk)) return;
+    prog.skin = sk.id; saveProg(); wearSkin(sk.id); tone(660, 0.12, 'sine', 0.05, 990); updateSkinView(sk.id);
+  }
+  function showSkins(viewId) {
+    toMenu(); const th = skinThumbs(), have = totalStars(), st = window.Store, all = st.allSkins();
+    const sk = SKINS.find((k) => k.id === (typeof viewId === 'string' ? viewId : prog.skin)) || SKINS[0];
+    skinView = null;
+    const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
+      return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
     panel(HOME_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
-      '<div class="sprev" style="--pk:' + (sk.pack ? PACK_TINT[sk.pack] : '#ffb547') + '">' + '<div class="pvh">' + (big ? '<img alt="" src="' + big + '">' : '') + '</div>' + '<div class="info">' + tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : '') + act + '</div></div>' +
+      '<div class="sprev"><div class="pvh"></div><div class="info"></div></div>' +
       '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn" type="button" data-act="all">All skins · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
-      { back: showHome, all: () => buyIt('allSkins', () => showSkins(sk.id)),
-        use: () => { prog.skin = sk.id; saveProg(); wearSkin(prog.skin); buzz('soft'); tone(660, 0.12, 'sine', 0.05, 990); showSkins(sk.id); },
-        buy: () => buyIt(sk.pack, () => { prog.skin = sk.id; saveProg(); wearSkin(sk.id); showSkins(sk.id); }),
-        try: async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialPending = sk.id; startLevel(nextLevel()); } });
-    const grid = document.querySelector('.skins'); if (grid) grid.scrollTop = prevScroll;
-    livePreview(sk, document.querySelector('.pvh'));
-    document.querySelectorAll('[data-skin]').forEach((b) => b.addEventListener('click', () => {
-      const k = SKINS.find((x) => x.id === b.dataset.skin); buzz('select');
-      if (k.id === skinView && skinOpen(k) && prog.skin !== k.id) { prog.skin = k.id; saveProg(); wearSkin(k.id); tone(660, 0.12, 'sine', 0.05, 990); }
-      showSkins(k.id);
-    }));
+      { back: showHome, all: () => buyIt('allSkins', () => updateSkinView(skinView)) });
+    updateSkinView(sk.id);
+    // One listener survives changes to the chosen skin's info and action buttons.
+    document.querySelector('#card .sprev .info').addEventListener('click', async (e) => {
+      const button = e.target.closest('[data-act]'); if (!button) return;
+      e.stopPropagation(); buzz('select'); const viewed = SKINS.find((k) => k.id === skinView);
+      if (button.dataset.act === 'use') chooseSkin(viewed);
+      else if (button.dataset.act === 'buy') buyIt(viewed.pack, () => chooseSkin(viewed));
+      else if (button.dataset.act === 'try') {
+        const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; }
+        trialPending = viewed.id; startLevel(nextLevel());
+      }
+    });
+    document.querySelector('.skins').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-skin]'); if (!button) return;
+      e.stopPropagation(); const k = SKINS.find((x) => x.id === button.dataset.skin); buzz('select');
+      if (k.id === skinView && skinOpen(k) && prog.skin !== k.id) chooseSkin(k);
+      else if (k.id !== skinView) updateSkinView(k.id);
+    });
   }
   // ---------- tutorial (first level only) ----------
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
