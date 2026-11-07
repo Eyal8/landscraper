@@ -2076,11 +2076,14 @@ window.Board = (function () {
     const x = i % W, y = (i / W) | 0;
     if (fixed[i] === 2 || cells[i] !== LAND) return false; // the outer frame and the board's outline are never eaten
     if (fixed[i]) { fixed[i] = 0; total++; } // an eaten obstacle becomes ordinary sea that you can claim back
-    if ((x === px && y === py) || (x === tx && y === ty)) return false;
+    const under = (x === px && y === py) || (x === tx && y === ty);
+    if (under && (state !== 'play' || invuln > 0 || hideT > 0 || enterT > 0 || shieldOn)) return false; // just landed, shielded or between lives: the ground holds
     cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = 0; setMask(i); mask.needsUpdate = true;
     const [wx, wz] = W2(x, y); burst(wx, H_LAND, wz, 0xc9a27a, 14, 2.5, 4);
     chomp(); buzz('eat');
-    pct = percent(); drawHud(); return true;
+    pct = percent(); drawHud();
+    if (under) die('your land was eaten');
+    return true;
   }
 
   // ---------- level flow ----------
@@ -2162,6 +2165,7 @@ window.Board = (function () {
     'a buzzsaw caught you on land': ['The saw got you', 'Buzzed!', 'Sliced!'],
     'a crab pinched you': ['Pinched!', 'The crab got you', 'Snip snap!'],
     'a jellyfish bolt hit you': ['Zapped!', 'Shocked!', 'The bolt got you'],
+    'your land was eaten': ['Eaten from under you!', 'Chomped your spot!', 'The ground is gone!'],
     'an eel caught you': ['The eel got you', 'Slurp!', 'Eel attack!'] };
   const OUCH = ['Ouch!', 'Oops!', 'Whoa!', 'Argh!', 'Yikes!'];
   const pick = (a) => a[(Math.random() * a.length) | 0];
@@ -3322,6 +3326,7 @@ window.Board = (function () {
       const [lx, ly] = cellsXY[cellsXY.length - 1]; px = tx = lx; py = ty = ly; stepP = 1; dir = null; queue = [];
       if (close) claim();
     },
+    eatUnder() { invuln = 0; const m = { kind: 'eater' }; return eat(idx(px, py), m); }, place(x, y) { px = tx = x; py = ty = y; stepP = 1; dir = null; },
     setLives(n) { lives = n; drawHud(); }, power(kind, x, y) { powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 }); },
     fuseAt(k) { lightFuse(k); }, unlockAll() { LEVELS.forEach((x) => { prog.done[x.id] = true; }); saveProg(); }, get levels() { return LEVELS.map((x) => x.id); }, get mode() { return mode; }, get rushTime() { return rushTime; }, startDaily, startRush, showHome, get bossHp() { return bossHp; }
   };
