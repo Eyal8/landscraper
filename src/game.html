@@ -1126,25 +1126,28 @@ window.Board = (function () {
   // ---------- the player: a little hover drone ----------
   const drone = new THREE.Group();
   const body = new THREE.Group(); drone.add(body);
-  const white = new THREE.MeshPhongMaterial({ color: 0x2f86ff, shininess: 110, specular: 0xffffff, emissive: 0x001a44 }); // the drone's body: electric blue (the motorboat is the red one)
-  const accent = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x888888 });
-  const dark = new THREE.MeshPhongMaterial({ color: 0x1c2240, shininess: 120, specular: 0x8899ff });
-  const glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
-  const hull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 18), white); hull.scale.set(1, 0.72, 1); body.add(hull);
-  const band = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 10, 32), accent); band.rotation.x = Math.PI / 2; body.add(band);
-  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2), dark); visor.rotation.x = Math.PI / 2; visor.position.set(0, 0.05, 0.22); visor.scale.set(1.15, 1, 0.55); body.add(visor);
-  for (const sx of [-0.08, 0.08]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glow); e.position.set(sx, 0.07, 0.36); body.add(e); }
-  const rotors = [];
-  for (let k = 0; k < 4; k++) {
-    const a = Math.PI / 4 + k * Math.PI / 2, arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.07), white);
-    arm.position.set(Math.cos(a) * 0.36, 0.12, Math.sin(a) * 0.36); arm.rotation.y = -a; body.add(arm);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), accent); hub.position.set(Math.cos(a) * 0.52, 0.15, Math.sin(a) * 0.52); body.add(hub);
-    const disc = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
-    disc.position.set(Math.cos(a) * 0.52, 0.2, Math.sin(a) * 0.52); body.add(disc);
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.015, 0.05), dark); blade.position.copy(disc.position); body.add(blade); rotors.push(blade);
+  function makeDrone() {
+    const g = new THREE.Group();
+    const white = new THREE.MeshPhongMaterial({ color: 0x2f86ff, shininess: 110, specular: 0xffffff, emissive: 0x001a44 }); // the drone's body: electric blue (the motorboat is the red one)
+    const accent = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 90, specular: 0x888888 });
+    const dark = new THREE.MeshPhongMaterial({ color: 0x1c2240, shininess: 120, specular: 0x8899ff });
+    const glow = new THREE.MeshBasicMaterial({ color: 0x7ff0ff });
+    const hull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 18), white); hull.scale.set(1, 0.72, 1); g.add(hull);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 10, 32), accent); band.rotation.x = Math.PI / 2; g.add(band);
+    const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2), dark); visor.rotation.x = Math.PI / 2; visor.position.set(0, 0.05, 0.22); visor.scale.set(1.15, 1, 0.55); g.add(visor);
+    for (const sx of [-0.08, 0.08]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glow); e.position.set(sx, 0.07, 0.36); g.add(e); }
+    const rotors = [];
+    for (let k = 0; k < 4; k++) {
+      const a = Math.PI / 4 + k * Math.PI / 2, arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.07), white);
+      arm.position.set(Math.cos(a) * 0.36, 0.12, Math.sin(a) * 0.36); arm.rotation.y = -a; g.add(arm);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), accent); hub.position.set(Math.cos(a) * 0.52, 0.15, Math.sin(a) * 0.52); g.add(hub);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
+      disc.position.set(Math.cos(a) * 0.52, 0.2, Math.sin(a) * 0.52); g.add(disc);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.015, 0.05), dark); blade.position.copy(disc.position); g.add(blade); rotors.push(blade);
+    }
+    g.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
+    return g;
   }
-  // every skin lives inside body; the original drone is one of them. Front is +z.
-  const droneG = new THREE.Group(); while (body.children.length) droneG.add(body.children[0]); body.add(droneG);
   const M = (color, o) => new THREE.MeshPhongMaterial(Object.assign({ color, shininess: 90, specular: 0x666666 }, o || {}));
   const sph = (r, m, sx, sy, sz, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), m); o.scale.set(sx, sy, sz); o.position.set(x, y, z); return o; };
   const boxM = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
@@ -1413,13 +1416,199 @@ window.Board = (function () {
     const crest = new THREE.Mesh(new THREE.OctahedronGeometry(0.085), pale); crest.position.set(0, 0.2, 0.36); g.add(crest);
     return g;
   }
-  droneG.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
+  // The approved detail pass is shared by gameplay, thumbnails and live previews.
+  function detailSkin(sk,g) {
+    const brass=M(0xe6ae46,{shininess:125,specular:0xffecc5}), ivory=M(0xfff5df), navy=M(0x172c4a), teal=M(0x1caeaa), coral=M(0xf45a48), glass=M(0x2788af,{shininess:150,specular:0xe0fbff}), wood=M(0xa96538,{shininess:35});
+    const actions=[], baseScale=g.scale.clone();
+    const add=(o,parent=g)=>{parent.add(o);return o};
+    const sphere=(r,mat,x,y,z,sx=1,sy=1,sz=1,parent=g)=>add(sph(r,mat,sx,sy,sz,x,y,z),parent);
+    const line=(points,mat,r=.012,parent=g)=>add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat),parent);
+    const torus=(r,t,mat,x,y,z,rx=0,ry=0,parent=g)=>{const o=new THREE.Mesh(new THREE.TorusGeometry(r,t,8,28),mat);o.position.set(x,y,z);o.rotation.set(rx,ry,0);return add(o,parent)};
+    const box=(w,h,d,mat,x,y,z,parent=g)=>add(boxM(w,h,d,mat,x,y,z),parent);
+    const cone=(r,h,mat,x,y,z,parent=g)=>{const o=new THREE.Mesh(new THREE.ConeGeometry(r,h,12),mat);o.position.set(x,y,z);return add(o,parent)};
+    const recolor=(o,color)=>{if(o&&o.material&&o.material.color)o.material.color.setHex(color)};
+    const pivot=(o,parent=g)=>{const h=new THREE.Group();h.position.copy(o.position);o.position.set(0,0,0);h.add(o);parent.add(h);return h};
+    const deckLines=(width,length,y,z=0)=>{for(let i=-2;i<=2;i++)box(.009,.008,length,wood,i*width/5,y,z)};
+    const rail=(width,front,back,y,mat=ivory)=>{for(const k of [-1,1]){line([[k*width,y,back],[k*width,y,front*.55],[k*width*.65,y,front],[0,y,front+.07]],mat);for(const z of [back,front*.45])line([[k*width,y-.1,z],[k*width,y,z]],mat,.009)}};
+    const pennant=(x,y,z,parent=g,mat=coral)=>{const flag=box(.13,.07,.008,mat,x,y,z,parent);actions.push((t,b)=>flag.rotation.y=Math.sin(t*(3+5*b))*(.04+.16*b));return flag};
+    const glint=(x,y,z,parent=g)=>sphere(.025,ivory,x,y,z,.7,1.2,.4,parent);
+    const faceDetail=(head,y,z,w)=>{for(const k of[-1,1]){const brow=box(.065,.018,.02,navy,k*w,y,z,head);brow.rotation.z=-k*.12}};
+    if(sk.id==='boat'||sk.id==='goldenboat'){
+      const gold=sk.id==='goldenboat';recolor(g.children[0],gold?0xdba135:0xea3f50);recolor(g.children[2],gold?0x724021:0xb87844);
+      deckLines(.42,.57,.112);rail(.25,.26,-.3,.22,gold?brass:ivory);box(.28,.09,.12,navy,0,.18,-.26);sphere(.045,brass,0,.22,.1,1,.5,1);
+      const wheel=torus(.055,.009,brass,0,.25,.12);wheel.rotation.x=-.45;line([[-.09,.1,-.45],[.09,.1,-.45]],brass,.018);
+      for(const k of[-1,1]){sphere(.026,glass,k*.23,.1,.27);box(.012,.017,.3,ivory,k*.285,-.06,-.02)}
+      if(gold){
+        const old=g.children.find(o=>o.geometry&&o.geometry.type==='OctahedronGeometry');if(old)old.visible=false;
+        const crown=new THREE.Group();crown.position.set(0,.16,.34);g.add(crown);torus(.075,.013,brass,0,0,0,Math.PI/2,0,crown);for(let j=0;j<5;j++){const a=j*Math.PI*2/5;cone(.022,.09,brass,Math.cos(a)*.06,.045,Math.sin(a)*.06,crown);sphere(.013,ivory,Math.cos(a)*.06,.095,Math.sin(a)*.06,1,1,1,crown)}
+        for(const k of[-1,1])line([[k*.24,.12,-.29],[k*.24,.39,-.29],[0,.46,-.29],[-k*.24,.39,-.29]],brass,.012);
+        for(const k of[-1,1])sphere(.027,M(0x3fa9b8),k*.245,.24,.21);
+      }
+      const captain=new THREE.Group();captain.position.set(0,.18,-.1);captain.name='captain';
+      for(const part of g.children.slice(4,8)){part.position.sub(captain.position);captain.add(part)}g.add(captain);
+      actions.push((t,b)=>captain.rotation.z=Math.sin(t*5)*.055*b);
+    } else if(sk.id==='raft'){
+      for(let i=0;i<5;i++){const x=-.32+i*.16;torus(.06,.007,wood,x,.001,.49,0);for(const z of[-.31,.3]){const rope=torus(.08,.012,ivory,x,.01,z,0);rope.scale.x=.9}}
+      for(const k of[-1,1])line([[k*.3,.06,-.25],[0,.85,-.05],[k*.3,.06,.33]],ivory,.008);
+      const sail=g.children.find(o=>o.isGroup);if(sail){const mesh=sail.children[0],position=mesh.geometry.attributes.position,rest=Float32Array.from(position.array);actions.push((t,b)=>{for(let i=0;i<position.count;i++)position.setZ(i,rest[i*3+2]+Math.sin(position.getY(i)*4+t*(2+3*b))*(.008+.035*b)*(1-Math.abs(position.getX(i))/.32));position.needsUpdate=true})}
+    } else if(sk.id==='duck'){
+      recolor(g.children[0],0xffca35);const head=g.children.find(o=>o.isGroup);sphere(.035,coral,-.14,-.045,.18,1.1,.45,.3,head);sphere(.035,coral,.14,-.045,.18,1.1,.45,.3,head);
+      line([[-.055,-.06,.31],[0,-.08,.33],[.055,-.06,.31]],M(0x9c4d16),.007,head);glint(-.115,.095,.2,head);glint(.085,.095,.2,head);
+      for(const k of[-1,1])for(let j=0;j<3;j++){const feather=sphere(.08,M(0xf3a91d),k*.35,.16+j*.025,-.12+j*.07,.25,.35,1.3);feather.rotation.y=k*.15}
+      const wings=g.children.filter(o=>o.isMesh&&Math.abs(o.position.x)>.3&&o.position.y>.1);actions.push((t,b)=>wings.forEach((o,k)=>o.rotation.z=(k?1:-1)*(.3+Math.sin(t*6+k*Math.PI)*.18*b)));
+    } else if(sk.id==='drone'){
+      recolor(g.children[0],0x1677d2);recolor(g.children[1],0x19bdd0);
+      g.children[0].material.shininess=70;g.children[0].material.specular.setHex(0x76a4d0);
+      for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2,x=Math.cos(a)*.52,z=Math.sin(a)*.52;torus(.205,.016,navy,x,.19,z,Math.PI/2);sphere(.025,k%2?coral:teal,x,.13,z)}
+      for(let i=-1;i<=1;i++)box(.035,.016,.15,navy,i*.09,.266,-.08);line([[-.2,.23,.06],[0,.29,.12],[.2,.23,.06]],brass,.008);
+    } else if(sk.id==='turtle'){
+      recolor(g.children[0],0x21745b);for(const o of g.children)if(o.geometry&&o.geometry.type==='CylinderGeometry'&&o.geometry.parameters.radialSegments===6)o.visible=false;
+      for(let i=0;i<7;i++){const a=i*Math.PI/3,r=i===6?0:.205,x=Math.cos(a)*r,z=Math.sin(a)*r;const pl=new THREE.Mesh(new THREE.CylinderGeometry(.108,.116,.035,6),M(i%2?0x74b86d:0x9ccf80,{shininess:45}));pl.position.set(x,.32-r*.16,z);pl.rotation.x=z*.75;pl.rotation.z=-x*.75;add(pl)}
+      const head=g.children.find(o=>o.isGroup&&o.position.z>.4);if(head){faceDetail(head,.09,.09,.07);sphere(.025,coral,-.105,.015,.115,1,.4,.2,head);sphere(.025,coral,.105,.015,.115,1,.4,.2,head)}
+      const fins=g.children.filter(o=>o.isGroup&&Math.abs(o.position.x)>.2);actions.push((t,b)=>fins.forEach((f,k)=>f.rotation.z=Math.sin(t*7+k*Math.PI)*.2*b));
+    } else if(sk.id==='kayak'){
+      recolor(g.children[0],0xf26b37);recolor(g.children[1],0x22bdb6);
+      for(const z of[-.48,.43]){const h=torus(.08,.013,navy,0,.215,z,Math.PI/2);h.scale.z=1.35}
+      const skin=M(0xf3c195),paddler=new THREE.Group();paddler.position.set(0,.21,-.07);paddler.name='kayak-paddler';g.add(paddler);
+      sphere(.1,coral,0,.09,0,.9,1.05,.75,paddler);sphere(.073,skin,0,.25,.025,1,1,1,paddler);sphere(.08,navy,0,.295,.015,1,.5,1,paddler);
+      const paddle=g.children.find(o=>o.isGroup&&o.position.y===.3);
+      if(paddle){
+        paddle.name='kayak-paddle';paddle.rotation.y=0;recolor(paddle.children[0],0x293a4d);for(const blade of paddle.children.slice(1))recolor(blade,0xf7bf43);
+        const up=new THREE.Vector3(0,1,0),delta=new THREE.Vector3();
+        const arms=[-1,1].map(k=>{
+          const upper=add(new THREE.Mesh(new THREE.CylinderGeometry(.023,.025,1,8),coral));
+          const fore=add(new THREE.Mesh(new THREE.CylinderGeometry(.018,.021,1,8),skin));
+          return {k,upper,fore,hand:sphere(.024,skin,0,0,0),shoulder:new THREE.Vector3(),elbow:new THREE.Vector3(),grip:new THREE.Vector3()};
+        });
+        const link=(mesh,a,b)=>{delta.subVectors(b,a);mesh.position.copy(a).add(b).multiplyScalar(.5);mesh.scale.y=delta.length();mesh.quaternion.setFromUnitVectors(up,delta.normalize())};
+        const stroke=(t,b)=>{
+          const phase=t*4;
+          // Each submerged blade sweeps from bow to stern, alternating sides every half cycle.
+          paddle.rotation.set(.06*b,-Math.sin(phase)*.68*b,Math.cos(phase)*.43*b);
+          paddle.position.y=.3+Math.abs(Math.sin(phase))*.035*b;
+          paddler.rotation.y=-Math.sin(phase)*.16*b;paddler.rotation.z=Math.cos(phase)*.045*b;
+          for(const a of arms){
+            a.shoulder.set(a.k*.075,.14,.01).applyEuler(paddler.rotation).add(paddler.position);
+            a.grip.set(a.k*.21,0,0).applyEuler(paddle.rotation).add(paddle.position);
+            a.elbow.copy(a.shoulder).lerp(a.grip,.5);a.elbow.x+=a.k*.04;a.elbow.z-=.055;
+            link(a.upper,a.shoulder,a.elbow);link(a.fore,a.elbow,a.grip);a.hand.position.copy(a.grip);
+          }
+        };
+        stroke(0,0);actions.push(stroke);
+      }
+    } else if(sk.id==='hovercraft'){
+      recolor(g.children[2],0x6550b8);recolor(g.children[3],0x1e628c);
+      for(let i=0;i<14;i++){const a=i*Math.PI*2/14;const r=box(.055,.095,.045,navy,Math.cos(a)*.43,.02,Math.sin(a)*.59);r.rotation.y=-a}
+      const pods=g.children.filter(o=>o.isGroup&&o.position.z<-.3);for(const pod of pods){for(let i=0;i<3;i++){const guard=box(.3,.008,.018,brass,0,0,.052,pod);guard.rotation.z=i*Math.PI/3}torus(.19,.008,navy,0,0,.015,0,0,pod)}
+      for(const k of[-1,1])line([[k*.27,.27,.39],[k*.35,.2,.13],[k*.3,.19,-.17]],brass,.009);
+    } else if(sk.id==='dragonboat'){
+      const head=g.children.find(o=>o.isGroup&&o.position.z>.5);if(head){for(const k of[-1,1]){for(let j=0;j<3;j++){const mane=cone(.09,.19,M(0xbf3349),k*(.12+j*.025),.18-j*.045,-.12,head);mane.rotation.z=-k*(.8+j*.1)}line([[k*.11,.37,-.03],[k*.2,.5,-.08],[k*.18,.57,-.16]],brass,.022,head)}}
+      for(const k of[-1,1])for(let j=0;j<7;j++)sphere(.04,brass,k*.23,.1,-.48+j*.13,1,.5,1.3);
+      const drum=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.12,20),M(0xa63042));drum.position.set(0,.27,-.37);add(drum);torus(.105,.009,brass,0,.335,-.37,Math.PI/2);sphere(.09,ivory,0,.335,-.37,1,.08,1);
+      const oars=g.children.filter(o=>o.geometry&&o.geometry.type==='BoxGeometry'&&o.geometry.parameters.width===.4).map(o=>pivot(o));actions.push((t,b)=>oars.forEach((o,k)=>{o.rotation.x=Math.sin(t*5)*.28*b;o.rotation.y=Math.sin(t*5)*.25*b*(k%2?1:-1)}));
+    } else if(sk.id==='sub'){
+      recolor(g.children[0],0xf2b82c);for(const x of[-.287,.287])for(const z of[.18,-.02,-.22]){torus(.066,.012,brass,x,.14,z,0,Math.PI/2);for(let j=0;j<4;j++){const a=j*Math.PI/2;sphere(.008,navy,x,.14+Math.cos(a)*.065,z+Math.sin(a)*.065)}}
+      torus(.135,.022,brass,0,.1,-.58);for(const k of[-1,1]){const fin=box(.16,.025,.18,navy,k*.29,.06,-.33);fin.rotation.y=-k*.25}
+      const scope=new THREE.Group();scope.position.set(0,.4,-.04);g.add(scope);const oldPeri=g.children[2],oldTip=g.children[3];oldPeri.visible=oldTip.visible=false;box(.035,.22,.035,navy,0,.1,0,scope);box(.055,.055,.12,navy,0,.2,.045,scope);sphere(.023,glass,0,.2,.105,1,1,.4,scope);
+      const bubbles=[];for(let j=0;j<5;j++){const bubble=sphere(.023,M(0xb8edff,{transparent:true,opacity:.55}),0,.1,-.65);bubble.visible=false;bubbles.push(bubble)}actions.push((t,b)=>{scope.rotation.y=Math.sin(t*(1+2*b))*.45;bubbles.forEach((o,k)=>{const a=(t*.8+k/5)%1;o.visible=b>.2;o.position.set(Math.sin(k*2)*.07,.05+a*.35,-.65-a*.35);o.scale.setScalar(1-a)})});
+    } else if(sk.id==='pirate'){
+      const sail=g.children.find(o=>o.isGroup);if(sail){sail.children[1].visible=false;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#202634';x.fillRect(0,0,256,256);x.strokeStyle='#e9c57c';x.lineWidth=9;for(const k of[-1,1]){x.beginPath();x.moveTo(70,195+(k>0?0:-60));x.lineTo(188,135+(k>0?0:60));x.stroke()}x.fillStyle='#fff4dc';x.beginPath();x.ellipse(128,104,48,43,0,0,Math.PI*2);x.fill();x.fillRect(104,128,48,24);x.fillStyle='#202634';for(const a of[110,146]){x.beginPath();x.arc(a,101,12,0,Math.PI*2);x.fill()}x.fillRect(120,125,6,27);x.fillRect(134,125,6,27);sail.children[0].material.map=new THREE.CanvasTexture(c);sail.children[0].material.color.setHex(0xffffff);sail.children[0].material.needsUpdate=true}
+      for(const k of[-1,1])for(const z of[-.25,.02,.25]){sphere(.035,navy,k*.3,-.04,z,1,.9,.65);torus(.04,.009,brass,k*.31,-.04,z,0,Math.PI/2)}rail(.24,.24,-.34,.2,wood);deckLines(.4,.55,.11);pennant(.07,.95,0);
+    } else if(sk.id==='yacht'){
+      rail(.26,.41,-.36,.22);deckLines(.42,.55,.112);for(const k of[-1,1])for(const z of[-.2,-.08,.05]){box(.016,.045,.075,glass,k*.185,.215,z);sphere(.017,brass,k*.275,.12,z)}
+      const life=torus(.065,.018,coral,0,.15,-.37,Math.PI/2);for(let k=0;k<4;k++){const a=k*Math.PI/2;sphere(.018,ivory,Math.cos(a)*.063,.15,-.37+Math.sin(a)*.063)}
+      const radar=box(.17,.03,.04,navy,0,.49,-.2);actions.push((t,b)=>radar.rotation.y=t*(.25+1.2*b));pennant(.06,.53,-.2);
+    } else if(sk.id==='jetski'){
+      for(const k of[-1,1]){line([[k*.21,.12,-.25],[k*.22,.15,.05],[k*.1,.15,.38]],navy,.015);for(let j=0;j<3;j++)box(.025,.015,.065,navy,k*.2,.19,-.18+j*.08)}
+      const rider=new THREE.Group();rider.name='jetski-rider';rider.position.set(0,.22,-.12);g.add(rider);
+      sphere(.095,navy,0,.08,0,.9,1.2,.8,rider);box(.09,.095,.025,coral,0,.1,.075,rider);
+      sphere(.078,M(0xf3be94),0,.25,.025,1,1,1,rider).name='rider-face';
+      sphere(.09,M(0x246bba),0,.31,.015,1,.65,1,rider).name='rider-helmet';
+      sphere(.068,navy,0,.265,.093,1.06,.45,.48,rider);sphere(.052,glass,0,.27,.118,1,.43,.18,rider);
+      line([[-.03,.217,.094],[0,.21,.105],[.03,.217,.094]],navy,.005,rider);
+      for(const k of[-1,1]){line([[k*.07,.15,.01],[k*.12,.08,.17],[k*.16,.1,.24]],coral,.028,rider);sphere(.025,navy,k*.16,.1,.24,1,1,1,rider)}
+      actions.push((t,b)=>rider.rotation.x=-.12*b+Math.sin(t*7)*.02*b);
+    } else if(sk.id==='ufo'){
+      recolor(g.children[0],0x5945a6);for(let k=0;k<12;k++){const a=k*Math.PI/6;const p=box(.1,.025,.07,ivory,Math.cos(a)*.37,.105,Math.sin(a)*.37);p.rotation.y=-a}
+      const orbit=new THREE.Group();orbit.position.y=.03;g.add(orbit);for(let k=0;k<3;k++){const a=k*Math.PI*2/3;sphere(.033,brass,Math.cos(a)*.51,0,Math.sin(a)*.51,1,.5,1,orbit)}actions.push((t,b)=>orbit.rotation.y=t*(.25+1.4*b));
+      for(const k of[-1,1]){line([[k*.06,.34,0],[k*.09,.43,.01]],teal,.008);sphere(.02,coral,k*.09,.44,.01)}
+    } else if(sk.id==='rocket'){
+      recolor(g.children[0],0xf27624);recolor(g.children[1],0xd93750);recolor(g.children[3],0x247e9d);recolor(g.children[4],0x213958);
+      g.children[0].material.shininess=70;g.children[0].material.specular.setHex(0xffbc76);
+      for(const z of[-.22,.25])torus(.167,.008,navy,0,.2,z);
+      for(const k of[-1,1]){const fin=box(.13,.035,.22,coral,k*.18,.1,-.24);fin.rotation.y=k*.3;sphere(.018,brass,k*.1,.34,.05)}
+      const core=cone(.055,.3,new THREE.MeshBasicMaterial({color:0x8eeeff}),0,.2,-.47);core.rotation.x=-Math.PI/2;core.visible=false;actions.push((t,b)=>{core.scale.y=.5+b*(1.2+Math.sin(t*27)*.2);core.visible=b>.05});
+    } else if(sk.id==='astro'){
+      recolor(g.children[0],0x6543b0);recolor(g.children[2],0x285fbd);recolor(g.children[3],0x243651);
+      const helmet=g.children.find(o=>o.isGroup);helmet.name='astronaut-helmet';
+      recolor(helmet.children[0],0xe89c32);helmet.children[1].visible=false;
+      const screen=new THREE.Mesh(new THREE.SphereGeometry(.146,24,16,0,Math.PI,Math.PI*.12,Math.PI*.78),M(0x132c46,{shininess:120,specular:0x6dacc6}));
+      screen.name='astronaut-visor';helmet.add(screen);
+      const rim=torus(.132,.008,brass,0,0,.066,0,0,helmet);rim.scale.y=.88;
+      line([[-.065,.065,.119],[-.025,.085,.115],[.025,.085,.118]],glass,.008,helmet);
+      for(const k of[-1,1]){sphere(.028,navy,k*.14,0,0,1,1,.8,helmet);const leg=box(.065,.13,.08,teal,k*.065,.13,-.025);leg.rotation.x=-.22;actions.push((t,b)=>leg.rotation.x=-.22+Math.sin(t*4+k*Math.PI)*.16*b);box(.08,.045,.13,navy,k*.065,.055,.01);sphere(.026,coral,k*.135,.31,.015)}
+      box(.075,.055,.02,teal,0,.32,.12);box(.12,.018,.025,navy,0,.23,.11);for(const k of[-1,1]){const jet=cone(.028,.13,new THREE.MeshBasicMaterial({color:0x8eefff}),k*.085,.13,-.18);jet.rotation.x=-Math.PI/2;jet.visible=false;actions.push((t,b)=>{jet.visible=b>.1;jet.scale.y=.4+b*(.5+Math.sin(t*19)*.1)})}
+      const arms=g.children.filter(o=>o.geometry&&o.geometry.type==='SphereGeometry'&&Math.abs(o.position.x)===.12);actions.push((t,b)=>arms.forEach((o,k)=>o.rotation.x=Math.sin(t*4+k*Math.PI)*.25*b));
+    } else if(sk.id==='saturn'){
+      const tilt=g.children.find(o=>o.isGroup),ring=new THREE.Mesh(new THREE.RingGeometry(.36,.49,64),M(0xd8bb92,{side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;if(tilt)add(ring,tilt);
+      const moons=new THREE.Group();moons.position.y=.32;g.add(moons);sphere(.047,ivory,.58,.04,0,1,1,1,moons);sphere(.025,teal,-.4,-.04,.28,1,1,1,moons);actions.push((t,b)=>moons.rotation.y=t*(.15+.9*b));
+    } else if(sk.id==='swan'){
+      recolor(g.children[0],0xe84e96);recolor(g.children[1],0xf29bc8);
+      const old=g.children.find(o=>o.geometry&&o.geometry.type==='TorusGeometry');if(old)old.visible=false;
+      line([[0,.2,.2],[0,.36,.14],[0,.55,.22],[0,.52,.32]],g.children[0].material,.055);
+      const feathers=[];for(const k of[-1,1])for(let j=0;j<3;j++){const f=sphere(.11,M(0xcc5ca2),k*(.28+j*.025),.2+j*.025,-.12-j*.06,.35,.35,1.35);f.rotation.z=k*.3;feathers.push(f)}
+      for(let j=0;j<3;j++)cone(.018,.07,brass,Math.sin(j*2.1)*.05,.68,.3+Math.cos(j*2.1)*.05);actions.push((t,b)=>feathers.forEach((f,k)=>f.rotation.z=(k<3?-1:1)*(.3+Math.sin(t*4)*.12*b)));
+    } else if(sk.id==='donut'){
+      recolor(g.children[0],0xb97639);const top=g.children[1],a=top.geometry.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),angle=Math.atan2(y,x);a.setZ(i,a.getZ(i)+Math.sin(angle*7)*.008)}top.geometry.computeVertexNormals();
+      for(let j=0;j<7;j++){const a=j*Math.PI*2/7;sphere(.04,M(0xff4fae),Math.cos(a)*.37,.12,Math.sin(a)*.37,.8,1.6,.8)}
+      for(const o of g.children.slice(2,24)){sphere(.008,o.material,-.03,0,0,1,1,1,o);sphere(.008,o.material,.03,0,0,1,1,1,o)}box(.025,.035,.035,navy,0,.15,-.44);
+      actions.push((t,b)=>g.scale.set(baseScale.x*(1+Math.sin(t*5)*.025*b),baseScale.y*(1-Math.sin(t*5)*.04*b),baseScale.z*(1-Math.sin(t*5)*.018*b)));
+    } else if(sk.id==='croc'){
+      recolor(g.children[0],0x2da566);recolor(g.children[1],0xb8d988);const head=g.children.find(o=>o.isGroup&&o.position.z>.4);if(head){faceDetail(head,.205,-.045,.1);line([[-.1,.1,.05],[0,.13,.12],[.1,.1,.05]],M(0x278153),.009,head)}
+      const tail=g.children.find(o=>o.isGroup&&o.position.z<-.4);if(tail){for(let j=0;j<4;j++){const sc=cone(.035,.075,brass,0,.1-j*.01,-.09-j*.045,tail);sc.rotation.x=-.1}}
+      const feet=g.children.filter(o=>o.geometry&&o.geometry.type==='SphereGeometry'&&o.position.y===.02);actions.push((t,b)=>feet.forEach((f,k)=>f.rotation.y=Math.sin(t*6+k*Math.PI)*.4*b));
+    } else if(sk.id==='unicorn'){
+      const head=g.children.find(o=>o.isGroup);head.name='unicorn-face';
+      recolor(g.children[0],0xb779e0);recolor(head.children[0],0xd8b9ed);
+      // The original eyes sat inside the muzzle. Put the whole eye on its visible surface.
+      for(const o of head.children.slice(3))o.visible=false;
+      for(const k of[-1,1]){
+        const ear=cone(.035,.11,head.children[0].material,k*.085,.09,-.055,head);ear.rotation.z=-k*.25;
+        sphere(.039,navy,k*.078,.035,.132,.95,1.1,.5,head);
+        sphere(.029,ivory,k*.078,.038,.148,1,1.05,.5,head);
+        sphere(.019,navy,k*.078,.04,.163,1,1,.55,head).name='unicorn-eye';
+        sphere(.006,ivory,k*.078-.006,.049,.174,1,1,.5,head);
+        line([[k*.105,.075,.139],[k*.118,.087,.134]],navy,.006,head);
+        sphere(.009,navy,k*.025,-.037,.216,1,.65,.5,head);
+      }
+      line([[-.033,-.061,.211],[0,-.069,.218],[.033,-.061,.211]],navy,.005,head);
+      for(let i=0;i<5;i++)torus(.032-i*.004,.004,ivory,0,.1+i*.025,.02,Math.PI/2,0,head);
+      const strands=[];for(let j=0;j<4;j++){const c=[0xf66b9b,0xf2bd63,0x6dc6cb,0xa28de0][j];strands.push(line([[(j-1.5)*.025,.21,-.4],[(j-1.5)*.04,.22,-.5],[(j-1.5)*.035,.13,-.59]],M(c),.019))}
+      actions.push((t,b)=>strands.forEach((f,k)=>f.rotation.z=Math.sin(t*5+k)*.09*b));
+    }
+    const oldAnim = g.userData.anim, pose = new THREE.Group();
+    pose.name = 'skin-' + sk.id; pose.add(g);
+    const boatLike = ['boat', 'goldenboat', 'pirate', 'yacht', 'kayak', 'jetski', 'dragonboat'].includes(sk.id);
+    let blend = 0, phase = 0;
+    pose.userData.anim = (t, dt, moving) => {
+      if (reduceMotion || dt <= 0) return;
+      blend += (Number(!!moving) - blend) * (1 - Math.exp(-dt * 9));
+      phase += dt * (1 + blend * 0.45);
+      if (oldAnim) oldAnim(phase, dt * (sk.id === 'drone' ? 0.55 + 0.75 * blend : 1), moving);
+      for (const action of actions) action(phase, blend);
+      pose.rotation.x = boatLike ? -0.055 * blend + Math.sin(phase * 4) * 0.015 * blend : Math.sin(phase * 3) * 0.025 * blend;
+      pose.rotation.z = Math.sin(phase * (sk.id === 'drone' ? 5 : 2.8)) * 0.035 * blend;
+      pose.position.y = Math.sin(phase * 4) * 0.018 * blend;
+      if (sk.id === 'donut' || sk.id === 'ufo') g.rotation.y = Math.sin(phase * 1.4) * 0.07 * blend;
+    };
+    return pose;
+  }
   const SKINS = [
     { id: 'boat', name: 'Motorboat', stars: 0, make: makeBoat, lift: 0.3 },
     { id: 'raft', name: 'Raft', stars: 10, make: makeRaft, lift: 0.26 },
     { id: 'duck', name: 'Duck', stars: 30, make: makeDuck, lift: 0.26 },
-    { id: 'drone', name: 'Drone', stars: 60, make: null, lift: 0.55 },
-    { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26 },
+    { id: 'drone', name: 'Drone', stars: 60, make: makeDrone, lift: 0.55 },
+    { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26, preview: 1.15 },
     { id: 'kayak', name: 'Kayak', stars: 150, make: makeKayak, lift: 0.28, preview: 1.25 },
     { id: 'hovercraft', name: 'Hovercraft', stars: 200, make: makeHovercraft, lift: 0.32 },
     { id: 'dragonboat', name: 'Dragon Boat', stars: 250, make: makeDragonBoat, lift: 0.28, preview: 1.4 },
@@ -1437,8 +1626,11 @@ window.Board = (function () {
     { id: 'croc', name: 'Crocodile', pack: 'pool', make: makeCroc, lift: 0.26, sc: 1.1 },
     { id: 'unicorn', name: 'Unicorn', pack: 'pool', make: makeUnicorn, lift: 0.26, sc: 1.1 },
   ];
-  const skinGroups = { drone: droneG };
-  for (const sk of SKINS) if (sk.make) { skinGroups[sk.id] = sk.make(); if (sk.sc) skinGroups[sk.id].scale.setScalar(sk.sc); body.add(skinGroups[sk.id]); }
+  function createSkin(sk) {
+    const g = detailSkin(sk, sk.make()); if (sk.sc) g.scale.setScalar(sk.sc); return g;
+  }
+  const skinGroups = {};
+  for (const sk of SKINS) { skinGroups[sk.id] = createSkin(sk); body.add(skinGroups[sk.id]); }
   let skinNow = SKINS[0];
   function wearSkin(id) { skinNow = SKINS.find((k) => k.id === id) || SKINS[0]; for (const k in skinGroups) skinGroups[k].visible = k === skinNow.id; }
   wearSkin('boat');
@@ -2961,7 +3153,7 @@ window.Board = (function () {
         el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('click', (e) => e.stopPropagation());
       }
       let g = pv.cache[sk.id];
-      if (!g) { g = sk.make ? sk.make() : droneG.clone(true); if (sk.sc) g.scale.setScalar(sk.sc); pv.cache[sk.id] = g; }
+      if (!g) { g = createSkin(sk); pv.cache[sk.id] = g; }
       if (pv.g !== g) { if (pv.g) pv.sc.remove(pv.g); pv.sc.add(g); g.visible = true; g.position.set(0, 0, 0); pv.g = g; }
       pv.cam.position.set(0, 1.55, 3.05).multiplyScalar(sk.preview || 1); pv.cam.lookAt(0, 0.24, 0);
       pv.drag = null; pv.vel = 0; pv.rot = 0.5; pv.r.setSize(size || 128, size || 128);
@@ -3679,6 +3871,7 @@ window.Board = (function () {
     hit() { invuln = hideT = enterT = 0; die('a monster caught you'); },
     setRushTime(v) { rushTime = v; },
     showSkins, get skin() { return skinNow.id; },
+    get skinModel() { return skinGroups[skinNow.id]; }, get previewModel() { return pv && pv.g; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
     setClock(v) { clockT = v; }, get clock() { return clockT; },
