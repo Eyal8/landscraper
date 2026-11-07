@@ -1340,7 +1340,7 @@ window.Board = (function () {
   const trailCol = new THREE.Color(), fuseCol = new THREE.Color(0xff3355);
   const dashGeo = new THREE.BoxGeometry(0.38, 0.08, 0.15);
   const dashes = new THREE.InstancedMesh(dashGeo, new THREE.MeshBasicMaterial({ color: trailCol }), DMAX);
-  const dashBase = dashes.material.color.clone(), ironCol = new THREE.Color(0xb46bff);
+  const dashBase = dashes.material.color.clone(), ironCol = new THREE.Color(0x7d8fae);
   dashes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); dashes.count = 0; dashes.frustumCulled = false; scene.add(dashes);
   // burnt dashes share the same matrices, drawn slightly larger in red over the part the fuse has passed
   const burnt = new THREE.InstancedMesh(dashGeo.clone().scale(1.12, 1.3, 1.3), new THREE.MeshBasicMaterial({ color: fuseCol }), DMAX);
@@ -1613,11 +1613,11 @@ window.Board = (function () {
     slow: { label: 'Slow', color: 0x2f8bff, secs: 7, text: 'Monsters slow down.' },
     freeze: { label: 'Freeze', color: 0x6ff4ff, secs: 4, text: 'Monsters stop.' },
     life: { label: '+1 Life', color: 0xff3355, secs: 0, text: 'One more life.' },
-    shield: { label: 'Shield', color: 0xffc21a, secs: 0, text: 'Blocks the next hit.' },
+    shield: { label: 'Shield', color: 0x3ee05a, secs: 0, text: 'Blocks the next hit.' },
     bomb: { label: 'Bomb', color: 0xff7a1a, secs: 0, text: 'Claims the area around it.' },
-    iron: { label: 'Iron Line', color: 0xb46bff, secs: 8, text: 'Monsters bounce off your line.' },
-    time: { label: '+8 Seconds', color: 0x2ee6a0, secs: 0, text: 'More time on the clock.' },
-    boost: { label: 'Speed', color: 0xff4fd8, secs: 6, text: 'You move much faster.' }
+    iron: { label: 'Iron Line', color: 0xb8c6dc, secs: 8, text: 'Monsters bounce off your line.' },
+    time: { label: '+8 Seconds', color: 0xff4fd8, secs: 0, text: 'More time on the clock.' },
+    boost: { label: 'Speed', color: 0xffd60a, secs: 6, text: 'You move much faster.' }
   };
   function makePower(kind) {
     const g = new THREE.Group();
