@@ -2111,7 +2111,7 @@ window.Board = (function () {
   const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
   const withShield = (fn) => async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
   const SHIELD_I = '<svg class="bi" viewBox="0 0 24 24"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6z" fill="#7fdcff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4 4.8-4.8" fill="none" stroke="#0b3f8f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small class="adt"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>Watch ad</small>');
+  const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small class="adt"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>Ad</small>');
   // an interstitial between levels: never in the first 5 levels, every second level end, at most once per 90 seconds
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
   function levelClear() {
