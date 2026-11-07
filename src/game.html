@@ -862,7 +862,7 @@ window.Board = (function () {
   const SEA = 0, LAND = 1, TRAIL = 2;
   const TRAP_MAX = 40; // a monster enclosed in a sea area this small (cells) is trapped
   const SPEED = 9, FUSE = 2.5; // cells per second; the fuse runs 2.5x faster than you
-  const cells = new Uint8Array(N), fixed = new Uint8Array(N); // fixed: border and obstacles (not counted, never eaten)
+  const cells = new Uint8Array(N), fixed = new Uint8Array(N), fixed0 = new Uint8Array(N); // fixed: border and obstacles (not counted, never eaten)
   const idx = (x, y) => y * W + x;
   const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < Hh;
   const isBorder = (x, y) => x < 2 || y < 2 || x >= W - 2 || y >= Hh - 2;
@@ -1747,6 +1747,7 @@ window.Board = (function () {
       hGoal[k] = hNow[k] = land ? H_LAND : 0; hVel[k] = 0; delay[k] = 0; flashC[k] = 0; trailIdx[k] = -1;
       setTile(k); setMask(k);
     }
+    fixed0.set(fixed); // the board as it was built, so a boss round can put it back
     tiles.instanceMatrix.needsUpdate = true; if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true; mask.needsUpdate = true;
     monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = [];
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
@@ -2031,7 +2032,12 @@ window.Board = (function () {
     state = 'round'; trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; dir = null; queue = [];
     flash('Round ' + bossRoundNo() + ' / 3', 'the sea is back · +20s', 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
     const [cx, cy] = [W / 2, Hh / 2];
-    for (let i = 0; i < N; i++) if (cells[i] === LAND && !fixed[i]) { const x = i % W, y = (i / W) | 0; cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = reduceMotion ? 0 : 0.15 + Math.hypot(x - cx, y - cy) * 0.035; flashC[i] = 1; setMask(i); }
+    total = 0;
+    for (let i = 0; i < N; i++) { // back to the board as it was built: your land goes, eaten obstacles grow back
+      const x = i % W, y = (i / W) | 0, d = reduceMotion ? 0 : 0.15 + Math.hypot(x - cx, y - cy) * 0.035;
+      if (fixed0[i]) { fixed[i] = fixed0[i]; if (cells[i] !== LAND) { cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = d; flashC[i] = 1; setMask(i); } }
+      else { total++; if (cells[i] === LAND) { cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = d; flashC[i] = 1; setMask(i); } }
+    }
     mask.needsUpdate = true;
     for (let k = 0; k < 18; k++) { const [wx, wz] = W2(rand(2, W - 2), rand(2, Hh - 2)); setTimeout(() => burst(wx, 0.3, wz, 0x9fe6ff, 10, 3, 4), k * 45); }
     hideT = 0; enter(1.1);
