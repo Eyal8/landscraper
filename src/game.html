@@ -1625,7 +1625,12 @@ window.Board = (function () {
     g.add(ring); const disc = new THREE.Mesh(new THREE.CircleGeometry(0.3, 28), new THREE.MeshBasicMaterial({ color: POWERS[kind].color, transparent: true, opacity: 0.45, depthWrite: false })); disc.position.z = -0.04; g.add(disc); // its colour fills the ring, so you can tell them apart by colour alone
     let icon;
     if (kind === 'life') { const s = new THREE.Shape(); s.moveTo(0, -0.16); s.bezierCurveTo(-0.3, 0.05, -0.12, 0.26, 0, 0.1); s.bezierCurveTo(0.12, 0.26, 0.3, 0.05, 0, -0.16); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xff5a7a })); icon.position.z = -0.03; }
-    else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff }); const face = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), m); face.rotation.x = Math.PI / 2; const h = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), new THREE.MeshBasicMaterial({ color: 0x1d2a63 })); h.position.set(0, 0.06, 0.04); const h2 = h.clone(); h2.rotation.z = -1.2; h2.position.set(0.05, 0, 0.04); icon.add(face, h, h2); }
+    else if (kind === 'slow') { icon = new THREE.Group(); const m = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 }), d = new THREE.MeshBasicMaterial({ color: 0x1d2a63 }); // a snail
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 10), m); body.scale.set(2.1, 0.55, 0.8); body.position.set(0.01, -0.1, 0);
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.115, 18, 14), m); shell.scale.z = 0.6; shell.position.set(-0.04, 0.02, 0.01);
+      const sp = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.016, 8, 20, Math.PI * 1.6), d); sp.position.set(-0.04, 0.02, 0.08); sp.rotation.z = 0.6; const sc = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), d); sc.position.set(-0.035, 0.025, 0.085);
+      icon.add(body, shell, sp, sc);
+      for (const a of [0.25, 0.6]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.13, 6), m); st.position.set(0.17 + a * 0.04, -0.02, 0); st.rotation.z = -a; const tip = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), m); tip.position.set(0.17 + a * 0.04 + Math.sin(a) * 0.065, -0.02 + Math.cos(a) * 0.065, 0); icon.add(st, tip); } }
     else if (kind === 'shield') { const sh = new THREE.Shape(); sh.moveTo(0, 0.2); sh.lineTo(0.16, 0.13); sh.lineTo(0.13, -0.06); sh.quadraticCurveTo(0.06, -0.17, 0, -0.21); sh.quadraticCurveTo(-0.06, -0.17, -0.13, -0.06); sh.lineTo(-0.16, 0.13); sh.closePath(); icon = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }), new THREE.MeshPhongMaterial({ color: 0xffd166, shininess: 120 })); icon.position.z = -0.03; }
     else if (kind === 'bomb') { icon = new THREE.Group(); const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 12), new THREE.MeshPhongMaterial({ color: 0x2a2a3a, shininess: 120 })); const fu = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6), new THREE.MeshPhongMaterial({ color: 0xc9a27a })); fu.position.set(0.06, 0.16, 0); fu.rotation.z = -0.5; const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb340 })); sp.position.set(0.1, 0.21, 0); icon.add(b, fu, sp); }
     else if (kind === 'time') { icon = new THREE.Group(); const gm = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 120 }), sand = new THREE.MeshPhongMaterial({ color: 0xffd166 }); // an hourglass
@@ -1952,7 +1957,7 @@ window.Board = (function () {
   }
   // Timed boosters in the HUD: the booster's icon in its colour, with a ring that drains as time runs out
   const PW_IC = {
-    slow: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM11 7h2v4.4l3.2 1.9-1 1.7L11 12.6z"/></svg>',
+    slow: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12" r="6"/><path d="M9.5 12a2 2 0 1 0 2-2M2 19h15.5a3 3 0 0 0 3-3v-4M20.5 12l-1.5-4M20.5 12l2-3.5"/></g></svg>',
     freeze: '<svg class="ic" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></g></svg>',
     boost: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2 4 14h7l-1.5 8L19 10h-7z"/></svg>',
     iron: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.6"><rect x="1.8" y="7.5" width="11.5" height="9" rx="4.5"/><rect x="10.7" y="7.5" width="11.5" height="9" rx="4.5"/></g></svg>'
@@ -2027,6 +2032,9 @@ window.Board = (function () {
     const n = Math.min(60, fresh.length);
     for (let k = 0; k < n; k++) { const i = fresh[(Math.random() * fresh.length) | 0], [wx, wz] = W2(i % W, (i / W) | 0); setTimeout(() => burst(wx, H_LAND + 0.1, wz, 0xffffff, 2, 1.5, 3.5), delay[i] * 1000 + 120); }
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
+    for (const p of powers) if (!p.taken && p.home === undefined && cells[idx(p.x, p.y)] === LAND) { // a booster inside the land you just claimed is yours: it sparkles, then flies to you
+      p.home = 0.35; const [wx, wz] = W2(p.fx, p.fy); burst(wx, 1, wz, POWERS[p.kind].color, 18, 3, 5); burst(wx, 1, wz, 0xffd166, 10, 2.5, 4); popAt(wx, wz, 'Claimed!', '#ffd166');
+    }
     const before = pct; pct = percent();
     const gained = pct - before, pts = fresh.length * 10 * (1 + (gained >= 12 ? 1 : 0));
     score += pts;
@@ -3252,8 +3260,9 @@ window.Board = (function () {
       p.t += dt;
       const [wx, wz] = W2(p.fx, p.fy);
       if (p.taken) { p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6)); p.mesh.position.y += dt * 3; continue; }
-      if (live && Math.hypot(p.fx - fx, p.fy - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
-      if (p.t > POWER_LIFE) { p.taken = true; continue; } // left alone too long: it shrinks away
+      if (p.home !== undefined) { p.home -= dt; if (p.home < 0) { const k = Math.min(1, dt * 9); p.fx += (fx - p.fx) * k; p.fy += (fy - p.fy) * k; if (Math.hypot(p.fx - fx, p.fy - fy) < 0.7) { takePower(p); continue; } } }
+      else if (live && Math.hypot(p.fx - fx, p.fy - fy) < 1.2) { takePower(p); continue; } // fly through it to collect it
+      if (p.t > POWER_LIFE && p.home === undefined) { p.taken = true; continue; } // left alone too long: it shrinks away
       const rise = Math.min(1, p.t / 0.55), pop = rise < 1 ? 1 - Math.pow(1 - rise, 3) * Math.cos(rise * 9) : 1; // rises from under the water, overshoots a little, settles
       p.mesh.position.set(wx, Math.max(0, hNow[idx(clamp(p.x, 0, W - 1), clamp(p.y, 0, Hh - 1))]) - 0.6 + 1.15 * pop + (rise < 1 ? 0 : Math.sin(p.t * 3) * 0.1), wz); p.mesh.rotation.set(-0.75, Math.sin(p.t * 2) * 0.5 + (1 - rise) * 6, 0); // faces the camera, gently swaying
       p.mesh.scale.setScalar(1.5 * Math.min(1, p.t * 2.5)); p.mesh.visible = p.t < POWER_LIFE - 3 || Math.sin(p.t * (p.t > POWER_LIFE - 1 ? 40 : 22)) > -0.3; // blinks in its last 3 seconds
