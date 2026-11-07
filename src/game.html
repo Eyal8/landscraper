@@ -446,6 +446,24 @@ h2.shop { color: #ffd166; }
 .hint { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; pointer-events: none;
   font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); transition: opacity 0.4s; }
 @media (prefers-reduced-motion: reduce) { #flash, .card, .stars svg.on, .pop { animation: none; transition: none; } }
+
+/* Earned rewards sit above the results without replacing them. */
+#skinUnlock { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; box-sizing: border-box; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(8,15,38,.78); }
+.unlock-card { gap: 12px; background: radial-gradient(ellipse at 50% 35%, #69502e, #242b51 65%); border-color: rgba(255,209,102,.6); box-shadow: 0 0 60px rgba(255,193,57,.16); }
+.unlock-card h2 { color: #fff0bf; font-size: clamp(22px, 6vw, 28px); }
+.unlock-card .kicker { font-size: 10px; }
+.unlock-stage { position: relative; width: min(256px, 100%); aspect-ratio: 1; flex-shrink: 0; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,219,126,.22), transparent 68%); }
+.unlock-preview { position: absolute; inset: 0; }
+#stage .unlock-preview canvas { width: 100% !important; height: 100% !important; }
+.unlock-name { font: 800 23px var(--display); }
+.unlock-card .ic-star { width: 22px; height: 22px; vertical-align: middle; }
+.unlock-card .unlock-hint { font-size: 11px; }
+.unlock-use { background: linear-gradient(#ffe7a2, #ffc34c); color: #49300b; }
+.gold-dust { position: absolute; inset: 0; pointer-events: none; }
+.gold-dust i { position: absolute; left: var(--x); top: var(--y); width: 4px; height: 7px; background: #ffdb7a; box-shadow: 0 0 7px #ffd166; transform: rotate(var(--r)); animation: goldDrift 2.8s ease-in-out var(--d) 2 both; }
+@keyframes goldDrift { 0% { opacity: 0; transform: translateY(-22px) rotate(var(--r)); } 25%,70% { opacity: .85; } 100% { opacity: 0; transform: translateY(38px) rotate(calc(var(--r) + 100deg)); } }
+@media (max-height: 700px) { .unlock-card { gap: 9px; padding: 18px 16px; } .unlock-stage { width: 180px; } }
+@media (prefers-reduced-motion: reduce) { .gold-dust i { animation: none; opacity: .55; } .unlock-card { animation: none; } }
 </style>
 
 <main id="stage" tabindex="-1">
@@ -1277,6 +1295,63 @@ window.Board = (function () {
     g.userData.anim = (t, dt, mv) => { tail.rotation.y = Math.sin(t * (mv ? 7 : 2.4)) * 0.35; head.rotation.x = -Math.abs(Math.sin(t * 1.3)) * 0.12; g.rotation.z = Math.sin(t * 2) * 0.04; };
     return g;
   }
+  function rewardHull(g, mat, width, length, y) {
+    const sh = new THREE.Shape(); sh.moveTo(0, -length); sh.bezierCurveTo(-width, -length * 0.7, -width, length * 0.65, 0, length); sh.bezierCurveTo(width, length * 0.65, width, -length * 0.7, 0, -length);
+    const h = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.035, bevelSegments: 3 }), mat); h.rotation.x = Math.PI / 2; h.position.y = y; g.add(h); return h;
+  }
+  function makeKayak() {
+    const g = new THREE.Group(), coral = M(0xff573d), teal = M(0x18cbb8), dark = M(0x17364a), gold = M(0xffdb62);
+    rewardHull(g, coral, 0.27, 0.77, 0.1); rewardHull(g, teal, 0.235, 0.72, 0.17);
+    g.add(sph(0.17, dark, 0.8, 0.25, 1.7, 0, 0.19, -0.03));
+    g.add(boxM(0.19, 0.1, 0.07, dark, 0, 0.25, -0.19));
+    for (const z of [-0.48, 0.43]) for (const k of [-1, 1]) { const cord = boxM(0.21, 0.015, 0.018, gold, 0, 0.21, z + k * 0.045); cord.rotation.y = k * 0.5; g.add(cord); }
+    const paddle = new THREE.Group(); paddle.position.set(0, 0.3, 0); paddle.rotation.y = 0.65;
+    paddle.add(boxM(1.05, 0.025, 0.025, dark, 0, 0, 0));
+    for (const k of [-1, 1]) paddle.add(sph(0.13, gold, 1.3, 0.12, 0.6, k * 0.56, 0, 0)); g.add(paddle);
+    g.userData.anim = (t, dt, mv) => { paddle.rotation.y = 0.65 + Math.sin(t * (mv ? 5 : 1.4)) * 0.3; paddle.rotation.z = Math.sin(t * (mv ? 5 : 1.4)) * 0.12; }; return g;
+  }
+  function makeHovercraft() {
+    const g = new THREE.Group(), navy = M(0x192c50), pearl = M(0xe2f4ff), teal = M(0x23dccf), glass = M(0x2281b2, { shininess: 150, specular: 0xffffff }), gold = M(0xffd166);
+    g.add(sph(0.43, navy, 1.1, 0.3, 1.5, 0, 0.02, 0)); g.add(sph(0.4, teal, 1.1, 0.15, 1.5, 0, 0.1, 0));
+    g.add(sph(0.36, pearl, 1.1, 0.38, 1.55, 0, 0.17, 0)); g.add(sph(0.25, glass, 1, 0.6, 1.45, 0, 0.32, 0.15));
+    g.add(boxM(0.08, 0.025, 0.38, teal, 0, 0.45, 0.12));
+    const fans = [];
+    for (const k of [-1, 1]) {
+      const pod = new THREE.Group(); pod.position.set(k * 0.3, 0.36, -0.4); g.add(pod);
+      pod.add(new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.035, 10, 28), pearl));
+      const fan = new THREE.Group(); for (let j = 0; j < 5; j++) { const arm = new THREE.Group(); arm.rotation.z = j * Math.PI * 2 / 5; arm.add(boxM(0.055, 0.14, 0.018, navy, 0, 0.07, 0)); fan.add(arm); } pod.add(fan); fans.push(fan);
+      pod.add(sph(0.045, gold, 1, 1, 0.6, 0, 0, 0.025)); g.add(sph(0.045, gold, 1.5, 0.55, 1, k * 0.24, 0.22, 0.48));
+    }
+    g.userData.anim = (t, dt, mv) => fans.forEach((f, k) => { f.rotation.z += dt * (mv ? 32 : 12) * (k ? -1 : 1); }); return g;
+  }
+  function makeDragonBoat() {
+    const g = new THREE.Group(), jade = M(0x21a97a), gold = M(0xffcf56, { shininess: 140, specular: 0xffffff }), red = M(0xc62c45), wood = M(0x753342), ivory = M(0xfff0ce);
+    rewardHull(g, red, 0.32, 0.7, 0.1); rewardHull(g, gold, 0.31, 0.66, 0.16); rewardHull(g, jade, 0.26, 0.61, 0.2);
+    for (const z of [-0.35, -0.1, 0.15]) { g.add(boxM(0.35, 0.055, 0.09, wood, 0, 0.22, z)); for (const k of [-1, 1]) { const oar = boxM(0.4, 0.025, 0.045, gold, k * 0.36, 0.17, z); oar.rotation.y = k * 0.5; g.add(oar); } }
+    const head = new THREE.Group(); head.position.set(0, 0.37, 0.55); g.add(head);
+    head.add(sph(0.15, jade, 0.85, 1.8, 0.85, 0, -0.06, -0.02)); head.add(sph(0.18, jade, 1, 0.85, 1.3, 0, 0.18, 0.05)); head.add(sph(0.13, jade, 1.05, 0.6, 1.5, 0, 0.14, 0.22));
+    head.add(sph(0.11, gold, 1.1, 0.3, 1.45, 0, 0.045, 0.23));
+    for (const k of [-1, 1]) {
+      head.add(sph(0.022, wood, 1, 0.7, 0.6, k * 0.055, 0.2, 0.36));
+      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.023, 0.095, 8), ivory); fang.rotation.z = Math.PI; fang.position.set(k * 0.085, 0.075, 0.3); head.add(fang);
+      const brow = boxM(0.12, 0.035, 0.045, gold, k * 0.115, 0.3, 0.19); brow.rotation.z = -k * 0.3; head.add(brow);
+      const curl = new THREE.CatmullRomCurve3([new THREE.Vector3(k * 0.1, 0.12, 0.28), new THREE.Vector3(k * 0.25, 0.09, 0.31), new THREE.Vector3(k * 0.3, 0.18, 0.24)]); head.add(new THREE.Mesh(new THREE.TubeGeometry(curl, 12, 0.012, 6, false), gold));
+    }
+    head.add(boxM(0.19, 0.028, 0.19, red, 0, 0.065, 0.23)); eyesOn(head, 0.24, 0.18, 0.105, 0.05);
+    for (const k of [-1, 1]) { const horn = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.24, 10), gold); horn.position.set(k * 0.13, 0.39, -0.03); horn.rotation.z = -k * 0.4; head.add(horn);
+      const whisker = boxM(0.23, 0.018, 0.018, ivory, k * 0.2, 0.1, 0.26); whisker.rotation.z = k * 0.35; head.add(whisker); }
+    for (let j = 0; j < 5; j++) { const crest = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.13, 8), red); crest.position.set(0, 0.35 + j * 0.08, 0.43); g.add(crest); }
+    const tail = new THREE.Group(); tail.position.set(0, 0.18, -0.62); const tip = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.38, 12), jade); tip.rotation.x = -0.65; tip.position.set(0, 0.1, -0.08); tail.add(tip); g.add(tail);
+    g.userData.anim = (t, dt, mv) => { head.rotation.y = Math.sin(t * 1.6) * 0.08; tail.rotation.z = Math.sin(t * (mv ? 6 : 2)) * 0.15; }; return g;
+  }
+  function makeGoldenBoat() {
+    const g = makeBoat(), gold = M(0xffc638, { shininess: 150, specular: 0xfff7ce }), pale = M(0xffe9a1, { shininess: 130, specular: 0xffffff });
+    // Retain the original captain and motor; gild the hull, stripe and teak deck.
+    g.children[0].material = gold; g.children[1].material = pale; g.children[2].material = M(0x8a4c22);
+    for (const k of [-1, 1]) { g.add(boxM(0.025, 0.08, 0.55, pale, k * 0.26, 0.19, -0.02)); g.add(sph(0.035, pale, 1, 1, 1, k * 0.26, 0.24, 0.22)); }
+    const crest = new THREE.Mesh(new THREE.OctahedronGeometry(0.085), pale); crest.position.set(0, 0.2, 0.36); g.add(crest);
+    return g;
+  }
   droneG.userData.anim = (t, dt) => { rotors.forEach((r, k) => { r.rotation.y += dt * (k % 2 ? 30 : -30); }); };
   const SKINS = [
     { id: 'boat', name: 'Motorboat', stars: 0, make: makeBoat, lift: 0.3 },
@@ -1284,6 +1359,10 @@ window.Board = (function () {
     { id: 'duck', name: 'Duck', stars: 30, make: makeDuck, lift: 0.26 },
     { id: 'drone', name: 'Drone', stars: 60, make: null, lift: 0.55 },
     { id: 'turtle', name: 'Turtle', stars: 100, make: makeTurtle, lift: 0.26 },
+    { id: 'kayak', name: 'Kayak', stars: 150, make: makeKayak, lift: 0.28, preview: 1.25 },
+    { id: 'hovercraft', name: 'Hovercraft', stars: 200, make: makeHovercraft, lift: 0.32 },
+    { id: 'dragonboat', name: 'Dragon Boat', stars: 250, make: makeDragonBoat, lift: 0.28, preview: 1.4 },
+    { id: 'goldenboat', name: 'Golden Boat', stars: 300, make: makeGoldenBoat, lift: 0.3 },
     { id: 'sub', name: 'Submarine', pack: 'sea', make: makeSub, lift: 0.28, sc: 1.15 },
     { id: 'pirate', name: 'Pirate Ship', pack: 'sea', make: makePirate, lift: 0.3 },
     { id: 'yacht', name: 'Yacht', pack: 'sea', make: makeYacht, lift: 0.3 },
@@ -1724,7 +1803,10 @@ window.Board = (function () {
   const setDev = (on) => { dev = on; try { localStorage.setItem('ls_dev', on ? '1' : '0'); } catch (e) {} };
   const isOpen = (i) => dev || i === 0 || !!prog.done[LEVELS[i - 1].id];
   const nextLevel = () => { const k = LEVELS.findIndex((x, i) => isOpen(i) && !prog.done[x.id]); return k < 0 ? LEVELS.length - 1 : k; };
-  const totalStars = () => Object.values(prog.stars).reduce((a, b) => a + b, 0);
+  const totalStars = () => LEVELS.reduce((n, l) => n + (prog.stars[l.id] || 0), 0);
+  // Only actual best-star improvements enqueue rewards. Existing saves never backfill celebrations.
+  const earnedSkins = SKINS.filter((sk) => !sk.pack && sk.stars > 0);
+  prog.skinUnlocks = [...new Set(Array.isArray(prog.skinUnlocks) ? prog.skinUnlocks : [])].filter((id) => earnedSkins.some((sk) => sk.id === id && totalStars() >= sk.stars));
   const worldStars = (w) => LEVELS.filter((x) => x.w === w).reduce((a, x) => a + (prog.stars[x.id] || 0), 0);
   const worldOpen = (w) => isOpen(LEVELS.findIndex((x) => x.w === w));
 
@@ -2162,7 +2244,8 @@ window.Board = (function () {
   // an interstitial between levels: never in the first 5 levels, every second level end, at most once per 90 seconds
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
   function levelClear() {
-    levelEnds++; const had = earned();
+    if (state !== 'play' || mode === 'rush') return;
+    levelEnds++; const had = earned(), starsBefore = totalStars(), clearedLevel = cur, clearedMode = mode;
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; $('power').innerHTML = '';
     const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= L.goal + 7 ? 1 : 0) + (pct >= L.goal + 14 ? 1 : 0);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
@@ -2174,17 +2257,19 @@ window.Board = (function () {
     if (mode === 'campaign') { const bonus = stars === 3 && lives < 5; if (bonus) { lives++; setTimeout(() => { flash('Bonus life!', 'for a perfect clear', 1300); tone(988, 0.15, 'sine', 0.06, 1480); }, 2300); } prog.lives = lives; }
     if (mode === 'daily' && dailyKey === todayKey()) window.Board.submit('daily', clockT);
     if (mode === 'daily') { const d = dailyKey, was = prog.daily[d] || {}; dailyBest = !was.time || clockT < was.time; prog.daily[d] = { stars: Math.max(was.stars || 0, stars), score: Math.max(was.score || 0, score), time: dailyBest ? +clockT.toFixed(1) : was.time, late: d !== todayKey() && !(savingStreak === d) && (!was.stars || was.late) }; savingStreak = null; }
-    else {
+    else if (mode === 'campaign') {
       if ((prog.stars[L.id] || 0) < stars) prog.stars[L.id] = stars;
       delete prog.skipped[L.id];
       if ((prog.best[L.id] || 0) < score) prog.best[L.id] = score;
       newWorld = !prog.done[L.id] && L.l === 19 && cur + 1 < LEVELS.length;
       prog.done[L.id] = true;
+      for (const sk of earnedSkins) if (starsBefore < sk.stars && totalStars() >= sk.stars && !prog.skinUnlocks.includes(sk.id)) prog.skinUnlocks.push(sk.id);
     }
     saveProg();
     const gotNew = earned().filter((k) => !had.includes(k));
     if (gotNew.length) setTimeout(() => { flash('New trophy!', 'see Trophies', 1600); arp([784, 988, 1175, 1568], 90, 0.2); buzz('clear'); }, 4200);
     setTimeout(() => {
+      if (state !== 'clear' || cur !== clearedLevel || mode !== clearedMode) return;
       $('hud').hidden = true;
       const hasNext = mode === 'campaign' && cur + 1 < LEVELS.length, nextIsNewWorld = hasNext && LEVELS[cur + 1].w !== L.w;
       const need = L.goal + (stars === 1 ? 7 : 14) - pct;
@@ -2199,6 +2284,8 @@ window.Board = (function () {
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
+      const results = $('card').firstElementChild;
+      setTimeout(() => { if (results.isConnected && state === 'clear') showSkinUnlock(); }, reduceMotion ? 650 : 2100);
       if (!fill) { [0, 1, 2].forEach((k) => { if (k < stars) setTimeout(() => { tone(880 + k * 220, 0.2, 'triangle'); buzz(k === 2 ? 'claim' : 'soft'); }, 350 + k * 180); }); return; }
       // the bar fills from 0 to what you claimed; each star lights up as the bar passes its mark
       const t0 = performance.now() + 250, dur = reduceMotion ? 1 : 1400; let lit = 0, lastN = -1;
@@ -2341,8 +2428,9 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialActive) { trialActive = false; wearSkin(prog.skin); } onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
+    if ($('skinUnlock')) return;
     if (badgeClose) { badgeClose(); return; }
     if (state === 'play' && !paused) showPause();
     else if (onHome && state === 'menu') AppPlugin.exitApp();
@@ -2360,6 +2448,7 @@ window.Board = (function () {
       '</div>' +
       '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
       { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
+    showSkinUnlock();
   }
 
   // ---------- trophies: one per month of Daily (bronze 10 days, silver 20, gold every day), two per world ----------
@@ -2725,6 +2814,7 @@ window.Board = (function () {
       const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x556699, 0.8)); const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(2, 4, 3); sc.add(dl); const rim = new THREE.DirectionalLight(0xbfe4ff, 0.5); rim.position.set(-3, 2, -3); sc.add(rim);
       const cam = new THREE.PerspectiveCamera(27, 1, 0.1, 50); cam.position.set(1.75, 1.8, 2.55); cam.lookAt(0, 0.24, 0);
       for (const sk of SKINS) {
+        cam.position.set(1.75, 1.8, 2.55).multiplyScalar(sk.preview || 1); cam.lookAt(0, 0.24, 0);
         const g = skinGroups[sk.id], was = g.visible, par = g.parent; g.visible = true; sc.add(g); g.rotation.set(0, 0.5, 0); g.position.set(0, 0, 0);
         r.render(sc, cam); thumbs[sk.id] = r.domElement.toDataURL(); sc.remove(g); par.add(g); g.rotation.set(0, 0, 0); g.visible = was;
       }
@@ -2748,7 +2838,7 @@ window.Board = (function () {
   const groupOf = (k) => k.pack || 'prog';
   const PACK_TINT = { sea: '#3fb0ff', space: '#9b5cff', pool: '#ff7ad9' };
   let skinView = null, pv = null;
-  function livePreview(sk, holder) { // the chosen skin turning slowly; drag to spin it
+  function livePreview(sk, holder, size) { // the chosen skin turning slowly; drag to spin it
     if (!holder) return;
     try {
       if (!pv) {
@@ -2765,15 +2855,53 @@ window.Board = (function () {
       let g = pv.cache[sk.id];
       if (!g) { g = sk.make ? sk.make() : droneG.clone(true); if (sk.sc) g.scale.setScalar(sk.sc); pv.cache[sk.id] = g; }
       if (pv.g !== g) { if (pv.g) pv.sc.remove(pv.g); pv.sc.add(g); g.visible = true; g.position.set(0, 0, 0); pv.g = g; }
+      pv.cam.position.set(0, 1.55, 3.05).multiplyScalar(sk.preview || 1); pv.cam.lookAt(0, 0.24, 0);
+      pv.drag = null; pv.vel = 0; pv.rot = 0.5; pv.r.setSize(size || 128, size || 128);
       holder.innerHTML = ''; holder.appendChild(pv.r.domElement);
       if (!pv.raf) { pv.last = performance.now(); const tick = (now) => {
         if (!document.body.contains(pv.r.domElement)) { pv.raf = 0; return; }
         const dt = Math.min(0.05, (now - pv.last) / 1000); pv.last = now;
         if (!pv.drag) { pv.vel *= Math.pow(0.04, dt); pv.rot += dt * (reduceMotion ? 0 : 0.6) + pv.vel * dt; }
-        pv.g.rotation.set(0, pv.rot, 0); if (pv.g.userData.anim) pv.g.userData.anim(now / 1000, dt, false);
+        pv.g.rotation.set(0, pv.rot, 0); if (!reduceMotion && pv.g.userData.anim) pv.g.userData.anim(now / 1000, dt, false);
         pv.r.render(pv.sc, pv.cam); pv.raf = requestAnimationFrame(tick); };
         pv.raf = requestAnimationFrame(tick); }
     } catch (e) { /* no WebGL: the still picture stays */ }
+  }
+  // A separate modal leaves the completed results and their event handlers intact.
+  let unlockFocus = null;
+  function closeSkinUnlock() {
+    const el = $('skinUnlock'); if (!el) return;
+    el.remove(); $('panel').inert = false;
+    if (unlockFocus && unlockFocus.isConnected) unlockFocus.focus({ preventScroll: true });
+  }
+  function showSkinUnlock() {
+    if ($('skinUnlock') || !prog.skinUnlocks.length || (state !== 'menu' && state !== 'clear')) return;
+    const sk = earnedSkins.find((k) => k.id === prog.skinUnlocks[0]); if (!sk) return;
+    unlockFocus = document.activeElement; $('panel').inert = true;
+    const el = document.createElement('div'); el.id = 'skinUnlock'; el.dataset.skin = sk.id;
+    el.innerHTML = '<div class="card unlock-card" role="dialog" aria-modal="true" aria-labelledby="unlockTitle" aria-describedby="unlockMilestone">' +
+      '<div class="kicker">Earned on the water</div><h2 id="unlockTitle">New Skin Unlocked!</h2>' +
+      '<div class="unlock-stage"><div class="unlock-preview" role="img" aria-label="' + sk.name + ' 3D preview"></div><div class="gold-dust" aria-hidden="true">' + Array.from({ length: 22 }, (_, k) => '<i style="--x:' + ((k * 37 + 9) % 100) + '%;--y:' + ((k * 23 + 7) % 100) + '%;--d:' + (k % 7 * 0.18) + 's;--r:' + k * 29 + 'deg"></i>').join('') + '</div></div>' +
+      '<b class="unlock-name">' + sk.name + '</b><p id="unlockMilestone">' + STAR + ' ' + sk.stars + ' campaign stars</p>' +
+      (sk.id === 'raft' ? '<p class="unlock-hint">Change skins anytime from Home › Skins</p>' : '') +
+      '<div class="btns"><button class="btn unlock-use" type="button">Use it</button><button class="btn alt unlock-later" type="button">Later</button></div></div>';
+    stage.append(el);
+    el.addEventListener('pointerdown', (e) => e.stopPropagation()); el.addEventListener('click', (e) => e.stopPropagation());
+    const acknowledge = (use) => {
+      if (use) { prog.skin = sk.id; trialActive = false; trialPending = null; wearSkin(sk.id); }
+      prog.skinUnlocks.shift(); saveProg(); buzz('soft'); closeSkinUnlock(); showSkinUnlock();
+    };
+    el.querySelector('.unlock-use').onclick = () => acknowledge(true);
+    el.querySelector('.unlock-later').onclick = () => acknowledge(false);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === el.querySelector('.unlock-use') ? el.querySelector('.unlock-later') : el.querySelector('.unlock-use')).focus(); }
+      if (e.key === 'Escape') e.preventDefault();
+      e.stopPropagation();
+    });
+    // Render the same model used in the collection and on the board.
+    livePreview(sk, el.querySelector('.unlock-preview'), 256);
+    el.querySelector('.unlock-use').focus({ preventScroll: true });
+    arp([659, 831, 988, 1319, 1661], 100, 0.28, 'sine'); buzz('clear');
   }
   function showSkins(viewId) {
     toMenu(); const th = skinThumbs(), have = totalStars(), st = window.Store, all = st.allSkins();
@@ -3393,6 +3521,8 @@ window.Board = (function () {
     skipIntro() { if (state === 'intro') { hidePanel(); state = 'play'; } }, get ink() { let n = 0; for (let i = 0; i < N; i++) if (inkT[i] > 0) n++; return n; }, get rings() { return monsters.filter((m) => m.ring.visible).length; },
     steer, startLevel, hold(v) { touchHeld = !!v; touchDir = v ? 'any' : null; },
     freeze(v) { testFrozen = !!v; },
+    complete(p = 100) { pct = p; levelClear(); },
+    showSkins, get skin() { return skinNow.id; },
     clearMonsters() { monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = []; },
     addMonster(kind, x, y, vx, vy) { const m = spawnMonster(kind, [x, y]); if (vx !== undefined) { m.vx = vx; m.vy = vy; } },
     setClock(v) { clockT = v; }, get clock() { return clockT; },
