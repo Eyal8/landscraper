@@ -2079,7 +2079,8 @@ window.Board = (function () {
     const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
     const [x, y] = free[(rng() * free.length) | 0];
     let pool = L.powers.filter((k) => k !== 'life' || lives < 5); if (!pool.length) pool = L.powers;
-    const kind = force || pool[(rng() * pool.length) | 0];
+    const low = lives <= 1 || (L.boss && lives <= 2), lifeOut = powers.some((p) => !p.taken && p.kind === 'life');
+    const kind = force || (low && L.powers.includes('life') && !lifeOut ? 'life' : pool[(rng() * pool.length) | 0]); // running out of lives: the next booster is a life
     powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
   }
 
@@ -2198,7 +2199,7 @@ window.Board = (function () {
       return;
     }
     if (mode === 'rush') { rushHit(why); return; }
-    if (!tutorialSafe()) lives--; ouch(); buzz('hit'); shake = 0.35;
+    if (!tutorialSafe()) lives--; if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 2.5); ouch(); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
@@ -2921,7 +2922,7 @@ window.Board = (function () {
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED * (boostT > 0 ? 1.6 : 1)); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
-      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < (L.boss ? 2 : 1)) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.boss ? 9 : L.newPower ? 12 : 18; } }
+      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 2) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.boss ? 9 : L.newPower ? 12 : 18; } }
       if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
     const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
@@ -3323,7 +3324,7 @@ window.Board = (function () {
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, boss: m.boss || null, gen: m.gen || 0, x: m.x, y: m.y, dead: !!m.dead })); },
-    get trailLen() { return trail.length; },
+    get trailLen() { return trail.length; }, get powers() { return powers.filter((p) => !p.taken).map((p) => p.kind); },
     // test bot: run the game without drawing, and read the board
     sim(sec) { const step = 1 / 30; for (let k = 0; k < Math.round(sec / step); k++) { simT += step; update(step, simT); if (state !== 'play' && state !== 'intro') break; } },
     snap() { return { W, Hh, cells: Array.from(cells), px, py, tx, ty, stepP, dir, drawing, state, lives, pct, goal: L.goal, boss: L.boss, bossHp, clock: clockT, entering: hideT > 0 || enterT > 0, speed: L.speed, fuse: !!fuse,
