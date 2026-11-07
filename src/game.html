@@ -2532,7 +2532,7 @@ window.Board = (function () {
     for (let k = 0; k < tail; k++) cal += '<div class="blank"></div>';
     cal += '</div>';
     const playLbl = () => { const pk = dailyPick || today, lbl = pk === today ? 'today' : new Date(pk + 'T00:00:00Z').toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-      return (prog.daily[pk] ? 'Replay ' : 'Play ') + lbl + (pk === today && dailyFree() ? '' : adTag()); };
+      return (prog.daily[pk] ? 'Replay ' : 'Play ') + lbl + (pk === today && dailyFree() ? '<small class="adt" style="visibility:hidden" aria-hidden="true"><svg viewBox="0 0 24 24"></svg>.</small>' : adTag()); }; // same height with or without the ad line, so the card never moves
     const best = done && done.time ? ' · best ' + fmtClock(done.time, true) : '';
     // missed yesterday after a streak? one ad saves it
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
