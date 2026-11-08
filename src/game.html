@@ -24,6 +24,7 @@ body {
 }
 #stage:focus { outline: none; }
 #stage { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--sky1, #7cc8ff) 0%, var(--sky2, #d6efff) 100%); transition: background 0.6s; }
+#stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--world-scene) center / 100% 100% no-repeat; opacity: .62; filter: blur(1px); }
 #stage canvas { position: absolute; inset: 0; display: block; }
 .ts { text-shadow: 0 1px 2px rgba(10, 20, 50, 0.55), 0 1px 10px rgba(10, 20, 50, 0.45); }
 
@@ -526,6 +527,9 @@ h2.shop { color: #ffd166; }
 @media (prefers-reduced-motion: reduce) { #flash, #flash.show, #flash.out, .card, .stars svg.on, .pop { animation: none; transition: none; } #flash, #flash.show, #flash.out { transform: translate(-50%, 0); } }
 
 
+.capture-highlight { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 14px; background: rgba(255,209,102,.1); border: 1px solid rgba(255,209,102,.3); }
+.capture-highlight b { font: 800 13px/1.4 var(--display); color: var(--gold); }
+.capture-highlight span { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
 .trial-ready, .trial-reminder { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 18px; background: rgba(90,175,255,.14); border: 1px solid rgba(140,200,255,.35); overflow-wrap: anywhere; flex-shrink: 0; }
 .trial-ready b, .trial-reminder b { display: block; font: 800 14px/1.3 var(--display); }
 .trial-ready span, .trial-reminder p { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
@@ -1045,6 +1049,50 @@ window.Board = (function () {
   WORLDS.forEach((w, k) => { w.id = WORLD_IDS[k]; });
   const texCache = {};
   const worldTex = (w) => texCache[w.tex] || (texCache[w.tex] = TEX[w.tex]());
+
+  const backdropCache = {};
+  function worldBackdrop(world) { // soft, static scenery; cached independently of gameplay RNG
+    const cw = Math.min(1600, stage.clientWidth), ch = Math.min(1200, stage.clientHeight), key = cw + 'x' + ch;
+    let cached = backdropCache[world.id];
+    if (!cached || cached.key !== key) {
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d'), unit = Math.min(cw, ch);
+      const ridge = (y, amp, color) => {
+        g.fillStyle = color; g.beginPath(); g.moveTo(0, ch); g.lineTo(0, ch * y);
+        g.bezierCurveTo(cw * .18, ch * (y - amp), cw * .35, ch * (y + amp), cw * .53, ch * y);
+        g.bezierCurveTo(cw * .73, ch * (y - amp), cw * .88, ch * (y - amp * .5), cw, ch * (y + amp * .3));
+        g.lineTo(cw, ch); g.closePath(); g.fill();
+      };
+      const polygon = (points, color) => { g.fillStyle = color; g.beginPath(); points.forEach(([x,y],i) => i ? g.lineTo(x*cw,y*ch) : g.moveTo(x*cw,y*ch)); g.closePath(); g.fill(); };
+      const mountains = (points, color) => polygon([[0,1], ...points, [1,1]], color);
+      const glow = (x, y, r, color) => { const gr = g.createRadialGradient(x*cw,y*ch,0,x*cw,y*ch,r*unit); gr.addColorStop(0,color); gr.addColorStop(1,color.replace(/,[^,]+\)$/,',0)')); g.fillStyle=gr; g.fillRect(0,0,cw,ch); };
+      const cloud = (x,y,r) => { g.save(); g.translate(x*cw,y*ch); g.scale(1.8, .65); const gr=g.createRadialGradient(0,0,0,0,0,r*unit); gr.addColorStop(0,'rgba(255,255,255,.7)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.beginPath(); g.arc(0,0,r*unit,0,7); g.fill(); g.restore(); };
+      if (world.id === 'meadow') {
+        cloud(.04,.27,.17); cloud(.97,.4,.18); cloud(.87,.12,.1);
+        ridge(.66,.1,'#a1d99a'); ridge(.8,.09,'#85c879'); ridge(.93,.06,'#70b66a');
+        for (const x of [.035,.12,.88,.975]) { const y=ch*(.67+.035*Math.sin(x*35)), r=unit*.025; g.fillStyle='#6fa87b'; g.fillRect(x*cw-2,y,4,r*2); for(const [dx,dy]of[[-.5,0],[.45,-.2],[0,-.8]]){g.beginPath();g.ellipse(x*cw+dx*r,y+dy*r,r,r*1.25,0,0,7);g.fill()} }
+        for (let i=0;i<16;i++) { const x=cw*(i%2?.96-.018*(i%4):.025+.018*(i%4)), y=ch*(.86+(i%5)*.03), r=unit*.004; g.strokeStyle='#609e64';g.lineWidth=1.5;g.beginPath();g.moveTo(x,y+12);g.lineTo(x,y);g.stroke();g.fillStyle=i%3?'#fff5d4':'#f5b8d0';for(let k=0;k<5;k++){g.beginPath();g.arc(x+Math.cos(k*1.26)*r,y+Math.sin(k*1.26)*r,r,0,7);g.fill()}g.fillStyle='#edc96b';g.beginPath();g.arc(x,y,r*.7,0,7);g.fill(); }
+      } else if (world.id === 'dunes') {
+        glow(.83,.22,.3,'rgba(255,245,204,.7)'); ridge(.57,.1,'#edc68f'); ridge(.73,.13,'#dda971'); ridge(.91,.09,'#ca955f');
+        for(const x of [.045,.95]) { const y=ch*.77,r=unit*.07;g.strokeStyle='#9c9064';g.lineWidth=3;g.lineCap='round';g.beginPath();g.moveTo(x*cw,y+r);g.quadraticCurveTo(x*cw+r*.15,y+r*.35,x*cw,y);g.stroke();g.strokeStyle='#929d70';g.lineWidth=5;for(const d of[-1,1])for(const dy of[-.3,.1]){g.beginPath();g.moveTo(x*cw,y);g.quadraticCurveTo(x*cw+d*r*.5,y-r*.35,x*cw+d*r*.75,y+r*dy);g.stroke()} }
+      } else if (world.id === 'glacier') {
+        cloud(.08,.2,.17); cloud(.95,.34,.16);
+        mountains([[0,.67],[.08,.49],[.19,.66],[.35,.4],[.51,.67],[.7,.44],[.86,.65],[1,.47]],'#b3c9e9');
+        polygon([[.02,.6],[.08,.49],[.13,.57],[.09,.55]],'#f0f6ff'); polygon([[.29,.49],[.35,.4],[.43,.53],[.36,.49]],'#edf5ff'); polygon([[.63,.53],[.7,.44],[.78,.56],[.7,.52]],'#f2f7ff');
+        ridge(.79,.08,'#cddfed'); ridge(.93,.045,'#e5eef5');
+      } else if (world.id === 'reef') {
+        glow(.15,.15,.5,'rgba(230,255,249,.35)'); ridge(.64,.08,'#98d6cc'); ridge(.8,.1,'#74c2bd'); ridge(.95,.04,'#dddbc1');
+        g.strokeStyle='rgba(242,255,255,.65)';g.lineWidth=2;for(let i=0;i<12;i++){const x=cw*(i%2?.95:.04)+Math.sin(i*2)*unit*.025,y=ch*(.25+(i%6)*.1);g.beginPath();g.arc(x,y,unit*(.006+(i%3)*.004),0,7);g.stroke()}
+        for(const [x,col]of[[.025,'#e0a1b2'],[.975,'#d5b4a1']]){const bx=cw*x,by=ch*.98,r=unit*.1;g.strokeStyle=col;g.lineWidth=6;g.lineCap='round';for(const d of[-1,0,1]){g.beginPath();g.moveTo(bx,by);g.bezierCurveTo(bx+d*r*.3,by-r*.3,bx+d*r*.6,by-r*.5,bx+d*r*.45,by-r);g.stroke();g.beginPath();g.moveTo(bx+d*r*.25,by-r*.4);g.lineTo(bx+d*r*.7,by-r*.65);g.stroke()}}
+      } else {
+        glow(.15,.7,.35,'rgba(255,191,108,.65)'); mountains([[0,.72],[.14,.42],[.3,.69],[.48,.55],[.65,.74],[.84,.45],[1,.69]],'#8f7583');
+        mountains([[0,.9],[.16,.73],[.35,.91],[.56,.72],[.76,.87],[.93,.68],[1,.82]],'#6c6071'); ridge(.95,.05,'#514b60');
+        for(const x of [.14,.84]){g.strokeStyle='#eea17a';g.lineWidth=3;g.beginPath();g.moveTo(x*cw,ch*.46);g.lineTo((x+.025)*cw,ch*.57);g.lineTo((x-.01)*cw,ch*.66);g.stroke()}
+        for(let i=0;i<12;i++)glow(i%2?.96:.04,.68+(i%5)*.06,.012,'rgba(255,211,154,.5)');
+      }
+      cached = backdropCache[world.id] = {key, url:c.toDataURL()};
+    }
+    stage.style.setProperty('--world-scene', 'url("' + cached.url + '")'); stage.dataset.world = world.id;
+  }
 
   // ---------- floor: animated water with grid and shoreline foam ----------
   const maskData = new Uint8Array(N * 4);
@@ -2102,7 +2150,7 @@ window.Board = (function () {
   // ---------- game state ----------
   let startLives = 3, state = 'menu', paused = false, frozenT = 0, slowT = 0, boostT = 0, cur = 0, L = LEVELS[0], lives = 3, score = 0, pct = 0, total = 0;
   let px = 0, py = 0, tx = 0, ty = 0, stepP = 1, dir = null, queue = [], drawing = false, trail = [], trailFrom = 0, monsters = [], powers = [], invuln = 0, lastLand = [0, 0];
-  let clockT = 0, timePending = 0;
+  let clockT = 0, timePending = 0, bestCapture = 0, bestCaptureBonus = 0;
   const fmtClock = (t, tenths) => { t = Math.max(0, t); const m = Math.floor(t / 60), sec = t - m * 60; return m + ':' + (tenths ? sec.toFixed(1).padStart(4, '0') : String(Math.ceil(sec - 1e-9) === 60 ? 59 : Math.floor(sec)).padStart(2, '0')); };
   const clockOn = () => (mode === 'campaign' && L.time && !tutorialSafe()) || mode === 'daily';
   let powersSeen = false, fuse = null, powerTimer = 0, shake = 0, clearT = 0, testFrozen = false, shieldOn = false, ironT = 0, bossHp = 0, mode = 'campaign';
@@ -2116,7 +2164,7 @@ window.Board = (function () {
     baseMat.color.setHex(w.side).multiplyScalar(0.7);
     floorMat.uniforms.uDeep.value.set(w.deep); floorMat.uniforms.uShallow.value.set(w.shallow); floorMat.uniforms.uFoam.value.set(w.foam);
     trailCol.setHex(w.trail);
-    stage.style.setProperty('--sky1', w.sky[0]); stage.style.setProperty('--sky2', w.sky[1]);
+    stage.style.setProperty('--sky1', w.sky[0]); stage.style.setProperty('--sky2', w.sky[1]); worldBackdrop(w);
   }
   function inShape(shape, x, y) {
     const u = (x + 0.5 - 12) / 10, v = (y + 0.5 - 19) / 17;
@@ -2373,6 +2421,10 @@ window.Board = (function () {
   const W2 = (x, y) => [x + ox, y + oz];
 
   // ---------- claiming ----------
+  const captureTitle = (n) => n === 1 ? 'Trapped!' : n === 2 ? 'Double trap!' : n === 3 ? 'Triple trap!' : n === 4 ? 'Quadruple trap!' : n.toLocaleString() + '× trap!';
+  function captureSummary() {
+    return bestCapture < 2 ? '' : '<div class="capture-highlight"><b>Best capture · ' + captureTitle(bestCapture) + '</b><span>' + bestCapture + ' monsters at once · +' + bestCaptureBonus.toLocaleString() + ' capture bonus</span></div>';
+  }
   function claim() {
     // the part the fuse already burnt turns back to sea; only the rest of the line becomes land
     const burntN = fuse ? Math.min(trail.length, Math.floor(fuse.pos)) : 0;
@@ -2444,7 +2496,8 @@ window.Board = (function () {
       }
       trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
       const bonus = 250 * trapped.length * trapped.length; score += bonus;
-      flash(trapped.length > 1 ? 'Double trap!' : 'Trapped!', '+' + bonus, 1300);
+      if (trapped.length > bestCapture) { bestCapture = trapped.length; bestCaptureBonus = bonus; }
+      flash(captureTitle(trapped.length), '+' + bonus.toLocaleString() + ' capture bonus', 1300);
       arp([392, 523, 784, 1047], 60, 0.16, 'triangle'); buzz('trap'); shake = 0.25;
     } else if (gained >= 12) { flash('Huge claim!', '+' + gained + '%'); arp([523, 659, 784, 1047], 70); buzz('big'); shake = 0.2; }
     else if (fresh.length) { tone(560 + gained * 30, 0.16, 'triangle'); buzz('claim'); }
@@ -2600,7 +2653,7 @@ window.Board = (function () {
       const bar = fill ? '<div class="endbar ' + mode + '"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
-        '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
+        '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' + captureSummary() +
         '<div class="btns">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : '') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
@@ -2672,7 +2725,7 @@ window.Board = (function () {
     const trialReward = canGo ? null : finishSkinTrial();
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
-    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' +
+    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' + captureSummary() +
       '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt" type="button" data-act="retryS">' + SHIELD_I + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
@@ -2708,6 +2761,7 @@ window.Board = (function () {
     begin(typeof i === 'number' ? i : levelIndex(i));
   }
   function begin(lv) {
+    bestCapture = bestCaptureBonus = 0;
     pauseExitPending = pauseLevelsOpen = false;
     if (trialContinueOffer) finishSkinTrial();
     trialContinueOffer = false; trialActive = null; clearOwnedTrial();
@@ -3124,7 +3178,7 @@ window.Board = (function () {
       if (mode !== 'rush' || state !== 'over') return;
       $('hud').hidden = true;
       if (!rushExtra) { // one chance per run to keep going
-        panel('<div class="kicker">Rush</div><h2>Time!</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared</p>' +
+        panel('<div class="kicker">Rush</div><h2>Time!</h2><div class="big">' + rushTotal.toLocaleString('en-US') + '</div><p>' + rushBoard + (rushBoard === 1 ? ' board' : ' boards') + ' cleared</p>' + captureSummary() +
           '<div class="btns"><button class="btn" type="button" data-act="more">+15 seconds' + adTag() + '</button><button class="btn alt" type="button" data-act="end">End run</button></div>',
           { more: async () => { const ok = await window.Ads.showRewarded('rushTime'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } trialContinueOffer = false; rushExtra = true; rushTime = 15; hidePanel(); $('hud').hidden = false; state = 'play'; paused = false; enter(0.3); drawHud(); },
             end: () => { rushExtra = true; rushFinal(); } });
@@ -3139,7 +3193,7 @@ window.Board = (function () {
     window.Board.submit('rush', rushTotal);
     {
       panel('<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush' + (best ? ' win' : '') + '">' + (best ? 'New best!' : 'Time!') + '</h2><div class="big rscore">' + rushTotal.toLocaleString('en-US') + '</div>' +
-        '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + rushBoard + '</b><span>' + (rushBoard === 1 ? 'board' : 'boards') + (bestB ? ' · best!' : '') + '</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div></div>' +
+        captureSummary() + '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + rushBoard + '</b><span>' + (rushBoard === 1 ? 'board' : 'boards') + (bestB ? ' · best!' : '') + '</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div></div>' +
         '<div class="btns"><button class="btn go-rush" type="button" data-act="again">Play again</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { again: adBreak(startRush), home: adBreak(showHome), lb: () => window.Board.show('rush') });
       showTrialReminder(trialReward);
@@ -3850,6 +3904,7 @@ window.Board = (function () {
   }
 
   function resize() {
+    worldBackdrop(WORLDS[L.world]);
     const w = stage.clientWidth, top = $('hud').hidden ? 0 : Math.ceil($('hud').getBoundingClientRect().height), h = Math.max(1, stage.clientHeight - top);
     renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
     renderer.domElement.style.top = top + 'px'; renderer.domElement.style.bottom = 'auto';
