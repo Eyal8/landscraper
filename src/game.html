@@ -82,6 +82,7 @@ body {
 .endbar { margin-top: 22px; }
 .endbar.daily .track i.goal { background: linear-gradient(90deg, #7ff5e2, #34cdb6); } .endbar.daily .tk.hit .tks { color: #7ff5e2; filter: drop-shadow(0 0 6px rgba(127,245,226,0.9)); }
 .endbar .tk span { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); font: 500 10px var(--mono); letter-spacing: 0.04em; color: rgba(255,255,255,0.45); transition: color 0.2s, transform 0.25s cubic-bezier(.2,.9,.3,1.8); }
+.endbar .scale-start { position: absolute; left: 0; top: 19px; color: rgba(255,255,255,.45); font: 500 10px var(--mono); letter-spacing: .04em; }
 .endbar .tk.hit { background: #fff; }
 .endbar .tk.hit { background: #fff; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
 .endbar .tk.hit span { color: var(--gold); transform: translateX(-50%) scale(1.15); }
@@ -379,6 +380,9 @@ h2.shop { color: #ffd166; }
 .cdr.low b { color: #e8405a; } .cdr.low .cdp { stroke: #e8405a; }
 .btn.go { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3a2400; box-shadow: 0 4px 0 #b8740a, 0 8px 22px rgba(255,180,40,0.35); }
 .btn.go small { opacity: 0.75; }
+.btn.shield-next { background: linear-gradient(120deg, rgba(62,224,90,.18), rgba(27,140,88,.32)); color: #fff; box-shadow: inset 0 0 0 1px rgba(110,240,145,.5), 0 4px 0 rgba(10,50,38,.35); }
+.shield-icon { display: inline-block; width: 28px; height: 28px; vertical-align: -8px; margin-right: 8px; }
+.shield-icon img { display: block; width: 100%; height: 100%; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
 .btn.go-rush { background: linear-gradient(180deg, #ffc49e, #ff7e4a); color: #4a1600; box-shadow: 0 4px 0 #b84a1e; }
 .card .home-x { position: absolute; top: 16px; left: 16px; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
@@ -2651,7 +2655,11 @@ window.Board = (function () {
   const fails = {}; // failed tries per level this session (Skip appears after 3)
   const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
   const withShield = (fn) => async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
-  const SHIELD_I = '<svg class="bi" viewBox="0 0 24 24"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6z" fill="#7fdcff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4 4.8-4.8" fill="none" stroke="#0b3f8f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  let shieldThumb = '';
+  function shieldIcon() {
+    if (!shieldThumb) shieldThumb = foeIcon(null, 'shield');
+    return '<span class="shield-icon" aria-hidden="true">' + shieldThumb + '</span>';
+  }
   const adTag = () => (window.Store && window.Store.noAds() ? '' : '<small class="adt"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>Ad</small>');
   // an interstitial between levels: never in the first 5 levels, every second level end, at most once per 90 seconds
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
@@ -2689,11 +2697,11 @@ window.Board = (function () {
       const more = mode === 'daily' ? (dailyBest ? 'New best time: ' : 'Time ' + fmtClock(clockT, true) + ' · best ') + fmtClock(prog.daily[dailyKey].time, true) : stars === 3 ? 'Perfect clear!' : L.boss ? 'Lose fewer lives for more stars' : Math.max(1, need) + '% more for ' + (stars + 1) + ' stars';
       const fill = !L.boss, th = STAR_THRESHOLDS;
       const lo = th[0] - 15, hi = 100, pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
-      const bar = fill ? '<div class="endbar ' + mode + '"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
+      const bar = fill ? '<div class="endbar ' + mode + '"><span class="scale-start">' + lo + '%</span><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="result-heading"><div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2></div><div class="result-performance">' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p></div><div class="result-note-slot">' + levelResultNote() + '</div>' +
-        '<div class="btns result-actions">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : '') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
+        '<div class="btns result-actions">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : ' go') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt shield-next" type="button" data-act="nextS">' + shieldIcon() + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
@@ -2767,7 +2775,7 @@ window.Board = (function () {
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
     panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' + captureSummary() +
       '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
-      (canShield ? '<button class="btn alt" type="button" data-act="retryS">' + SHIELD_I + 'Try again with a Shield' + adTag() + '</button>' : '') +
+      (canShield ? '<button class="btn alt shield-next" type="button" data-act="retryS">' + shieldIcon() + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
       { cont: keepGoing, retryS: withShield(() => startLevel(cur)),
