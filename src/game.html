@@ -99,7 +99,7 @@ body {
 #power .pw { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 3px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
 #power .pw i { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
 #power .pr { position: absolute; inset: 0; transform: rotate(-90deg); } #power .pr circle { fill: none; stroke: rgba(255,255,255,0.14); stroke-width: 4; } #power .pr .pp { stroke: var(--c); stroke-dasharray: 107; stroke-linecap: round; }
-#power.tight .pw { font-size: 0; gap: 0; padding: 3px; } /* four at once: icons only */
+#power.tight .pw { font-size: 0; gap: 0; padding: 3px; } /* several at once: icons only */
 #power .ic { width: 15px; height: 15px; color: var(--c); }
 @media (max-height: 500px) and (min-width: 600px) {
   .mid { grid-column: 2; grid-row: 1; }
@@ -201,6 +201,7 @@ body {
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
 .card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
 .card .kicker { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.card .level-context { font-size: 14px; line-height: 1.3; letter-spacing: 0.16em; }
 .card .big { font: 800 44px/1 var(--display); font-variant-numeric: tabular-nums; }
 .card .got { font: 800 17px var(--display); color: var(--gold); letter-spacing: 0; }
 .btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -420,20 +421,22 @@ h2.shop { color: #ffd166; }
 .tro small { font: 500 11px var(--mono); letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
 .sect { width: 100%; font: 500 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-align: left; margin-top: 4px; }
 .row3 .btn { padding: 12px 6px; font-size: 12px; }
-.worlds { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-.world { position: relative; isolation: isolate; overflow: hidden; cursor: pointer; border: 0; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line); }
+.worlds { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.world { position: relative; isolation: isolate; overflow: hidden; cursor: pointer; min-width: 0; min-height: 136px; border: 0; border-radius: 22px; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 16px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 rgba(10,20,60,.25); }
+.world:last-child:nth-child(odd) { grid-column: 1 / -1; width: calc((100% - 12px) / 2); justify-self: center; }
 .world::before, .world::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
 .world::before { background: var(--world-art) center / 100% 100% no-repeat; }
-.world::after { background: linear-gradient(90deg, rgba(12,20,48,.4), rgba(12,20,48,.12) 65%, rgba(12,20,48,.32)); box-shadow: inset 0 0 0 1px var(--line); border-radius: inherit; }
+.world::after { background: linear-gradient(180deg, rgba(12,20,48,.35), rgba(12,20,48,.08) 45%, rgba(12,20,48,.5)); box-shadow: inset 0 0 0 1px var(--line); border-radius: inherit; }
 .world > * { position: relative; z-index: 1; text-shadow: 0 1px 3px rgba(12,20,48,.6); }
-.world b { font: 800 17px var(--display); display: block; }
-.world span { font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
-.world > span { flex-shrink: 0; white-space: nowrap; }
+.world b { font: 800 18px/1.1 var(--display); display: block; overflow-wrap: anywhere; }
+.world span { font: 500 11px/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.95; }
+.world div > span { display: block; margin-top: 5px; }
+.world .world-number { margin: 0 0 4px; font-size: 9px; letter-spacing: 0.12em; opacity: 0.8; }
+.world > span { flex-shrink: 0; white-space: nowrap; padding: 3px 7px; border-radius: 10px; background: rgba(12,20,48,.28); }
 @media (max-width: 360px) {
-  .world { padding: 12px; gap: 8px; }
-  .world b { font-size: 14px; }
-  .world span { font-size: 11px; letter-spacing: .04em; }
-  .world div > span { white-space: nowrap; }
+  .world { min-height: 120px; padding: 11px; gap: 12px; }
+  .world b { font-size: 16px; }
+  .world span { font-size: 10px; }
 }
 .world[disabled] { cursor: default; filter: grayscale(0.7); opacity: 0.55; }
 .ic-star { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.25em; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
@@ -1106,7 +1109,7 @@ window.Board = (function () {
 
   const backdropCache = {};
   function worldBackdrop(world, thumbnail = false) { // soft, static scenery; cached independently of gameplay RNG
-    const cw = thumbnail ? 640 : Math.min(1600, stage.clientWidth), ch = thumbnail ? 160 : Math.min(1200, stage.clientHeight), key = cw + 'x' + ch, cacheId = world.id + (thumbnail ? '-card' : '');
+    const cw = thumbnail ? 400 : Math.min(1600, stage.clientWidth), ch = thumbnail ? 320 : Math.min(1200, stage.clientHeight), key = cw + 'x' + ch, cacheId = world.id + (thumbnail ? '-card' : '');
     let cached = backdropCache[cacheId];
     if (!cached || cached.key !== key) {
       const c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d'), unit = Math.min(cw, ch);
@@ -1814,10 +1817,10 @@ window.Board = (function () {
   // the shield: a soap-bubble around the hero while it is active
   const bubbleMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uT: { value: 0 } },
     vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'varying vec3 vN; varying vec3 vV; uniform float uT; void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 1.8); vec3 c = mix(vec3(0.45, 0.95, 1.0), vec3(1.0, 0.82, 0.35), 0.5 + 0.5 * sin(uT * 2.0 + vN.y * 4.0 + vN.x * 3.0)); gl_FragColor = vec4(c, 0.16 + f * 0.9); }' });
+    fragmentShader: 'varying vec3 vN; varying vec3 vV; uniform float uT; void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 1.8); vec3 c = mix(vec3(0.16, 0.88, 0.32), vec3(0.67, 1.0, 0.72), 0.5 + 0.5 * sin(uT * 2.0 + vN.y * 4.0 + vN.x * 3.0)); gl_FragColor = vec4(c, 0.16 + f * 0.9); }' });
   const bubble = new THREE.Mesh(new THREE.SphereGeometry(1.0, 36, 24), bubbleMat);
   bubble.renderOrder = 3; bubble.visible = false; scene.add(bubble);
-  const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.07, 10, 56), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 1, depthWrite: false }));
+  const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.07, 10, 56), new THREE.MeshBasicMaterial({ color: 0x3ee05a, transparent: true, opacity: 1, depthWrite: false }));
   bubbleRim.rotation.x = Math.PI / 2; bubble.add(bubbleRim);
   let bubbleK = 0;
   // ---------- a shared, playful landing, tinted for each skin family ----------
@@ -2488,19 +2491,20 @@ window.Board = (function () {
     const l = $('lives'); l.innerHTML = ''; l.setAttribute('role', 'img'); l.setAttribute('aria-label', lives + ' lives remaining, maximum 5');
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); if (i >= 3) s.firstChild.setAttribute('fill', '#ffc93a'); l.append(s.firstChild); }
   }
-  // Timed boosters in the HUD: the booster's icon in its colour, with a ring that drains as time runs out
+  // Active boosters in the HUD: timed effects drain; Shield stays full until it blocks a hit.
   const PW_IC = {
     slow: '<svg class="ic" viewBox="0 0 24 24"><g fill="currentColor"><ellipse cx="12" cy="13.5" rx="5.6" ry="6.6"/><circle cx="12" cy="4.4" r="2.3"/><ellipse cx="5.4" cy="9.6" rx="2.6" ry="1.4" transform="rotate(-35 5.4 9.6)"/><ellipse cx="18.6" cy="9.6" rx="2.6" ry="1.4" transform="rotate(35 18.6 9.6)"/><ellipse cx="6.6" cy="19.2" rx="2.2" ry="1.2" transform="rotate(35 6.6 19.2)"/><ellipse cx="17.4" cy="19.2" rx="2.2" ry="1.2" transform="rotate(-35 17.4 19.2)"/></g></svg>',
     freeze: '<svg class="ic" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></g></svg>',
     boost: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2 4 14h7l-1.5 8L19 10h-7z"/></svg>',
+    shield: '<svg class="ic" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 21 6l-1.5 9c-1 3.3-4 5.7-7.5 7-3.5-1.3-6.5-3.7-7.5-7L3 6z"/><path fill="none" stroke="#e5ffe8" stroke-width="1.5" d="m7 7 5-2 5 2"/></svg>',
     iron: '<svg class="ic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.6"><rect x="1.8" y="7.5" width="11.5" height="9" rx="4.5"/><rect x="10.7" y="7.5" width="11.5" height="9" rx="4.5"/></g></svg>'
   };
   let pwKey = '';
   function powerHud() {
-    const on = [['slow', slowT], ['freeze', frozenT], ['boost', boostT], ['iron', ironT]].filter((o) => o[1] > 0), el = $('power');
+    const on = [['slow', slowT], ['freeze', frozenT], ['boost', boostT], ['iron', ironT], ['shield', shieldOn ? 1 : 0]].filter((o) => o[1] > 0), el = $('power');
     const key = on.map((o) => o[0]).join();
-    if (key !== pwKey) { pwKey = key; el.classList.toggle('tight', on.length > 3); el.innerHTML = on.map(([k]) => '<div class="pw" style="--c:#' + POWERS[k].color.toString(16).padStart(6, '0') + '"><i><svg class="pr" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="pp" cx="20" cy="20" r="17"/></svg>' + PW_IC[k] + '</i>' + POWERS[k].label + '</div>').join(''); }
-    on.forEach(([k, t], j) => { const c = el.children[j] && el.children[j].querySelector('.pp'); if (c) c.style.strokeDashoffset = (107 * (1 - Math.min(1, t / POWERS[k].secs))).toFixed(1); });
+    if (key !== pwKey) { pwKey = key; el.classList.toggle('tight', on.length > 3); el.innerHTML = on.map(([k]) => '<div class="pw" data-power="' + k + '" role="img" aria-label="' + POWERS[k].label + (k === 'shield' ? ' active: blocks the next hit' : ' active') + '" style="--c:#' + POWERS[k].color.toString(16).padStart(6, '0') + '"><i><svg class="pr" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="pp" cx="20" cy="20" r="17"/></svg>' + PW_IC[k] + '</i>' + POWERS[k].label + '</div>').join(''); }
+    on.forEach(([k, t], j) => { const c = el.children[j] && el.children[j].querySelector('.pp'); if (c) c.style.strokeDashoffset = (k === 'shield' ? 0 : 107 * (1 - Math.min(1, t / POWERS[k].secs))).toFixed(1); });
     dashes.material.color.copy(ironT > 0 ? ironCol : dashBase);
   }
   function percent() { let n = 0; for (let i = 0; i < N; i++) if (!fixed[i] && cells[i] === LAND) n++; return Math.floor(n / total * 100); }
@@ -2721,8 +2725,8 @@ window.Board = (function () {
   const starsSvg = (n, lazy) => '<div class="stars">' + [0, 1, 2].map((k) => '<span class="st"><i class="rays"></i><i class="sp" style="left:-6px;top:2px;animation-delay:' + (1 + k * 0.4) + 's"></i><i class="sp" style="right:-6px;bottom:4px;animation-delay:' + (1.6 + k * 0.3) + 's"></i><svg data-k="' + k + '" class="' + (k < n && !lazy ? 'on' : '') + '" style="animation-delay:' + (lazy ? 0 : 0.15 + k * 0.18) + 's" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg></span>').join('') + '</div>'; // only the stars you earned shine
   let dailyBest = false, levelEnds = 0, continued = false, startShield = false;
   const fails = {}; // failed tries per level this session (Skip appears after 3)
-  const shieldOffer = () => mode === 'campaign' && Object.keys(prog.done).length >= 10;
-  const withShield = (fn) => async () => { const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
+  const shieldOffer = () => mode === 'campaign' && prog.seen.includes('p-shield');
+  const withShield = (fn) => async () => { if (!shieldOffer()) return; const ok = await window.Ads.showRewarded('continue'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } startShield = true; fn(); };
   let shieldThumb = '';
   function shieldIcon() {
     if (!shieldThumb) shieldThumb = foeIcon(null, 'shield');
@@ -2734,7 +2738,7 @@ window.Board = (function () {
   function levelClear() {
     if (state !== 'play' || mode === 'rush') return;
     levelEnds++; const had = earned(), starsBefore = totalStars(), clearedLevel = cur, clearedMode = mode;
-    state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; $('power').innerHTML = '';
+    state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; shieldOn = false; powerHud();
     const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= STAR_THRESHOLDS[1] ? 1 : 0) + (pct >= STAR_THRESHOLDS[2] ? 1 : 0);
     const newWorld = mode === 'campaign' && !prog.done[L.id] && L.l === 19 && cur + 1 < LEVELS.length;
     const headline = newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : clearHeadline(stars);
@@ -2768,7 +2772,7 @@ window.Board = (function () {
       const bar = fill ? '<div class="endbar ' + mode + '"><span class="scale-start">' + lo + '%</span><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       const note = levelResultNote();
-      panel('<div class="result-heading"><div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + headline + '</h2></div><div class="result-performance">' + starsSvg(stars, fill) +
+      panel('<div class="result-heading"><div class="kicker level-context">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + headline + '</h2></div><div class="result-performance">' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p></div>' + (note ? '<div class="result-note-slot">' + note + '</div>' : '') +
         '<div class="btns result-actions">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : ' go') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt shield-next" type="button" data-act="nextS">' + shieldIcon() + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
@@ -2818,7 +2822,7 @@ window.Board = (function () {
     if (shieldOn && !timeout) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
       shieldOn = false; bubbleK = 0; invuln = 1.2; hitBlinkAge = 0; blinkAfterLanding = false; fuse = null; spark.visible = false; burnt.count = 0;
       const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
-      burst(wx, 1, wz, 0x9fe6ff, 30, 4, 4); burst(wx, 1, wz, 0xffffff, 16, 3, 4);
+      burst(wx, 1, wz, 0x3ee05a, 30, 4, 4); burst(wx, 1, wz, 0xffffff, 16, 3, 4);
       tone(1200, 0.25, 'sine', 0.06, 300); buzz('hit'); flash('Shield!', 'it saved you', 800); drawHud();
       return;
     }
@@ -2843,7 +2847,7 @@ window.Board = (function () {
     const trialReward = canGo ? null : finishSkinTrial();
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
-    panel('<div class="kicker">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away.' : 'Goal: ' + L.goal + '%.') + '</p>' + captureSummary() +
+    panel('<div class="kicker level-context">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away' : 'Goal: ' + L.goal + '%') + '</p>' + captureSummary() +
       '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt shield-next" type="button" data-act="retryS">' + shieldIcon() + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
@@ -3121,7 +3125,7 @@ window.Board = (function () {
     let html = BACK_X + '<h2>Worlds</h2><div class="worlds">';
     WORLDS.forEach((wd, w) => {
       const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
-      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + ';--world-art:url(\'' + worldBackdrop(wd, true) + '\')"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
+      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + ';--world-art:url(\'' + worldBackdrop(wd, true) + '\')"' + (open ? '' : ' disabled') + '><div><span class="world-number">World ' + (w + 1) + '</span><b>' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
     });
     html += '</div>';
     panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
@@ -3468,7 +3472,7 @@ window.Board = (function () {
     const have = totalStars(), open = skinOpen(sk), on = prog.skin === sk.id, waiting = pendingTrialSkin();
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
     const tag = sk.pack ? '<span class="tag prem"><span class="type-icon" aria-hidden="true">' + GROUP_ICON[sk.pack] + '</span>' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + STAR + (sk.stars ? sk.stars + ' stars' : 'Free') + '</span>';
-    const line = open ? '' : sk.pack ? names.join(', ') + '.' : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' in Campaign to unlock.';
+    const line = open ? '' : sk.pack ? names.join(', ') : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' in Campaign to unlock';
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
       sk.pack ? '<button class="btn skin-buy" type="button" data-act="buy"><span>Get the pack</span> <strong>' + window.Store.price(sk.pack) + '</strong></button>' +
         (waiting ? '<button class="btn alt" type="button" data-act="trialReady">Trial ready · choose a mode</button>' : '<button class="btn alt" type="button" data-act="try">Try for 1 game' + adTag() + '</button>') :
@@ -3577,7 +3581,7 @@ window.Board = (function () {
   function showPause() {
     if (state !== 'play') return;
     pauseExitPending = pauseLevelsOpen = false; paused = true; flashHold(true); const sb = settingsButtons();
-    panel('<div class="kicker' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+    panel('<div class="kicker level-context' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
       Object.assign({ resume: resumeGame, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: () => confirmLeaveGame(showHome),
@@ -3798,7 +3802,7 @@ window.Board = (function () {
     drone.visible = waitingToLand ? false : enterT > 0 ? true : !(hitBlinkAge >= 0 && invuln > 0 && state === 'play' && !reduceMotion && Math.floor(hitBlinkAge * 8) % 2);
     droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
     bubble.visible = shieldOn && !waitingToLand && state !== 'over';
-    if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubbleMat.uniforms.uT.value = t; if (Math.random() < dt * 6) { const a = rand(0, 6.28); burst(bubble.position.x + Math.cos(a) * 0.9, bubble.position.y + rand(-0.3, 0.5), bubble.position.z + Math.sin(a) * 0.9, 0xffe9a8, 1, 0.4, 1); } }
+    if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubbleMat.uniforms.uT.value = t; if (Math.random() < dt * 6) { const a = rand(0, 6.28); burst(bubble.position.x + Math.cos(a) * 0.9, bubble.position.y + rand(-0.3, 0.5), bubble.position.z + Math.sin(a) * 0.9, 0x9dffb0, 1, 0.4, 1); } }
     halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !entering; const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
     // fuse
