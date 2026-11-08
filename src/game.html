@@ -364,6 +364,10 @@ h2.shop { color: #ffd166; }
 .pcard.p-all { background: linear-gradient(120deg, #7a3cff, #e8457a 60%, #ffb21e); padding: 20px 14px; box-shadow: 0 5px 0 #6a2a8a, 0 10px 30px rgba(232,69,122,0.35); }
 .pcard.p-ads { background: linear-gradient(120deg, #0f8fa0, #22c7b0); }
 .pcard.p-skins { background: linear-gradient(120deg, #2a5fd6, #3fb0ff); }
+.pcard.p-sea { background: linear-gradient(120deg, #244ba8, #168ea8); }
+.pcard.p-space { background: linear-gradient(120deg, #6233b4, #9157c9); }
+.pcard.p-pool { background: linear-gradient(120deg, #ac337c, #358f98); }
+.pcard.p-pack .ptx b { white-space: normal; overflow-wrap: anywhere; }
 .pcard.owned { opacity: 0.55; cursor: default; }
 .pcard .pic { width: 46px; height: 46px; flex: none; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,0.2); color: #fff; }
 .pcard.p-all .pic { width: 50px; height: 50px; color: #ffe27a; background: rgba(0,0,0,0.18); }
@@ -2857,6 +2861,7 @@ window.Board = (function () {
       tone(1200, 0.25, 'sine', 0.06, 300); buzz('hit'); flash('Shield!', 'it saved you', 800); drawHud();
       return;
     }
+    if (timeout && shieldOn) { shieldOn = false; bubbleK = 0; }
     if (mode === 'rush') { rushHit(why); return; }
     if (!tutorialSafe()) lives--; if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 1.5 + rng() * 1.5); ouch(); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
@@ -3230,8 +3235,13 @@ window.Board = (function () {
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
+      Object.keys(PACKS).map((pack) => { const skins = SKINS.filter((k) => k.pack === pack);
+        const icons = skins.map((sk) => th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '').join('');
+        return card('buy_' + pack, 'p-pack p-' + pack, '<div class="thumbs">' + icons + '</div>', PACKS[pack], skins.length + ' skins', st.price(pack), st.pack(pack));
+      }).join('') +
       '</div><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
+        ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, showShop)])),
         restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
   }
 
@@ -3408,6 +3418,21 @@ window.Board = (function () {
   // The saved credit stays in place during play; a final result or confirmed exit consumes it.
   // After a restart, an interrupted game therefore becomes a pending trial again.
   let trialActive = null, trialContinueOffer = false, continueBusy = false, trialAdBusy = false;
+  const TRIAL_DAY = 24 * 60 * 60 * 1000, TRIAL_COOLDOWN = 7 * TRIAL_DAY;
+  // Old saves and already-pending trials remain valid; only new successful rewards count.
+  prog.skinTrials = Array.isArray(prog.skinTrials) ? prog.skinTrials.filter((x) => x && Number.isFinite(x.at) && SKINS.some((sk) => sk.id === x.skin && sk.pack)) : [];
+  function trialWaitUntil(sk, now = Date.now()) {
+    const recent = prog.skinTrials.filter((x) => x.at > now - TRIAL_DAY).map((x) => x.at).sort((a, b) => b - a);
+    const same = prog.skinTrials.filter((x) => x.skin === sk.id).reduce((last, x) => Math.max(last, x.at + TRIAL_COOLDOWN), 0);
+    return Math.max(now, same, recent.length >= 2 ? recent[1] + TRIAL_DAY : 0);
+  }
+  function trialWaitLabel(until) {
+    const minutes = Math.max(1, Math.ceil((until - Date.now()) / 60000));
+    const n = minutes > 1440 ? Math.ceil(minutes / 1440) : minutes > 60 ? Math.ceil(minutes / 60) : minutes;
+    const unit = minutes > 1440 ? 'day' : minutes > 60 ? 'hour' : 'minute';
+    return 'Try again in ' + n + ' ' + unit + (n === 1 ? '' : 's');
+  }
+  let trialRefreshT = 0;
   if (prog.skinTrial && !SKINS.some((sk) => sk.id === prog.skinTrial && sk.pack)) { delete prog.skinTrial; saveProg(); }
   function pendingTrialSkin() { return SKINS.find((sk) => sk.id === prog.skinTrial && sk.pack && !window.Store.pack(sk.pack)) || null; }
   function clearOwnedTrial() {
@@ -3514,12 +3539,13 @@ window.Board = (function () {
   }
   function skinInfo(sk) {
     const have = totalStars(), open = skinOpen(sk), on = prog.skin === sk.id, waiting = pendingTrialSkin();
+    const waitUntil = sk.pack ? trialWaitUntil(sk) : 0;
     const names = sk.pack ? SKINS.filter((k) => k.pack === sk.pack).map((k) => k.name) : [];
     const tag = sk.pack ? '<span class="tag prem"><span class="type-icon" aria-hidden="true">' + GROUP_ICON[sk.pack] + '</span>' + PACKS[sk.pack] + '</span>' : '<span class="tag">' + STAR + (sk.stars ? sk.stars + ' stars' : 'Free') + '</span>';
     const line = open ? '' : sk.pack ? names.join(', ') : 'Earn ' + (sk.stars - have) + ' more ' + STAR + ' in Campaign to unlock';
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
       sk.pack ? '<button class="btn skin-buy" type="button" data-act="buy"><span>Get the pack</span> <strong>' + window.Store.price(sk.pack) + '</strong></button>' +
-        (waiting ? '<button class="btn alt" type="button" data-act="trialReady">Trial ready · choose a mode</button>' : '<button class="btn alt" type="button" data-act="try">Try for 1 game' + adTag() + '</button>') :
+        (waiting ? '<button class="btn alt" type="button" data-act="trialReady">Trial ready · choose a mode</button>' : waitUntil > Date.now() ? '<button class="btn alt" type="button" disabled>' + trialWaitLabel(waitUntil) + '</button>' : '<button class="btn alt" type="button" data-act="try">Try for 1 game' + adTag() + '</button>') :
       '<button class="btn" type="button" data-act="earn">Play to earn stars</button>';
     return { html: tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : ''), actions: act };
   }
@@ -3531,6 +3557,9 @@ window.Board = (function () {
     preview.dataset.pack = sk.pack || 'prog';
     const details = skinInfo(sk); preview.querySelector('.info').innerHTML = details.html;
     preview.querySelector('.skin-actions').innerHTML = details.actions;
+    clearTimeout(trialRefreshT);
+    const wait = sk.pack && !skinOpen(sk) && !pendingTrialSkin() ? trialWaitUntil(sk) - Date.now() : 0;
+    if (wait > 0) trialRefreshT = setTimeout(() => { if (preview.isConnected && skinView === sk.id) updateSkinView(sk.id); }, Math.min(wait, 60000));
     const holder = preview.querySelector('.pvh'), silhouette = !sk.pack && !skinOpen(sk);
     holder.classList.toggle('silhouette', silhouette);
     holder.setAttribute('role', 'img'); holder.setAttribute('aria-label', sk.name + (silhouette ? ' locked silhouette' : ' 3D preview'));
@@ -3582,9 +3611,13 @@ window.Board = (function () {
       else if (button.dataset.act === 'trialReady') showHome();
       else if (button.dataset.act === 'try') {
         if (!viewed.pack || skinOpen(viewed) || pendingTrialSkin() || trialAdBusy) return;
+        if (trialWaitUntil(viewed) > Date.now()) { updateSkinView(viewed.id); return; }
         trialAdBusy = true; button.disabled = true;
         let ok = false; try { ok = await window.Ads.showRewarded('continue'); } finally { trialAdBusy = false; if (button.isConnected) button.disabled = false; }
         if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; }
+        const now = Date.now();
+        prog.skinTrials = prog.skinTrials.filter((x) => x.at > now - TRIAL_COOLDOWN);
+        prog.skinTrials.push({ skin: viewed.id, at: now });
         prog.skinTrial = viewed.id; saveProg(); showHome();
       }
     });
@@ -4203,8 +4236,18 @@ window.Board = (function () {
     e.preventDefault(); if (!keysHeld.has(e.key)) { keysHeld.add(e.key); steer(k); }
   });
   window.addEventListener('keyup', (e) => { keysHeld.delete(e.key); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { release(); keysHeld.clear(); if (state === 'play' && !paused) showPause(); } });
-  window.__shot = () => { release(); if (state === 'play' && !paused) showPause(); }; // the phone took a screenshot: pause, so the player doesn't lose a life
+  function pauseInterruptedGame() {
+    release(); keysHeld.clear();
+    if (state === 'play' && !paused) showPause();
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseInterruptedGame(); });
+  window.addEventListener('blur', pauseInterruptedGame);
+  window.addEventListener('pagehide', pauseInterruptedGame);
+  window.__shot = pauseInterruptedGame; // Native screenshot/focus callbacks also work without a visibility change.
+  if (AppPlugin) {
+    AppPlugin.addListener('appStateChange', ({ isActive }) => { if (!isActive) pauseInterruptedGame(); }).catch(() => {});
+    AppPlugin.addListener('pause', pauseInterruptedGame).catch(() => {});
+  }
 
   // ---------- loop ----------
   let last = performance.now(), simT = 0, camFix = null, gameT = 0;

@@ -31,6 +31,15 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // System overlays (including screenshot previews) can take focus without stopping the activity.
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus && getBridge() != null) {
+            getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript("window.__shot && window.__shot()", null));
+        }
+    }
+
     // Android 14+: a screenshot pauses the game, so the player doesn't lose a life
     private Object shotCb;
     @Override
