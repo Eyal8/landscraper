@@ -27,36 +27,40 @@ body {
 #stage canvas { position: absolute; inset: 0; display: block; }
 .ts { text-shadow: 0 1px 2px rgba(10, 20, 50, 0.55), 0 1px 10px rgba(10, 20, 50, 0.45); }
 
-/* HUD: open layout, with the level and clock kept together. */
+/* Compact badges for context and time; progress sits below the hearts. */
 #hud {
-  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 70px; align-items: center; gap: 10px; pointer-events: none;
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 70px; align-items: start; gap: 10px; pointer-events: none;
   padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
 }
-#hud[data-mode="rush"] { grid-template-columns: 40px minmax(0, 1fr); }
+
 #pauseBtn {
   pointer-events: auto; width: 40px; height: 40px; border-radius: 14px; border: 0; cursor: pointer; display: grid; place-items: center;
   background: var(--shade); color: var(--ink); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 #pauseBtn svg { width: 16px; height: 16px; }
-.mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.hud-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
-.hud-context { display: flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+.mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 2px; }
+.hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; padding: 5px 7px; border-radius: 9px; white-space: nowrap; }
+.hud-level { min-width: 0; }
 .hud-level b { font: 800 15px/1.2 var(--display); }
-#lvlLabel { background: var(--world-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none; filter: drop-shadow(0 1px 1px #142438) drop-shadow(0 0 2px rgba(10,20,50,.8)); -webkit-text-stroke: .25px rgba(10,20,50,.5); }
-.hud-time { color: var(--gold); white-space: nowrap; }
+#lvlLabel { background-image: linear-gradient(rgba(12,20,48,.4), rgba(12,20,48,.4)), var(--world-gradient); color: #fff; padding: 5px 7px; border-radius: 9px; }
+.hud-time { color: #fff; background: rgba(12,20,48,.65); }
+.hud-status { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 #clock { font: 800 16px/1.2 var(--display); font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
-.hud-time.low { color: #ff8798; }
-#clock.low { color: #ff6b7d; animation: lowt 1s ease-in-out infinite; }
+.hud-time.low { color: #ffad82; }
+#clock.low { color: #ffad82; animation: lowt 1s ease-in-out infinite; }
 #clock.bump { transform: scale(1.3); color: #ffd166; }
 @keyframes lowt { 50% { transform: scale(1.15); } }
-#pctLabel { display: inline-flex; align-items: baseline; gap: 4px; font: 500 11px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; margin-left: auto; }
+#pctLabel { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font: 500 10px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; }
 #pctLabel b { font: 800 16px/1.2 var(--display); color: var(--ink); }
 #pctLabel .hud-board { color: var(--ink-soft); }
 @media (max-width: 360px) {
   #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; }
+  .hud-level b { font-size: 13px; }
+  #clock { font-size: 14px; }
   #hud[data-mode="daily"] .hud-level b { font-size: 12px; }
-  #hud[data-mode="daily"] #clock { font-size: 14px; }
-  .hud-context { gap: 6px; }
+  .hud-level { padding: 0; }
+  #lvlLabel, .hud-time { padding: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { #clock.low { animation: none; } #clock.bump { transform: none; } }
 .bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
@@ -547,10 +551,10 @@ h2.shop { color: #ffd166; }
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <div class="hud-row"><div class="hud-context"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><i id="clock"></i></span></div><span id="pctLabel">0%</span></div>
+      <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><i id="clock"></i></span></div>
       <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div>
     </div>
-    <div class="lives" id="lives"></div>
+    <div class="hud-status ts"><div class="lives" id="lives"></div><span id="pctLabel">0%</span></div>
   </div>
   <div id="power"></div>
   <div id="vignette"></div>
@@ -2314,7 +2318,7 @@ window.Board = (function () {
       const low = mode !== 'daily' && shown <= 10; ck.classList.toggle('low', low); timeBox.classList.toggle('low', low);
       timeBox.setAttribute('aria-label', (mode === 'daily' ? 'Elapsed time ' : low ? 'Low time remaining ' : 'Time remaining ') + ck.textContent);
     }
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>Round ' + bossRoundNo() + '/3</b>' : '<b>' + pct + '%</b>';
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>' + bossRoundNo() + '/3</b><span class="hud-board">Rounds</span>' : '<b>' + pct + '%</b>';
     $('bar').setAttribute('aria-valuenow', Math.min(100, pct));
     $('bar').setAttribute('aria-valuetext', pct + '% claimed; goal ' + L.goal + '%');
     $('barGoal').title = 'Goal ' + L.goal + '%';
@@ -2737,7 +2741,7 @@ window.Board = (function () {
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if ($('skinUnlock')) return;
     if (badgeClose) { badgeClose(); return; }
-    if (state === 'play' && !paused) showPause();
+    if (state === 'play') { if (pauseExitPending) showPause(); else if (paused) confirmLeaveGame(showHome); else showPause(); }
     else if (onHome && state === 'menu') AppPlugin.exitApp();
     else showHome();
   }); } catch (e) {}
@@ -3137,7 +3141,7 @@ window.Board = (function () {
     else if (r === 'error') flash('Purchase failed', 'please try again', 1400, true);
   }
   const skinOpen = (sk) => dev || (sk.pack ? window.Store.pack(sk.pack) : totalStars() >= sk.stars);
-  // The saved credit stays in place during play; only a final result consumes it.
+  // The saved credit stays in place during play; a final result or confirmed exit consumes it.
   // After a restart, an interrupted game therefore becomes a pending trial again.
   let trialActive = null, trialContinueOffer = false, continueBusy = false, trialAdBusy = false;
   if (prog.skinTrial && !SKINS.some((sk) => sk.id === prog.skinTrial && sk.pack)) { delete prog.skinTrial; saveProg(); }
@@ -3340,14 +3344,24 @@ window.Board = (function () {
     else if (tut === 'line' && ev === 'near') { tut = 'trap'; coach("Don't let it touch your line", false); tutT = 2.6; }
   }
 
+  let pauseExitPending = false;
+  function confirmLeaveGame(destination) {
+    if (state !== 'play' || !paused) return;
+    pauseExitPending = true;
+    const game = mode === 'rush' ? 'Rush run' : mode === 'daily' ? 'Daily game' : 'level';
+    panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn" type="button" data-act="stay">Back to pause</button><button class="btn alt" type="button" data-act="leave">Leave game</button></div>', {
+      stay: showPause,
+      leave: () => { if (!pauseExitPending) return; pauseExitPending = false; finishSkinTrial(); destination(); }
+    });
+  }
   function showPause() {
     if (state !== 'play') return;
-    paused = true; flashHold(true); const sb = settingsButtons();
+    pauseExitPending = false; paused = true; flashHold(true); const sb = settingsButtons();
     panel('<div class="kicker' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
-      Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: showHome,
-        cal: () => showDaily(), rmenu: () => showRush(), lvls: () => showWorld(L.w) }, sb.acts));
+      Object.assign({ resume: () => { hidePanel(); paused = false; flashHold(false); }, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: () => confirmLeaveGame(showHome),
+        cal: () => confirmLeaveGame(() => showDaily()), rmenu: () => confirmLeaveGame(showRush), lvls: () => confirmLeaveGame(() => showWorld(L.w)) }, sb.acts));
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
