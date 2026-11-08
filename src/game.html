@@ -117,6 +117,7 @@ body {
 #adSim .big { font: 800 44px var(--display); }
 #adSim p { margin: 0; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5; }
 #adClose:disabled { opacity: 0.4; }
+.btn.world-next { background: var(--next-world-bg); color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(12,20,48,.65); }
 .btn small { display: block; font-size: 11px; opacity: 0.7; letter-spacing: 0.12em; margin-top: 2px; }
 .cal button { all: unset; cursor: pointer; aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,0.08); }
 .cal button.done { background: var(--gold); color: #3a2a00; font-weight: 700; }
@@ -225,14 +226,15 @@ body {
 .eps { width: 100%; display: flex; flex-direction: column; gap: 18px; text-align: left; }
 .ep h3 { margin: 0 0 8px; font: 800 15px var(--display); display: flex; justify-content: space-between; align-items: baseline; }
 .ep h3 small { font: 500 11px var(--mono); letter-spacing: 0.14em; color: var(--ink-soft); }
-.grid { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.grid { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .lvl { cursor: pointer; aspect-ratio: 1; border-radius: 14px; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: rgba(255,255,255,0.14); color: var(--ink); font: 800 16px var(--display); }
-.lvl { font-size: 24px !important; border-radius: 16px; position: relative; }
+.lvl { min-width: 0; font-size: clamp(16px, 6vw, 24px) !important; border-radius: 16px; position: relative; }
 .lvl small { font: 500 13px var(--mono); letter-spacing: 0; color: var(--gold); min-height: 15px; }
 .lvl .crown { position: absolute; top: -7px; right: -5px; width: 20px; height: 20px; color: #ffd166; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 .lvl.boss { box-shadow: inset 0 0 0 2px rgba(255,209,102,0.7); }
 .lvl.cur { background: #fff; color: #1d2a63; }
+.lvl .resume-label { color: #1d2a63; font-size: 9px; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
@@ -2598,7 +2600,7 @@ window.Board = (function () {
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
       panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' +
-        '<div class="btns">' + (hasNext ? '<button class="btn" type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
+        '<div class="btns">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : '') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
@@ -2705,6 +2707,7 @@ window.Board = (function () {
     begin(typeof i === 'number' ? i : levelIndex(i));
   }
   function begin(lv) {
+    pauseExitPending = pauseLevelsOpen = false;
     if (trialContinueOffer) finishSkinTrial();
     trialContinueOffer = false; trialActive = null; clearOwnedTrial();
     const trial = pendingTrialSkin();
@@ -2755,11 +2758,11 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { pauseExitPending = pauseLevelsOpen = false; closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if ($('skinUnlock')) return;
     if (badgeClose) { badgeClose(); return; }
-    if (state === 'play') { if (pauseExitPending) resumeGame(); else if (paused) confirmLeaveGame(showHome); else showPause(); }
+    if (state === 'play') { if (pauseLevelsOpen) showPause(); else if (pauseExitPending) resumeGame(); else if (paused) confirmLeaveGame(showHome); else showPause(); }
     else if (onHome && state === 'menu') AppPlugin.exitApp();
     else showHome();
   }); } catch (e) {}
@@ -2939,16 +2942,23 @@ window.Board = (function () {
     html += '</div>';
     panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
   }
-  function showWorld(w) {
-    toMenu();
+  function showWorld(w, fromPause = false) {
+    const browsingPaused = fromPause && state === 'play' && paused && mode === 'campaign' && w === L.w;
+    if (browsingPaused) { pauseLevelsOpen = true; pauseExitPending = false; } else toMenu();
     let html = BACK_X + '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid">';
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
-      const st = prog.stars[x.id] || 0, open = isOpen(i);
-      html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === nextLevel() ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
+      const st = prog.stars[x.id] || 0, current = browsingPaused && i === cur, open = isOpen(i) || current;
+      html += '<button class="lvl' + (x.boss ? ' boss' : '') + ((browsingPaused ? current : i === nextLevel()) ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="' + (current ? 'Resume level ' : 'Level ') + x.name + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small' + (current ? ' class="resume-label"' : '') + '>' + (current ? 'Resume' : st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
     html += '</div>';
-    panel(html, { lvl: (b) => startLevel(+b.dataset.i), back: showWorlds });
+    if (browsingPaused) html += '<button class="btn" type="button" data-act="resume">Resume ' + L.name + '</button>';
+    panel(html, { lvl: (b) => {
+      const i = +b.dataset.i;
+      if (!browsingPaused) startLevel(i);
+      else if (i === cur) resumeGame();
+      else confirmLeaveGame(() => startLevel(i), 'Play ' + LEVELS[i].name);
+    }, back: browsingPaused ? showPause : showWorlds, resume: resumeGame });
   }
   const SND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const VIB = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7.5" y="3" width="9" height="18" rx="2.2"/><path class="on" d="M4.5 8v8M2 10v4M19.5 8v8M22 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M3 3l18 18" stroke="#ff5a7a" stroke-width="2.4" stroke-linecap="round"/></svg>';
@@ -3362,14 +3372,14 @@ window.Board = (function () {
     else if (tut === 'line' && ev === 'near') { tut = 'trap'; coach("Don't let it touch your line", false); tutT = 2.6; }
   }
 
-  let pauseExitPending = false;
+  let pauseExitPending = false, pauseLevelsOpen = false;
   function resumeGame() {
     if (state !== 'play') return;
-    pauseExitPending = false; hidePanel(); paused = false; flashHold(false);
+    pauseExitPending = pauseLevelsOpen = false; hidePanel(); paused = false; flashHold(false);
   }
   function confirmLeaveGame(destination, label = 'Go Home') {
     if (state !== 'play' || !paused) return;
-    pauseExitPending = true;
+    pauseLevelsOpen = false; pauseExitPending = true;
     const game = mode === 'rush' ? 'Rush run' : mode === 'daily' ? 'Daily game' : 'level';
     panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
       stay: resumeGame,
@@ -3378,12 +3388,12 @@ window.Board = (function () {
   }
   function showPause() {
     if (state !== 'play') return;
-    pauseExitPending = false; paused = true; flashHold(true); const sb = settingsButtons();
+    pauseExitPending = pauseLevelsOpen = false; paused = true; flashHold(true); const sb = settingsButtons();
     panel('<div class="kicker' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
       Object.assign({ resume: resumeGame, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: () => confirmLeaveGame(showHome),
-        cal: () => confirmLeaveGame(() => showDaily(), 'Calendar'), rmenu: () => confirmLeaveGame(showRush, 'Rush menu'), lvls: () => confirmLeaveGame(() => showWorld(L.w), 'Levels') }, sb.acts));
+        cal: () => confirmLeaveGame(() => showDaily(), 'Calendar'), rmenu: () => confirmLeaveGame(showRush, 'Rush menu'), lvls: () => showWorld(L.w, true) }, sb.acts));
   }
   $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); showPause(); });
 
@@ -3922,7 +3932,7 @@ window.Board = (function () {
   // clicks on buttons and cards also bring the keyboard back to the game
   document.addEventListener('click', () => { try { window.focus(); } catch (err) {} }, true);
   window.addEventListener('keydown', (e) => {
-    const k = KEYS[e.key]; if (!k) { if (e.key === 'Escape') { if (pauseExitPending) resumeGame(); else showPause(); } return; }
+    const k = KEYS[e.key]; if (!k) { if (e.key === 'Escape') { if (pauseLevelsOpen) showPause(); else if (pauseExitPending) resumeGame(); else showPause(); } return; }
     e.preventDefault(); if (!keysHeld.has(e.key)) { keysHeld.add(e.key); steer(k); }
   });
   window.addEventListener('keyup', (e) => { keysHeld.delete(e.key); });
