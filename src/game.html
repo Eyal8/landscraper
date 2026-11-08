@@ -2532,10 +2532,19 @@ window.Board = (function () {
     if (kind === 'urchin') { m.uPhase = 'up'; m.uT = rand(1, 2.5); }
     monsters.push(m); return m;
   }
+  // Animate only the HUD number; scoring, saved bests and results use the real score.
+  let scoreShown = 0, scoreFrom = 0, scoreGoal = 0, scoreTween = 1;
+  function scoreHud(dt) {
+    if (score !== scoreGoal) { scoreFrom = scoreShown; scoreGoal = score; scoreTween = 0; }
+    scoreTween = Math.min(1, scoreTween + dt / 0.55);
+    scoreShown = reduceMotion || scoreGoal < scoreShown || !scoreGoal ? scoreGoal : scoreFrom + (scoreGoal - scoreFrom) * (1 - Math.pow(1 - scoreTween, 3));
+    const value = Math.floor(scoreShown), text = value.toLocaleString('en-US', value >= 100000 ? { notation: 'compact', maximumFractionDigits: 1 } : undefined);
+    if ($('scoreLabel').textContent !== text) $('scoreLabel').textContent = text;
+  }
   function drawHud() {
     $('hud').dataset.mode = mode;
     const points = score.toLocaleString('en-US');
-    $('scoreLabel').textContent = score >= 100000 ? score.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 }) : points;
+    if (reduceMotion || (score === 0 && mode !== 'rush')) scoreHud(1);
     $('scoreWrap').setAttribute('aria-label', 'Score: ' + points + ' points'); $('scoreWrap').title = points + ' points';
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
@@ -3824,6 +3833,7 @@ window.Board = (function () {
   const zero = new THREE.Vector3();
   function update(dt, t) {
     if (paused && state === 'play') return; // A paused landing holds its exact pose, just like gameplay.
+    scoreHud(dt);
     if ((hideT > 0 || enterT > 0) && (state === 'menu' || state === 'over')) { hideT = enterT = 0; resetLanding(); }
     floorMat.uniforms.uTime.value = t;
     powerHud(); trapFx(t);
