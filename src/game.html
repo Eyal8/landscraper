@@ -27,42 +27,36 @@ body {
 #stage canvas { position: absolute; inset: 0; display: block; }
 .ts { text-shadow: 0 1px 2px rgba(10, 20, 50, 0.55), 0 1px 10px rgba(10, 20, 50, 0.45); }
 
-/* HUD */
+/* HUD: open layout, with the level and clock kept together. */
 #hud {
-  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 6px 8px; pointer-events: none;
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 70px; align-items: center; gap: 10px; pointer-events: none;
   padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
 }
+#hud[data-mode="rush"] { grid-template-columns: 40px minmax(0, 1fr); }
 #pauseBtn {
-  grid-column: 1; grid-row: 1;
   pointer-events: auto; width: 40px; height: 40px; border-radius: 14px; border: 0; cursor: pointer; display: grid; place-items: center;
   background: var(--shade); color: var(--ink); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 #pauseBtn svg { width: 16px; height: 16px; }
-.mid { display: contents; }
-.hud-level, .hud-time { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 12px; background: rgba(16,24,56,.72); white-space: nowrap; box-sizing: border-box; }
-.hud-level { grid-column: 2; grid-row: 1; justify-self: start; color: var(--ink-soft); }
-.hud-level b { font: 800 13px/1.2 var(--display); color: var(--ink); }
-.hud-time { grid-column: 3; grid-row: 1; justify-self: end; justify-content: center; color: var(--gold); }
-.hud-level svg, .hud-time svg { width: 14px; height: 14px; flex: none; }
+.mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hud-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+.hud-context { display: flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+.hud-level b { font: 800 15px/1.2 var(--display); }
+#lvlLabel { background: var(--world-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none; filter: drop-shadow(0 1px 1px #142438) drop-shadow(0 0 2px rgba(10,20,50,.8)); -webkit-text-stroke: .25px rgba(10,20,50,.5); }
+.hud-time { color: var(--gold); white-space: nowrap; }
 #clock { font: 800 16px/1.2 var(--display); font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
 .hud-time.low { color: #ff8798; }
 #clock.low { color: #ff6b7d; animation: lowt 1s ease-in-out infinite; }
 #clock.bump { transform: scale(1.3); color: #ffd166; }
 @keyframes lowt { 50% { transform: scale(1.15); } }
-.hud-progress { grid-column: 1 / 3; grid-row: 2; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 5px 8px; border-radius: 12px; background: rgba(16,24,56,.72); }
-#pctLabel { display: flex; align-items: baseline; gap: 4px; font: 500 11px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; }
-#pctLabel b { font: 800 16px/1.2 var(--display); color: #7cf3c4; }
-#pctLabel span { opacity: 0.85; }
-#pctLabel .hud-board { margin-left: auto; }
-.hud-progress:has(.bar.goal) #pctLabel b { color: var(--gold); }
-#hud .bar { height: 8px; }
-#hud[data-mode="rush"] .hud-progress { grid-column: 1 / -1; }
-@media (min-width: 640px) {
-  #hud { grid-template-columns: 40px auto minmax(0, 1fr) auto auto; gap: 10px; }
-  .hud-level { grid-column: 2; }
-  .hud-time { grid-column: 4; }
-  .hud-progress, #hud[data-mode="rush"] .hud-progress { grid-column: 3; grid-row: 1; }
-  #hud .lives { grid-column: 5; grid-row: 1; }
+#pctLabel { display: inline-flex; align-items: baseline; gap: 4px; font: 500 11px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; margin-left: auto; }
+#pctLabel b { font: 800 16px/1.2 var(--display); color: var(--ink); }
+#pctLabel .hud-board { color: var(--ink-soft); }
+@media (max-width: 360px) {
+  #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; }
+  #hud[data-mode="daily"] .hud-level b { font-size: 12px; }
+  #hud[data-mode="daily"] #clock { font-size: 14px; }
+  .hud-context { gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { #clock.low { animation: none; } #clock.bump { transform: none; } }
 .bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
@@ -83,9 +77,12 @@ body {
 .endbar .tk.hit { background: #fff; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
 .endbar .tk.hit span { color: var(--gold); transform: translateX(-50%) scale(1.15); }
 .card .more { transition: opacity 0.4s; }
-.lives { grid-column: 3; grid-row: 2; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+.lives { display: grid; grid-template-columns: repeat(6, 10px); grid-auto-rows: 20px; gap: 3px 2px; min-height: 43px; align-content: start; justify-items: center; }
 .lives:empty { display: none; }
-.lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
+.lives svg { grid-column: span 2; width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
+.lives svg:nth-child(4) { grid-column: 2 / 4; grid-row: 2; }
+.lives svg:nth-child(5) { grid-column: 4 / 6; grid-row: 2; }
+.lives svg:nth-child(4):last-child { grid-column: 3 / 5; }
 .lives svg.off { opacity: 0.28; }
 #power { position: absolute; top: calc(var(--hud-bottom, 100px) + 8px); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
 #power .pw { display: flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
@@ -550,9 +547,8 @@ h2.shop { color: #ffd166; }
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <span class="hud-level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V3m0 1c5-3 9 3 14 0v10c-5 3-9-3-14 0"/></svg><b id="lvlLabel">1-1</b></span>
-      <span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><i id="clock"></i></span>
-      <div class="hud-progress"><span id="pctLabel">0% / 75%</span><div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div></div>
+      <div class="hud-row"><div class="hud-context"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><i id="clock"></i></span></div><span id="pctLabel">0%</span></div>
+      <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div>
     </div>
     <div class="lives" id="lives"></div>
   </div>
@@ -2012,10 +2008,10 @@ window.Board = (function () {
     volcano: [B('rect', [4, 5, 6, 7], [16, 9, 18, 11], [9, 16, 11, 18], [14, 22, 16, 24], [5, 27, 7, 29], [17, 30, 19, 32]), B('heart', [10, 16, 13, 19]), B('round', [6, 12, 8, 14], [15, 12, 17, 14], [10, 24, 13, 26]), B('diamond', [11, 8, 12, 29]), B('rect', [2, 9, 12, 10], [11, 18, 21, 19], [2, 27, 12, 28])]
   };
   // Monster lineup per level: b Puffer, e Chomper, s Buzzsaw, z Dart, p Starfish, h Shark (never more than
-  // one outside boss levels), i Octopus, w Whirlpool, B Big Puffer (boss). New monsters arrive on levels 1,
-  // 6 and 11 of a world, nearly alone; each world climbs in four waves of five (see the game plan doc).
+  // one outside boss levels), i Octopus, w Whirlpool, B Big Puffer (boss). Introductions keep familiar
+  // monsters alongside the newcomer; Meadow adds land hazards at level 8, then mixes the three kinds.
   const LINEUPS = {
-    meadow: ['b', 'b', 'bb', 'bb', 'bbb', 'e', 'be', 'bbe', 'bbe', 'bbbe', 'bs', 'bbs', 'bes', 'bbes', 'bbbes', 'bbes', 'bbess', 'bbbes', 'bbbess', 'Bess'],
+    meadow: ['bb', 'bb', 'bbb', 'bbb', 'bbbb', 'be', 'bbe', 'bbs', 'bes', 'bbbes', 'bbee', 'bbss', 'bbees', 'bbbess', 'bbbees', 'bbes', 'bbeess', 'bbbees', 'bbbeess', 'Bess'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzess'],
     glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhzzpss'],
     reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhzzpic'],
@@ -2023,7 +2019,7 @@ window.Board = (function () {
   };
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
-    meadow: { pool: ['life', 'slow', 'time'], intro: { life: 3, time: 6, slow: 16 } },
+    meadow: { pool: ['life', 'slow', 'time'], intro: { life: 3, time: 4, slow: 5 } },
     dunes: { pool: ['life', 'slow', 'freeze', 'time', 'boost'], intro: { boost: 6, freeze: 16 } },
     glacier: { pool: ['life', 'slow', 'freeze', 'shield', 'time', 'boost'], intro: { shield: 6 } },
     reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'time', 'boost'], intro: { bomb: 6 } },
@@ -2131,7 +2127,7 @@ window.Board = (function () {
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
     for (const kind of L.mon) spawnMonster(kind);
-    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = L.newPower || L.boss ? 3 : 6; powersSeen = false;
+    invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = nextPowerDelay(true); powersSeen = false;
     clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; ironT = 0; bossHp = L.boss ? 3 : 0; drawHud();
     hideT = 0; enterT = 0;
   }
@@ -2307,6 +2303,7 @@ window.Board = (function () {
   }
   function drawHud() {
     $('hud').dataset.mode = mode;
+    $('lvlLabel').style.setProperty('--world-gradient', WORLD_BG[L.world]);
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
     const ck = $('clock'), timeBox = $('clockWrap'), timed = clockOn() || mode === 'rush';
@@ -2317,11 +2314,13 @@ window.Board = (function () {
       const low = mode !== 'daily' && shown <= 10; ck.classList.toggle('low', low); timeBox.classList.toggle('low', low);
       timeBox.setAttribute('aria-label', (mode === 'daily' ? 'Elapsed time ' : low ? 'Low time remaining ' : 'Time remaining ') + ck.textContent);
     }
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b> <span>/ ' + RUSH_GOAL + '%</span><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>Round ' + bossRoundNo() + '/3</b>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>Round ' + bossRoundNo() + '/3</b>' : '<b>' + pct + '%</b>';
     $('bar').setAttribute('aria-valuenow', Math.min(100, pct));
+    $('bar').setAttribute('aria-valuetext', pct + '% claimed; goal ' + L.goal + '%');
+    $('barGoal').title = 'Goal ' + L.goal + '%';
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
-    const l = $('lives'); l.innerHTML = '';
+    const l = $('lives'); l.innerHTML = ''; l.setAttribute('role', 'img'); l.setAttribute('aria-label', lives + ' lives remaining, maximum 5');
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); if (i >= 3) s.firstChild.setAttribute('fill', '#ffc93a'); l.append(s.firstChild); }
   }
   // Timed boosters in the HUD: the booster's icon in its colour, with a ring that drains as time runs out
@@ -2464,7 +2463,7 @@ window.Board = (function () {
   function takePower(p) {
     p.taken = true; const [wx, wz] = W2(p.fx, p.fy);
     burst(wx, 1.2, wz, POWERS[p.kind].color, 30, 3, 6);
-    if (p.kind === 'life') lives = Math.min(5, lives + 1);
+    if (p.kind === 'life') { lives = Math.min(5, lives + 1); if (mode === 'campaign') { prog.lives = lives; saveProg(); } drawHud(); }
     if (p.kind === 'slow') slowT = POWERS.slow.secs;
     if (p.kind === 'freeze') frozenT = POWERS.freeze.secs;
     if (p.kind === 'shield') { shieldOn = true; bubbleK = 0; }
@@ -2481,17 +2480,29 @@ window.Board = (function () {
     arp([880, 1175, 1568], 60, 0.14, 'sine'); buzz('pickup');
   }
   const POWER_LIFE = 25; // seconds a booster waits on the board
+  function nextPowerDelay(first = false) {
+    const base = first ? (L.newPower || L.boss ? 3 : 6) : L.boss ? 9 : L.newPower ? 12 : 18;
+    return base * (0.75 + rng() * 0.5);
+  }
   function spawnPower(force) {
-    const free = seaCellsFree(); if (!free.length || !L.powers.length) return;
+    const active = powers.filter((p) => !p.taken);
+    if (active.length >= 2) return null;
+    // No duplicate types on the board, including introductory drops. Life drops stop at 4 lives.
+    const pool = L.powers.filter((k) => !active.some((p) => p.kind === k) && (k !== 'life' || lives < 4));
+    if (!pool.length) return null;
+    const free = seaCellsFree().filter(([x, y]) => active.every((p) => Math.hypot(x - p.fx, y - p.fy) >= 3));
+    if (!free.length) return null;
+    const low = lives <= 1 || (L.boss && lives <= 2);
+    const wt = (k) => k !== 'life' || pool.length === 1 ? 1 : (pool.length - 1) / (low ? 2 : 11);
+    let kind = pool.includes(force) ? force : null;
+    if (!kind) {
+      let r = rng() * pool.reduce((t, k) => t + wt(k), 0); kind = pool[pool.length - 1];
+      for (const k of pool) { r -= wt(k); if (r <= 0) { kind = k; break; } }
+    }
     const [x, y] = free[(rng() * free.length) | 0];
-    // lives are rare: never two on the board, none at 4+ lives, about 1 in 12 normally and 1 in 3 when you're nearly out
-    const low = lives <= 1 || (L.boss && lives <= 2), lifeOut = powers.some((p) => !p.taken && p.kind === 'life');
-    let pool = L.powers.filter((k) => k !== 'life' || (lives < 4 && !lifeOut)); if (!pool.length && !force) return;
-    const wt = (k) => (k === 'life' ? (low ? (pool.length - 1) / 2 : (pool.length - 1) / 11) : 1);
-    let r = rng() * pool.reduce((t, k) => t + wt(k), 0), kind = force || pool[pool.length - 1];
-    if (!force) for (const k of pool) { r -= wt(k); if (r <= 0) { kind = k; break; } }
     powers.push({ kind, x, y, fx: x, fy: y, mesh: makePower(kind), t: 0 });
-    const [sx, sz] = W2(x, y); burst(sx, 0.2, sz, POWERS[kind].color, 16, 2.5, 4); burst(sx, 0.2, sz, 0xffffff, 10, 2, 3); // it pops up out of the water
+    const [sx, sz] = W2(x, y); burst(sx, 0.2, sz, POWERS[kind].color, 16, 2.5, 4); burst(sx, 0.2, sz, 0xffffff, 10, 2, 3);
+    return kind;
   }
 
   // ---------- eaters bite land ----------
@@ -2616,7 +2627,7 @@ window.Board = (function () {
       return;
     }
     if (mode === 'rush') { rushHit(why); return; }
-    if (!tutorialSafe()) lives--; if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 2.5); ouch(); buzz('hit'); shake = 0.35;
+    if (!tutorialSafe()) lives--; if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 1.5 + rng() * 1.5); ouch(); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     $('vignette').classList.add('on'); setTimeout(() => $('vignette').classList.remove('on'), 60);
@@ -2624,7 +2635,7 @@ window.Board = (function () {
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
     enter(0.65); if (lives > 0) sawsHome();
-    if (mode === 'campaign' && lives > 0) { prog.lives = lives; saveProg(); }
+    if (mode === 'campaign') { prog.lives = lives > 0 ? lives : 3; saveProg(); }
     drawHud();
     if (lives <= 0) { state = 'over'; setTimeout(outOfLives, 1300); }
   }
@@ -2663,7 +2674,7 @@ window.Board = (function () {
     let ok = false; try { ok = await window.Ads.showRewarded('continue'); } finally { continueBusy = false; }
     if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; }
     trialContinueOffer = false;
-    continued = true; levelEnds--; lives = 1; hidePanel(); $('hud').hidden = false; state = 'play'; paused = false;
+    continued = true; levelEnds--; lives = 1; if (mode === 'campaign') { prog.lives = lives; saveProg(); } hidePanel(); $('hud').hidden = false; state = 'play'; paused = false;
     if (mode === 'campaign' && L.time) clockT = Math.max(clockT, 15);
     enter(0.3); drawHud();
   }
@@ -3492,7 +3503,7 @@ window.Board = (function () {
       if (hideT > 0 || enterT > 0) { /* dropping in */ }
       else if (stepP < 1) { stepP = Math.min(1, stepP + dt * SPEED * (boostT > 0 ? 1.6 : 1)); if (stepP >= 1) arrive(); }
       else if (dir) arrive();
-      if (L.powers.length) { powerTimer -= dt; if (powerTimer <= 0) { if (powers.filter((p) => !p.taken).length < 2) spawnPower(L.newPower && !powersSeen ? L.newPower : null); powersSeen = true; powerTimer = L.boss ? 9 : L.newPower ? 12 : 18; } }
+      if (L.powers.length && ticking) { powerTimer -= dt; if (powerTimer <= 0) { const spawned = spawnPower(L.newPower && !powersSeen ? L.newPower : null); if (spawned === L.newPower) powersSeen = true; powerTimer = nextPowerDelay(); } }
       if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
     const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
@@ -3902,6 +3913,7 @@ window.Board = (function () {
     get state() { return state; }, get pct() { return pct; }, get level() { return cur; }, get lives() { return lives; },
     get score() { return score; }, get pos() { return [px, py, stepP]; }, get dir() { return dir; }, get fuse() { return fuse && fuse.pos; },
     get monsters() { return monsters.map((m) => ({ kind: m.kind, boss: m.boss || null, gen: m.gen || 0, x: m.x, y: m.y, dead: !!m.dead })); },
+    get powerState() { return { nextIn: powerTimer, pool: L.powers.slice(), drops: powers.filter((p) => !p.taken).map((p) => ({ kind: p.kind, x: p.fx, y: p.fy, age: p.t })) }; }, spawnPower,
     get trailLen() { return trail.length; }, get powers() { return powers.filter((p) => !p.taken).map((p) => p.kind); },
     // test bot: run the game without drawing, and read the board
     sim(sec) { const step = 1 / 30; for (let k = 0; k < Math.round(sec / step); k++) { simT += step; update(step, simT); if (state !== 'play' && state !== 'intro') break; } },
