@@ -179,6 +179,7 @@ body {
   animation: cardIn 0.35s cubic-bezier(.2,.9,.3,1.25);
 }
 #card.swap { animation: none; }
+#card.anchored { align-self: flex-start; margin-top: var(--card-top, 0px); max-height: calc(100% - var(--card-top, 0px)); animation: none; }
 #card.swap > * { animation: swapIn 0.2s ease-out 0.2s both; }
 @keyframes swapIn { from { opacity: 0; } } /* content appears once the card has reached its new size, so nothing slides */
 @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
@@ -916,11 +917,14 @@ window.Board = (function () {
   // ---------- HUD helpers ----------
   let flashT = 0;
   let flashLeft = 0, flashAt = 0;
-  function flashOut() { flashLeft = 0; const f = $('flash'); f.classList.add('out'); f.classList.remove('show', 'held'); }
+  function flashOut() { clearTimeout(flashT); flashT = 0; flashLeft = 0; const f = $('flash'); f.classList.add('out'); f.classList.remove('show', 'held'); }
   function flashHold(on) { // hide and stop the banner during pause, then carry on after
-    const f = $('flash'); if (f.classList.contains('held') === on) return; f.classList.toggle('held', on);
-    if (on) { if (flashLeft > 0) { clearTimeout(flashT); flashLeft = Math.max(0, flashLeft - (performance.now() - flashAt)); } }
-    else if (flashLeft > 0) { flashAt = performance.now(); clearTimeout(flashT); flashT = setTimeout(flashOut, flashLeft); }
+    const f = $('flash'); if (on && f.classList.contains('held')) return;
+    clearTimeout(flashT); flashT = 0;
+    if (on && flashLeft > 0) flashLeft = Math.max(0, flashLeft - (performance.now() - flashAt));
+    if (flashLeft <= 0) { flashOut(); return; } // Pause can cancel a timer just as it becomes due.
+    f.classList.toggle('held', on);
+    if (!on) { flashAt = performance.now(); flashT = setTimeout(flashOut, flashLeft); }
   }
   function flash(text, small, ms, bad) {
     const f = $('flash'); ms = Math.max(ms || 1000, small ? 1800 : 1200);
@@ -931,12 +935,16 @@ window.Board = (function () {
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   let swapRaf = 0;
-  function panel(html, actions) { // switching between cards: the card glides to its new size and the new content fades in
+  function panel(html, actions, anchorTop = false) { // switching between cards: the card glides to its new size and the new content fades in
     const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // one way home everywhere: the house in the corner
     if (html.includes(HB)) html = HOME_X.replace('data-act="back"', 'data-act="home"') + html.replace(HB, '');
-    const c = $('card'), was = !$('panel').hidden && !reduceMotion ? c.getBoundingClientRect() : null;
+    const c = $('card'), was = !$('panel').hidden ? c.getBoundingClientRect() : null;
     c.className = 'card'; c.style.marginTop = ''; c.style.marginBottom = ''; c.innerHTML = html; $('panel').hidden = false;
-    if (was && was.height > 0) {
+    if (anchorTop && was) { // The exit confirmation keeps the pause card's top while its bottom shrinks.
+      const pn = $('panel'), cs = getComputedStyle(pn);
+      c.style.setProperty('--card-top', Math.max(0, was.top - pn.getBoundingClientRect().top - parseFloat(cs.paddingTop)) + 'px'); c.classList.add('anchored');
+    }
+    if (was && was.height > 0 && !reduceMotion) {
       c.classList.add('swap'); cancelAnimationFrame(swapRaf); c.style.transition = 'none'; c.style.height = was.height + 'px'; // hold the old size until the new one is known
       swapRaf = requestAnimationFrame(() => {
         c.style.transition = 'none'; c.style.height = ''; const to = c.getBoundingClientRect().height;
@@ -3359,7 +3367,7 @@ window.Board = (function () {
     panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
       stay: resumeGame,
       leave: () => { if (!pauseExitPending) return; pauseExitPending = false; finishSkinTrial(); destination(); }
-    });
+    }, true);
   }
   function showPause() {
     if (state !== 'play') return;
