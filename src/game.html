@@ -2186,8 +2186,8 @@ window.Board = (function () {
   // Boosters per world: what can appear, and the level where each one is first introduced.
   const BOOSTERS = {
     meadow: { pool: ['life', 'slow', 'time'], intro: { life: 3, time: 4, slow: 5 } },
-    dunes: { pool: ['life', 'slow', 'freeze', 'time', 'boost'], intro: { boost: 6, freeze: 16 } },
-    glacier: { pool: ['life', 'slow', 'freeze', 'shield', 'time', 'boost'], intro: { shield: 6 } },
+    dunes: { pool: ['life', 'slow', 'freeze', 'shield', 'time'], intro: { shield: 6, freeze: 16 } },
+    glacier: { pool: ['life', 'slow', 'freeze', 'shield', 'time', 'boost'], intro: { boost: 6 } },
     reef: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'time', 'boost'], intro: { bomb: 6 } },
     volcano: { pool: ['life', 'slow', 'freeze', 'shield', 'bomb', 'iron', 'time', 'boost'], intro: { iron: 6 } }
   };
@@ -2846,10 +2846,10 @@ window.Board = (function () {
     trialContinueOffer = canGo && !!trialActive;
     const trialReward = canGo ? null : finishSkinTrial();
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
-    const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = !canGo && shieldOffer();
+    const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = shieldOffer();
     panel('<div class="kicker level-context">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away' : 'Goal: ' + L.goal + '%') + '</p>' + captureSummary() +
       '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
-      (canShield ? '<button class="btn alt shield-next" type="button" data-act="retryS">' + shieldIcon() + 'Try again with a Shield' + adTag() + '</button>' : '') +
+      (canShield ? '<button class="btn alt shield-next" type="button" data-act="retryS"' + (canGo ? ' hidden' : '') + '>' + shieldIcon() + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
       { cont: keepGoing, retryS: withShield(() => startLevel(cur)),
@@ -2859,7 +2859,7 @@ window.Board = (function () {
   }
   function contCountdown() { // the Continue offer goes away after 10 seconds
     let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e || state !== 'over' || $('panel').hidden) { clearInterval(tick); return; } if (continueBusy) return; n--; e.textContent = n; e.parentNode.classList.remove('tk'); void e.offsetWidth; e.parentNode.classList.add('tk'); if (n <= 3) { e.parentNode.classList.add('low'); tone(880, 0.06, 'sine', 0.04); }
-      if (n <= 0) { clearInterval(tick); showTrialReminder(finishSkinTrial()); const b = e.closest('button'); const nx = b.nextElementSibling; if (nx) nx.classList.remove('alt'); collapse(b, nx); } }, 1000);
+      if (n <= 0) { clearInterval(tick); showTrialReminder(finishSkinTrial()); const shield = $('card').querySelector('[data-act=retryS]'); if (shield) shield.hidden = false; const b = e.closest('button'); const nx = b.nextElementSibling; if (nx) nx.classList.remove('alt'); collapse(b, nx); } }, 1000);
   }
   function collapse(b, nx) { // remove a button from an open card: the card shrinks from the bottom and its top stays where it was
     const c = $('card'), bh = b.offsetHeight, h = nx ? nx.getBoundingClientRect().top - b.getBoundingClientRect().top : bh, m0 = parseFloat(c.style.marginBottom) || 0; // the card is centred, so space below it holds its top in place
@@ -2891,20 +2891,24 @@ window.Board = (function () {
     if (trial) { trialActive = trial.id; wearSkin(trial.id); flash('Trying ' + trial.name, 'for this game', 1400); }
     else wearSkin(prog.skin);
     hidePanel(); build(lv); state = 'play'; paused = false; $('hud').hidden = false;
+    const introducePower = () => {
+      // Existing players who passed the moved Shield introduction still learn it before any offer.
+      const k = L.newPower && !prog.seen.includes('p-' + L.newPower) ? L.newPower :
+        mode === 'campaign' && L.powers.includes('shield') && !prog.seen.includes('p-shield') ? 'shield' : null;
+      if (k) {
+        state = 'intro'; prog.seen.push('p-' + k); saveProg(); const pw = POWERS[k];
+        panel('<div class="kicker">New booster</div><div class="foe">' + foeIcon(null, k) + '</div><h2>' + pw.label + '</h2><p>' + pw.text + ' Fly over it to grab it.</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
+          { go: () => { hidePanel(); state = 'play'; banner(); } });
+      } else { hidePanel(); state = 'play'; banner(); }
+    };
     const fresh = L.mon.filter((k, j) => L.mon.indexOf(k) === j && k !== 'mini' && !prog.seen.includes(k));
     if (fresh.length) { // introduce a new monster before the level starts
       state = 'intro'; const k = fresh[0]; prog.seen.push(...fresh); saveProg();
       panel('<div class="kicker">New monster</div><div class="foe">' + foeIcon(k) + '</div><h2>' + MONSTER_INFO[k].name + '</h2><p>' + MONSTER_INFO[k].text + '</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
-        { go: () => { hidePanel(); state = 'play'; banner(); } });
+        { go: introducePower });
       return;
     }
-    if (L.newPower && !prog.seen.includes('p-' + L.newPower)) { // and a new booster
-      state = 'intro'; prog.seen.push('p-' + L.newPower); saveProg(); const pw = POWERS[L.newPower];
-      panel('<div class="kicker">New booster</div><div class="foe">' + foeIcon(null, L.newPower) + '</div><h2>' + pw.label + '</h2><p>' + pw.text + ' Fly over it to grab it.</p><div class="btns"><button class="btn" type="button" data-act="go">Got it</button></div>',
-        { go: () => { hidePanel(); state = 'play'; banner(); } });
-      return;
-    }
-    banner();
+    introducePower();
   }
   function enter(delay, afterHit = false) { // Initial entries stay solid; only a hit earns post-landing blink feedback.
     px = tx = SPAWN_X; py = ty = SPAWN_Y; stepP = 1; dir = null; queue = []; lastLand = [SPAWN_X, SPAWN_Y];
