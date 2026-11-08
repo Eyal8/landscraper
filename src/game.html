@@ -261,9 +261,9 @@ body {
 .lvl.playing:not(.cur) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.65); }
 .card .level-choice-note { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: center; font: 500 12px/1.4 var(--mono); }
 .world-theme .world-level-title .kicker, .world-theme .level-context { color: color-mix(in srgb, var(--level-accent) 75%, white); }
-.level-select .lvl.cur, .world-theme .level-launch, .world-theme .pause-resume { background: linear-gradient(135deg, rgba(12,20,48,.38), rgba(12,20,48,.5)), var(--level-bg); color: #fff; text-shadow: 0 1px 2px rgba(12,20,48,.5); }
+.level-select .lvl.cur, .world-theme .level-launch:not(.go) { background: linear-gradient(135deg, rgba(12,20,48,.38), rgba(12,20,48,.5)), var(--level-bg); color: #fff; text-shadow: 0 1px 2px rgba(12,20,48,.5); }
 .level-select .lvl.cur { box-shadow: inset 0 0 0 2px var(--level-accent), 0 0 12px rgba(255,255,255,.08); }
-.world-theme .level-launch, .world-theme .pause-resume { font-weight: 700; }
+.level-select .level-launch, .btn.pause-resume { font-weight: 700; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
@@ -437,6 +437,11 @@ h2.shop { color: #ffd166; }
 .tro small { font: 500 11px var(--mono); letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
 .sect { width: 100%; font: 500 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-align: left; margin-top: 4px; }
 .row3 .btn { padding: 12px 6px; font-size: 12px; }
+.home-nav .btn { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px; border-radius: 18px; font-size: 11px; letter-spacing: .08em; background: linear-gradient(160deg, color-mix(in srgb, var(--nav-accent) 18%, transparent), rgba(255,255,255,.08)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nav-accent) 40%, transparent), 0 3px 0 rgba(10,20,60,.2); }
+.home-nav svg { width: 20px; height: 20px; flex: none; color: var(--nav-accent); }
+.home-nav .nav-worlds { --nav-accent: #8fdbaf; }
+.home-nav .nav-skins { --nav-accent: #c5b0ff; }
+.home-nav .nav-trophies { --nav-accent: #ffd166; }
 .worlds { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .world { position: relative; isolation: isolate; overflow: hidden; cursor: pointer; min-width: 0; min-height: 136px; border: 0; border-radius: 22px; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 16px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 rgba(10,20,60,.25); }
 .world:last-child:nth-child(odd) { grid-column: 1 / -1; width: calc((100% - 12px) / 2); justify-self: center; }
@@ -2991,7 +2996,7 @@ window.Board = (function () {
       '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b><svg class=\"rbolt\" viewBox=\"0 0 24 24\"><path d=\"M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z\"/></svg>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b><svg class="rbolt" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
-      '<div class="row3"><button class="btn alt" type="button" data-act="worlds">Worlds</button><button class="btn alt" type="button" data-act="skins">Skins</button><button class="btn alt" type="button" data-act="trophies">Trophies</button></div>',
+      '<div class="row3 home-nav"><button class="btn alt nav-worlds" type="button" data-act="worlds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16"/></svg>Worlds</button><button class="btn alt nav-skins" type="button" data-act="skins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 14 9 5 9-5-2 6H5zM8 13V9h8v4M12 9V5M3 4v4M1 6h4M19 2v4M17 4h4"/></svg>Skins</button><button class="btn alt nav-trophies" type="button" data-act="trophies"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + IC.trophy + '"/></svg>Trophies</button></div>',
       { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
     showSkinUnlock();
   }
@@ -3178,7 +3183,7 @@ window.Board = (function () {
       if (!browsingPaused) return;
       $('card').querySelectorAll('[data-act="lvl"]').forEach((b) => { const on = +b.dataset.i === selected; b.classList.toggle('cur', on); b.setAttribute('aria-pressed', on); });
       const cta = $('card').querySelector('[data-act="launch"]'), resume = browsingPaused && selected === cur;
-      cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
+      cta.classList.toggle('go', resume); cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
       if (browsingPaused) $('levelChoiceNote').textContent = resume ? 'Pick up where you paused' : trialActive ? 'Ends this game and skin trial' : 'Current level progress will be lost';
     };
     panel(html, { lvl: (b) => { if (!browsingPaused) { startLevel(+b.dataset.i); return; } selected = +b.dataset.i; updateChoice(); }, back: browsingPaused ? showPause : showWorlds,
@@ -3616,7 +3621,7 @@ window.Board = (function () {
   function showPause() {
     if (state !== 'play') return;
     pauseExitPending = pauseLevelsOpen = false; paused = true; $('hud').classList.add('hud-paused'); flashHold(true); const sb = settingsButtons();
-    panel('<div class="kicker level-context' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn pause-resume" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+    panel('<div class="kicker level-context' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn go pause-resume" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
       Object.assign({ resume: resumeGame, retry: mode === 'daily' ? () => playDaily(dailyKey) : adBreak(() => (mode === 'rush' ? startRush() : startLevel(cur))), home: () => confirmLeaveGame(showHome),
