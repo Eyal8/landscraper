@@ -42,8 +42,10 @@ body {
 .mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 2px; }
 .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
-.hud-level { min-width: 0; padding: 6px 0; }
+.hud-level { min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
 .hud-level b { font: 800 15px/1.2 var(--display); }
+.hud-score { display: inline-flex; align-items: baseline; gap: 3px; color: #fff0c2; font: 700 11px/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.hud-score small { font: 500 8px/1 var(--mono); letter-spacing: .04em; opacity: .85; }
 #lvlLabel { color: #fff; }
 .hud-time { padding: 6px 8px; border-radius: 12px; color: #fff; background: rgba(12,20,48,.25); border: 1px solid rgba(255,255,255,.2); }
 .clock-icon { width: 13px; height: 13px; flex: none; opacity: .85; }
@@ -70,8 +72,13 @@ body {
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
 .bar em { position: absolute; top: 50%; width: 28px; height: 28px; transform: translate(-50%, -50%); font-style: normal; }
 .bar em svg { width: 28px; height: 28px; fill: #ffd166; stroke: #995221; stroke-width: 1; filter: drop-shadow(0 0 5px rgba(255,209,102,.85)); }
-.bar em span { display: none; position: absolute; top: 28px; left: 50%; transform: translateX(-50%); color: #fff5cc; font: 500 10px/1 var(--mono); text-shadow: 0 1px 3px #243a54; }
-#hud[data-mode="rush"] .bar em span { display: block; }
+.bar em span { position: absolute; top: 27px; left: 50%; transform: translateX(-50%); color: #fff5cc; font: 700 12px/1 var(--mono); text-shadow: 0 1px 3px #243a54; }
+.bar.goal em svg { filter: drop-shadow(0 0 8px #fff0b3); animation: goalShine .9s ease-out both; }
+.bar.goal em::after { content: ''; position: absolute; inset: -3px; border: 2px solid #fff1b3; border-radius: 50%; animation: goalRing .9s ease-out both; }
+@keyframes goalShine { 0% { transform: scale(1); } 40% { transform: scale(1.5) rotate(12deg); filter: brightness(1.6) drop-shadow(0 0 12px #fff0b3); } 70% { transform: scale(1.05) rotate(-5deg); } 100% { transform: scale(1.15); } }
+@keyframes goalRing { from { transform: scale(.6); opacity: .9; } to { transform: scale(2); opacity: 0; } }
+#hud.hud-paused .bar.goal em svg, #hud.hud-paused .bar.goal em::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .bar.goal em svg { animation: none; } .bar.goal em::after { display: none; } .bar i { transition: none; } }
 .endbar { position: relative; width: 100%; margin: 4px 0 2px; padding-bottom: 20px; }
 .endbar .track { position: relative; height: 14px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
@@ -621,7 +628,7 @@ h2.shop { color: #ffd166; }
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg><i id="clock"></i></span></div>
+      <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b><span class="hud-score" id="scoreWrap" role="img" aria-label="Score: 0 points"><span id="scoreLabel">0</span><small aria-hidden="true">PTS</small></span></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg><i id="clock"></i></span></div>
       <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>75%</span></em></div>
     </div>
     <div class="hud-status ts"><div class="lives" id="lives"></div><span id="pctLabel">0%</span></div>
@@ -2472,6 +2479,9 @@ window.Board = (function () {
   }
   function drawHud() {
     $('hud').dataset.mode = mode;
+    const points = score.toLocaleString('en-US');
+    $('scoreLabel').textContent = score >= 100000 ? score.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 }) : points;
+    $('scoreWrap').setAttribute('aria-label', 'Score: ' + points + ' points'); $('scoreWrap').title = points + ' points';
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
     const ck = $('clock'), timeBox = $('clockWrap'), timed = clockOn() || mode === 'rush';
@@ -2892,7 +2902,7 @@ window.Board = (function () {
     const trial = pendingTrialSkin();
     if (trial) { trialActive = trial.id; wearSkin(trial.id); flash('Trying ' + trial.name, 'for this game', 1400); }
     else wearSkin(prog.skin);
-    hidePanel(); build(lv); state = 'play'; paused = false; $('hud').hidden = false;
+    hidePanel(); build(lv); state = 'play'; paused = false; $('hud').classList.remove('hud-paused'); $('hud').hidden = false;
     const introducePower = () => {
       // Existing players who passed the moved Shield introduction still learn it before any offer.
       const k = L.newPower && !prog.seen.includes('p-' + L.newPower) ? L.newPower :
@@ -3574,7 +3584,7 @@ window.Board = (function () {
   let pauseExitPending = false, pauseLevelsOpen = false;
   function resumeGame() {
     if (state !== 'play') return;
-    pauseExitPending = pauseLevelsOpen = false; hidePanel(); paused = false; flashHold(false);
+    pauseExitPending = pauseLevelsOpen = false; hidePanel(); paused = false; $('hud').classList.remove('hud-paused'); flashHold(false);
   }
   function confirmLeaveGame(destination, label = 'Go Home') {
     if (state !== 'play' || !paused) return;
@@ -3587,7 +3597,7 @@ window.Board = (function () {
   }
   function showPause() {
     if (state !== 'play') return;
-    pauseExitPending = pauseLevelsOpen = false; paused = true; flashHold(true); const sb = settingsButtons();
+    pauseExitPending = pauseLevelsOpen = false; paused = true; $('hud').classList.add('hud-paused'); flashHold(true); const sb = settingsButtons();
     panel('<div class="kicker level-context' + (mode === 'rush' ? ' rush' : mode === 'daily' ? ' daily' : '') + '">' + (mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Paused</h2><div class="btns"><button class="btn" type="button" data-act="resume">Resume</button><button class="btn alt" type="button" data-act="retry">Restart' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (mode === 'daily' ? '<button class="btn alt m-daily" type="button" data-act="cal"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg>Calendar</button>' : mode === 'rush' ? '<button class="btn alt m-rush" type="button" data-act="rmenu"><svg class="bi" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush menu</button>' : '<button class="btn alt" type="button" data-act="lvls">Levels</button>') +
       '<button class="btn alt" type="button" data-act="home">Home</button>' + sb.html + '</div>',
