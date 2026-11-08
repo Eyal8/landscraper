@@ -1800,10 +1800,10 @@ window.Board = (function () {
   shock.name = 'landing-ripple'; shock.position.set(SPAWN_X + ox, H_LAND + 0.03, SPAWN_Y + oz); shock.visible = false; scene.add(shock);
   const shockMat2 = shockMat.clone(), shock2 = new THREE.Mesh(shock.geometry, shockMat2);
   shock2.name = 'landing-ripple-echo'; shock2.position.copy(shock.position); shock2.visible = false; scene.add(shock2);
-  let hideT = 0, enterT = 0, shockT = 0, landingTouched = false, heroX = 0, heroZ = 0, heroInit = false;
+  let hideT = 0, enterT = 0, shockT = 0, landingTouched = false, blinkAfterLanding = false, hitBlinkAge = -1, heroX = 0, heroZ = 0, heroInit = false;
   function resetLanding() {
     body.scale.set(1, 1, 1); body.rotation.x = body.rotation.z = 0; drone.scale.setScalar(1.45);
-    padG.visible = shock.visible = shock2.visible = false; padMat.opacity = landingSparkMat.opacity = 0; shockT = 0;
+    padG.visible = shock.visible = shock2.visible = false; padMat.opacity = landingSparkMat.opacity = 0; shockT = 0; blinkAfterLanding = false; hitBlinkAge = -1;
   }
   // direction chevron on the ground in front of the drone
   const chev = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0.28), new THREE.Vector2(0.24, -0.02), new THREE.Vector2(0.1, -0.02), new THREE.Vector2(0, 0.1), new THREE.Vector2(-0.1, -0.02), new THREE.Vector2(-0.24, -0.02)])).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
@@ -2780,7 +2780,7 @@ window.Board = (function () {
     window.__lastWhy = why;
     if ((invuln > 0 && !timeout) || state !== 'play') return;
     if (shieldOn && !timeout) { // the bubble takes the hit: it pops, the fuse goes out, and you keep going
-      shieldOn = false; bubbleK = 0; invuln = 1.2; fuse = null; spark.visible = false; burnt.count = 0;
+      shieldOn = false; bubbleK = 0; invuln = 1.2; hitBlinkAge = 0; blinkAfterLanding = false; fuse = null; spark.visible = false; burnt.count = 0;
       const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
       burst(wx, 1, wz, 0x9fe6ff, 30, 4, 4); burst(wx, 1, wz, 0xffffff, 16, 3, 4);
       tone(1200, 0.25, 'sine', 0.06, 300); buzz('hit'); flash('Shield!', 'it saved you', 800); drawHud();
@@ -2794,7 +2794,7 @@ window.Board = (function () {
     const say = WHY[why] ? pick(WHY[why]) : why; flash(lives > 0 ? (timeout ? 'Time\'s up!' : pick(OUCH)) : 'Out of lives', lives > 0 ? say : timeout ? 'time ran out' : say, 1100, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; });
     trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
-    enter(0.65); if (lives > 0) sawsHome();
+    enter(0.65, true); if (lives > 0) sawsHome();
     if (mode === 'campaign') { prog.lives = lives > 0 ? lives : 3; saveProg(); }
     drawHud();
     if (lives <= 0) { state = 'over'; setTimeout(outOfLives, 1300); }
@@ -2836,7 +2836,7 @@ window.Board = (function () {
     trialContinueOffer = false;
     continued = true; levelEnds--; lives = 1; if (mode === 'campaign') { prog.lives = lives; saveProg(); } hidePanel(); $('hud').hidden = false; state = 'play'; paused = false;
     if (mode === 'campaign' && L.time) clockT = Math.max(clockT, 15);
-    enter(0.3); drawHud();
+    enter(0.3, true); drawHud();
   }
   function startLevel(i) {
     mode = 'campaign'; rng = Math.random;
@@ -2866,9 +2866,9 @@ window.Board = (function () {
     }
     banner();
   }
-  function enter(delay) { // one readable landing for every skin, with the existing control/protection timing
+  function enter(delay, afterHit = false) { // Initial entries stay solid; only a hit earns post-landing blink feedback.
     px = tx = SPAWN_X; py = ty = SPAWN_Y; stepP = 1; dir = null; queue = []; lastLand = [SPAWN_X, SPAWN_Y];
-    resetLanding(); landingTouched = false;
+    resetLanding(); landingTouched = false; blinkAfterLanding = afterHit;
     const color = LANDING_COLORS[skinNow.id] || LANDING_COLORS[skinNow.pack] || 0xffd166;
     padMat.color.setHex(color); shockMat.color.setHex(color); shockMat2.color.setHex(0xfff4ca);
     hideT = delay; enterT = ENTER; invuln = delay + ENTER + 0.9;
@@ -2884,6 +2884,8 @@ window.Board = (function () {
   }
   function landed() {
     landingImpact();
+    if (blinkAfterLanding) hitBlinkAge = 0; // Begin with a visible beat when control returns, never while still landing.
+    blinkAfterLanding = false;
     setTimeout(() => { if (touchHeld && touchDir && touchDir !== 'any') steer(touchDir); else for (const k of keysHeld) if (KEYS[k]) steer(KEYS[k]); }, 0); // a direction chosen during the drop counts
   }
   function banner() {
@@ -3263,7 +3265,7 @@ window.Board = (function () {
     rushTime = Math.max(0, rushTime - 5); tone(220, 0.4, 'sawtooth', 0.08, 90); buzz('hit'); shake = 0.3;
     flash('-5s', why, 900, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; }); trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
-    enter(0.4); drawHud();
+    enter(0.4, true); drawHud();
   }
   let rushExtra = false;
   function rushEnd() {
@@ -3688,6 +3690,7 @@ window.Board = (function () {
     // player
     if (live) {
       if (invuln > 0) invuln -= dt;
+      if (hitBlinkAge >= 0) hitBlinkAge = invuln > 0 ? hitBlinkAge + dt : -1;
       const ticking = !(hideT > 0 || enterT > 0); // booster timers wait while the boat drops back in, so a hit doesn't waste them
       if (ticking) { if (slowT > 0) slowT = Math.max(0, slowT - dt); if (frozenT > 0) frozenT = Math.max(0, frozenT - dt); if (ironT > 0) ironT = Math.max(0, ironT - dt); if (ironFx > 0) ironFx -= dt; if (boostT > 0) boostT = Math.max(0, boostT - dt); }
       if (tut === 'line' && drawing) for (const m of monsters) { if (m.dead) continue; if (trail.some((c) => Math.hypot((c % W) + 0.5 - m.x, ((c / W) | 0) + 0.5 - m.y) < 3.5)) { tutorialStep('near'); break; } }
@@ -3710,21 +3713,20 @@ window.Board = (function () {
     let onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
     const ground = (x, y) => { const i = idx(clamp(Math.round(x), 0, W - 1), clamp(Math.round(y), 0, Hh - 1)); return Math.max(0, hNow[i]); };
     const gy = Math.max(ground(px, py) * (1 - stepP) + ground(tx, ty) * stepP, 0);
-    let drop = 0, landingX = 0, landingZ = 0, landingPitch = 0, entering = false;
-    if (hideT > 0) { entering = true; if (!paused) { hideT = Math.max(0, hideT - dt); if (hideT === 0) tone(430, 0.12, 'sine', 0.035, 700); } }
+    let drop = 0, entering = false;
+    const waitingToLand = hideT > 0; // Keep the delay-ending frame hidden until its falling pose is ready.
+    if (waitingToLand) { entering = true; if (!paused) { hideT = Math.max(0, hideT - dt); if (hideT === 0) tone(430, 0.12, 'sine', 0.035, 700); } }
     else if (enterT > 0) {
       entering = true; const k = clamp(1 - enterT / ENTER, 0, 1), contact = 0.58;
       if (!reduceMotion) {
         if (k < contact) {
           const q = k / contact;
-          drop = 3.2 * (1 - q * q); landingX = -1.15 * (1 - q); landingZ = 0.3 * (1 - q);
-          drone.rotation.y = Math.PI + 0.65 * Math.pow(1 - q, 2);
-          landingPitch = -0.12 * Math.sin(q * Math.PI); body.rotation.z = -0.15 * (1 - q);
-          drone.scale.setScalar(1.45 * (0.88 + 0.12 * q));
+          drop = 6 * (1 - q * q); // Straight down from above, without a sideways throw or spin.
+          drone.rotation.y = Math.PI; body.rotation.z = 0; drone.scale.setScalar(1.45);
         } else {
           const q = (k - contact) / (1 - contact);
-          drop = q < 0.65 ? 0.38 * Math.sin(q / 0.65 * Math.PI) : 0;
-          const squash = q < 0.18 ? 0.18 * Math.cos(q / 0.18 * Math.PI / 2) : q > 0.58 && q < 0.82 ? 0.07 * Math.sin((q - 0.58) / 0.24 * Math.PI) : 0;
+          drop = q < 0.65 ? 0.22 * Math.sin(q / 0.65 * Math.PI) : 0;
+          const squash = q < 0.18 ? 0.12 * Math.cos(q / 0.18 * Math.PI / 2) : q > 0.58 && q < 0.82 ? 0.05 * Math.sin((q - 0.58) / 0.24 * Math.PI) : 0;
           body.scale.set(1 + squash * 0.5, 1 - squash, 1 + squash * 0.5); body.rotation.z = 0;
           drone.rotation.y = Math.PI; drone.scale.setScalar(1.45);
         }
@@ -3747,19 +3749,19 @@ window.Board = (function () {
     const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
     if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
     const floaty = ['drone', 'ufo', 'rocket', 'astro'].includes(skinNow.id);
-    drone.position.set(heroX + landingX, gy + skinNow.lift + drop + (reduceMotion || entering ? 0 : Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025)), heroZ + landingZ);
+    drone.position.set(heroX, gy + skinNow.lift + drop + (reduceMotion || entering ? 0 : Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025)), heroZ);
     const mdx = tx - px, mdy = ty - py;
     if (dir && !entering) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
-    body.rotation.x = entering ? landingPitch : (stepP < 1 && (mdx || mdy)) ? (skinNow.id === 'drone' ? 0.22 : -0.08) : 0; // drone leans in, boats lift the bow
+    body.rotation.x = entering ? 0 : (stepP < 1 && (mdx || mdy)) ? (skinNow.id === 'drone' ? 0.22 : -0.08) : 0; // drone leans in, boats lift the bow
     const moving = stepP < 1 && (mdx || mdy) && live;
     const sg = skinGroups[skinNow.id]; if (sg.userData.anim) sg.userData.anim(t, paused ? 0 : dt, moving);
     if (boostT > 0 && moving && !paused && !entering && Math.random() < dt * 40) { const [bx, bz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP); burst(bx, 0.5, bz, 0xa6ff4d, 2, 1.5, 1.5); } // speed sparks
     if (moving && !paused && !entering && skinNow.id !== 'drone' && cells[idx(px, py)] !== LAND && Math.random() < dt * 30) { // foam wake behind the hero at sea
       const a = drone.rotation.y; burst(heroX - Math.sin(a) * 0.7 + rand(-0.15, 0.15), gy + 0.12, heroZ - Math.cos(a) * 0.7 + rand(-0.15, 0.15), 0xffffff, 1, 0.6, 0.6);
     }
-    drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
-    droneShadow.position.set(fx + ox + landingX, gy + 0.02, fy + oz + landingZ); droneShadow.visible = drone.visible;
-    bubble.visible = shieldOn && hideT <= 0 && state !== 'over';
+    drone.visible = waitingToLand ? false : enterT > 0 ? true : !(hitBlinkAge >= 0 && invuln > 0 && state === 'play' && !reduceMotion && Math.floor(hitBlinkAge * 8) % 2);
+    droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
+    bubble.visible = shieldOn && !waitingToLand && state !== 'over';
     if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubbleMat.uniforms.uT.value = t; if (Math.random() < dt * 6) { const a = rand(0, 6.28); burst(bubble.position.x + Math.cos(a) * 0.9, bubble.position.y + rand(-0.3, 0.5), bubble.position.z + Math.sin(a) * 0.9, 0xffe9a8, 1, 0.4, 1); } }
     halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !entering; const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
