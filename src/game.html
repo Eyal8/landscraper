@@ -30,7 +30,7 @@ body {
 
 /* Compact badges for context and time; progress sits below the hearts. */
 #hud {
-  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 70px; align-items: start; gap: 10px; pointer-events: none;
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) 70px; align-items: start; gap: 10px; row-gap: 4px; pointer-events: none;
   padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
 }
 
@@ -43,7 +43,6 @@ body {
 .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .hud-level { min-width: 0; padding: 6px 0; }
-.hud-level::before { content: ''; width: 4px; height: 18px; border-radius: 3px; background: var(--world-gradient); box-shadow: 0 0 5px rgba(255,255,255,.25); }
 .hud-level b { font: 800 15px/1.2 var(--display); }
 #lvlLabel { color: #fff; }
 .hud-time { padding: 6px 8px; border-radius: 12px; color: #fff; background: rgba(12,20,48,.25); border: 1px solid rgba(255,255,255,.2); }
@@ -58,7 +57,7 @@ body {
 #pctLabel b { font: 800 16px/1.2 var(--display); color: var(--ink); }
 #pctLabel .hud-board { color: var(--ink-soft); }
 @media (max-width: 360px) {
-  #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; }
+  #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; row-gap: 4px; }
   .hud-level b { font-size: 12px; }
   #clock { font-size: 13px; }
   #hud[data-mode="daily"] #clock { font-size: 12px; }
@@ -95,17 +94,22 @@ body {
 .lives svg:nth-child(5) { grid-column: 4 / 6; grid-row: 2; }
 .lives svg:nth-child(4):last-child { grid-column: 3 / 5; }
 .lives svg.off { opacity: 0.28; }
-#power { grid-column: 1 / -1; justify-self: center; pointer-events: none; display: flex; gap: 8px; }
-#power:empty { display: none; }
-.hud-notices { grid-column: 1 / -1; min-height: var(--notice-height, 56px); }
-#power .pw { display: flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
-#power .pw i { position: relative; width: 30px; height: 30px; display: grid; place-items: center; }
+#power { grid-column: 1 / -1; justify-self: center; min-height: 30px; align-items: center; pointer-events: none; display: flex; gap: 8px; }
+.hud-notices { grid-column: 1 / -1; min-height: var(--notice-height, 72px); }
+#power .pw { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 3px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
+#power .pw i { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
 #power .pr { position: absolute; inset: 0; transform: rotate(-90deg); } #power .pr circle { fill: none; stroke: rgba(255,255,255,0.14); stroke-width: 4; } #power .pr .pp { stroke: var(--c); stroke-dasharray: 107; stroke-linecap: round; }
-#power.tight .pw { font-size: 0; gap: 0; padding: 4px; } /* four at once: icons only */
+#power.tight .pw { font-size: 0; gap: 0; padding: 3px; } /* four at once: icons only */
 #power .ic { width: 15px; height: 15px; color: var(--c); }
+@media (max-height: 500px) and (min-width: 600px) {
+  .mid { grid-column: 2; grid-row: 1; }
+  .hud-status { grid-column: 3; grid-row: 1; }
+  #power { grid-column: 2; grid-row: 1; align-self: start; padding-top: 2px; }
+  #power .pw { font-size: 0; gap: 0; padding: 3px; }
+}
 
 #flash {
-  position: absolute; left: 50%; top: calc(var(--hud-bottom, 140px) - var(--notice-height, 56px) + 4px); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
+  position: absolute; left: 50%; top: calc(var(--hud-bottom, 140px) - var(--notice-height, 72px) + 4px); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
   width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; overflow-wrap: anywhere;
   font: 800 clamp(13px, 3.6vw, 16px)/1.2 var(--display); opacity: 0; transition: opacity .2s, transform .2s;
   padding: 4px 8px; border-radius: 10px; background: transparent;
@@ -1139,6 +1143,39 @@ window.Board = (function () {
         for(const x of [.14,.84]){g.strokeStyle='#eea17a';g.lineWidth=3;g.beginPath();g.moveTo(x*cw,ch*.46);g.lineTo((x+.025)*cw,ch*.57);g.lineTo((x-.01)*cw,ch*.66);g.stroke()}
         for(let i=0;i<12;i++)glow(i%2?.96:.04,.68+(i%5)*.06,.012,'rgba(255,211,154,.5)');
       }
+      // Extra scenery lives behind the transparent game canvas, never on top of board tiles.
+      const bush = (x, y, r, color) => { g.fillStyle = color; for (const [dx,dy,s] of [[-.55,.12,.7],[0,-.18,1],[.6,.05,.72]]) { g.beginPath(); g.ellipse(x*cw+dx*r*unit,y*ch+dy*r*unit,r*unit*s,r*unit*s*.7,0,0,7); g.fill(); } };
+      const rock = (x, y, r, color, face) => { const bx=x*cw,by=y*ch,sz=r*unit; g.fillStyle=color; g.beginPath(); g.moveTo(bx-sz,by); g.lineTo(bx-sz*.7,by-sz*.65); g.lineTo(bx+sz*.2,by-sz); g.lineTo(bx+sz,by-sz*.35); g.lineTo(bx+sz*.8,by); g.closePath(); g.fill(); g.fillStyle=face; g.beginPath(); g.moveTo(bx-sz*.7,by-sz*.65); g.lineTo(bx+sz*.2,by-sz); g.lineTo(bx+sz*.4,by-sz*.12); g.closePath(); g.fill(); };
+      g.save(); g.globalAlpha = 0.75;
+      if (world.id === 'meadow') {
+        cloud(.18,.16,.13); cloud(.77,.29,.12);
+        glow(.75,.18,.22,'rgba(255,246,201,.35)');
+        for (const [x,y,r] of [[.02,.65,.055],[.11,.71,.04],[.91,.67,.05],[.99,.74,.07]]) { g.fillStyle='#7c9f73'; g.fillRect(x*cw-2,y*ch,4,r*unit); bush(x,y,r,'#7eb880'); bush(x-.012,y-.012,r*.65,'#98ce8c'); }
+        bush(.01,.99,.16,'#70af70'); bush(.99,.98,.14,'#80bd76');
+        for (let i=0;i<24;i++) { const x=i%2?.94+(i%3)*.018:.02+(i%3)*.018,y=.72+(i%8)*.035,bx=x*cw,by=y*ch,r=unit*.005; g.strokeStyle='#76aa6f'; g.lineWidth=1.2; g.beginPath();g.moveTo(bx,by+r*4);g.quadraticCurveTo(bx-r*2,by+r,bx,by);g.stroke();g.fillStyle=i%3?'#fff2bf':'#efb2cc';for(let k=0;k<5;k++){g.beginPath();g.arc(bx+Math.cos(k*1.26)*r,by+Math.sin(k*1.26)*r,r*.7,0,7);g.fill()} }
+      } else if (world.id === 'dunes') {
+        g.fillStyle='rgba(255,240,191,.6)';g.beginPath();g.arc(cw*.83,ch*.22,unit*.065,0,7);g.fill();
+        polygon([[0,.57],[.08,.43],[.2,.58]],'#d6b08a'); polygon([[.08,.43],[.12,.57],[.2,.58]],'#c9a380');
+        polygon([[.84,.63],[.94,.49],[1,.6],[1,.7]],'#e2b68b');
+        for (const [x,y,r] of [[.035,.71,.08],[.94,.87,.1],[.08,.97,.055]]) {const bx=x*cw,by=y*ch,sz=r*unit;g.strokeStyle='#9ca77c';g.lineWidth=Math.max(3,sz*.2);g.lineCap='round';g.beginPath();g.moveTo(bx,by);g.lineTo(bx,by-sz);g.moveTo(bx,by-sz*.4);g.lineTo(bx-sz*.35,by-sz*.4);g.lineTo(bx-sz*.35,by-sz*.7);g.moveTo(bx,by-sz*.6);g.lineTo(bx+sz*.3,by-sz*.6);g.lineTo(bx+sz*.3,by-sz*.85);g.stroke();}
+        rock(.015,.98,.12,'#c39268','#ddb185');rock(.985,.99,.1,'#ce9e72','#e5b98a');
+        g.strokeStyle='rgba(255,233,190,.45)';g.lineWidth=2;for(let i=0;i<5;i++){const y=ch*(.68+i*.065);g.beginPath();g.moveTo(0,y);g.bezierCurveTo(cw*.25,y-unit*.04,cw*.6,y+unit*.04,cw,y-unit*.025);g.stroke();}
+      } else if (world.id === 'glacier') {
+        g.strokeStyle='rgba(204,255,238,.35)';g.lineWidth=unit*.045;g.beginPath();g.moveTo(0,ch*.22);g.bezierCurveTo(cw*.25,ch*.08,cw*.55,ch*.34,cw,ch*.16);g.stroke();
+        for(const [x,y,r]of[[.035,.72,.11],[.94,.78,.09],[.01,.99,.18],[.99,.99,.15]]){const dx=r*unit/cw,dy=r*unit/ch;polygon([[x-dx*.5,y],[x-dx*.45,y-dy*.8],[x,y-dy*1.3],[x+dx*.55,y-dy*.75],[x+dx*.7,y]],'#a9c9df');polygon([[x,y-dy*1.3],[x+dx*.55,y-dy*.75],[x+dx*.7,y],[x,y]],'#d9edf4');}
+        for(let i=0;i<24;i++){const x=i%2?.88+(i%5)*.022:.02+(i%5)*.025,y=.12+(i%9)*.09;g.fillStyle='rgba(243,250,255,.65)';g.beginPath();g.arc(x*cw,y*ch,unit*(i%3? .0025:.004),0,7);g.fill();}
+      } else if (world.id === 'reef') {
+        polygon([[.08,0],[.17,0],[.65,1],[.4,1]],'rgba(223,255,246,.16)');polygon([[.7,0],[.75,0],[.95,1],[.85,1]],'rgba(223,255,246,.1)');
+        rock(.025,.99,.15,'#91c3b7','#b7d8c6');rock(.98,.98,.13,'#9ac6b9','#c4dec5');
+        for(const [x,y,r,color]of[[.025,.94,.23,'#7bb8ab'],[.98,.98,.25,'#8dbeb2'],[.07,.73,.13,'#93c4b7'],[.94,.67,.12,'#8dbeb6']]){const bx=x*cw,by=y*ch,sz=r*unit;g.strokeStyle=color;g.lineWidth=Math.max(2,sz*.07);g.lineCap='round';for(const d of[-1,0,1]){g.beginPath();g.moveTo(bx,by);g.bezierCurveTo(bx+d*sz*.5,by-sz*.3,bx-d*sz*.3,by-sz*.7,bx+d*sz*.35,by-sz);g.stroke();}}
+        for(let i=0;i<10;i++){const x=i%2?.94:.06,y=.17+i*.067;g.strokeStyle='rgba(228,255,249,.5)';g.lineWidth=1.3;g.beginPath();g.arc(x*cw+Math.sin(i)*unit*.025,y*ch,unit*.009,0,7);g.stroke();}
+      } else {
+        for(const x of[.14,.84]){g.fillStyle='rgba(118,98,117,.22)';for(let i=0;i<5;i++){g.beginPath();g.ellipse(x*cw+Math.sin(i)*unit*.025,ch*(.39-i*.025),unit*(.027+i*.008),unit*.025,0,0,7);g.fill();}}
+        rock(.02,.98,.18,'#64596b','#897487');rock(.98,.99,.16,'#5d5365','#847184');rock(.07,.75,.07,'#8b7585','#ac8993');
+        for(const x of[.02,.97]){const bx=x*cw,by=ch;g.lineCap='round';for(const [width,color]of[[unit*.034,'rgba(124,78,76,.7)'],[unit*.014,'rgba(242,162,115,.7)']]){g.strokeStyle=color;g.lineWidth=width;g.beginPath();g.moveTo(bx,by);g.bezierCurveTo(bx+unit*.03,by-unit*.07,bx-unit*.025,by-unit*.1,bx+unit*.01,by-unit*.16);g.stroke();}}
+        for(let i=0;i<12;i++)glow(i%2?.94:.04,.38+(i%6)*.09,.008,'rgba(255,213,159,.45)');
+      }
+      g.restore();
       cached = backdropCache[cacheId] = {key, url:c.toDataURL()};
     }
     if (!thumbnail) { stage.style.setProperty('--world-scene', 'url("' + cached.url + '")'); stage.dataset.world = world.id; }
@@ -2430,7 +2467,6 @@ window.Board = (function () {
   }
   function drawHud() {
     $('hud').dataset.mode = mode;
-    $('lvlLabel').parentElement.style.setProperty('--world-gradient', WORLD_BG[L.world]);
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
     const ck = $('clock'), timeBox = $('clockWrap'), timed = clockOn() || mode === 'rush';
@@ -3655,7 +3691,7 @@ window.Board = (function () {
     const want = following ? (camLo - 2.5) * (1 - along) + (camHi + 2.5) * along : mid;
     const wantX = following ? clamp(camWantX * 0.7, -W * 0.34, W * 0.34) : 0;
     const ease = 1 - Math.exp(-dt * 4.8);
-    if (!camInit || !dt) { camTz = want; camTx = wantX; camInit = true; } else { camTz += (want - camTz) * ease; camTx += (wantX - camTx) * ease; }
+    if (!camInit || (!dt && !following)) { camTz = want; camTx = wantX; camInit = true; } else { camTz += (want - camTz) * ease; camTx += (wantX - camTx) * ease; }
     const yaw = win * Math.sin(clearT * 0.6) * 0.3, el = EL - win * 0.12, d = camD * (1 - win * 0.08);
     const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0, sz = shake > 0 ? (Math.random() - 0.5) * shake : 0;
     camT.set(camTx + sx * 0.5, 0, camTz);
@@ -4024,9 +4060,12 @@ window.Board = (function () {
     placeCamera(t, dt);
   }
 
+  let viewWidth = 0, viewHeight = 0, viewTop = -1;
   function resize() {
     worldBackdrop(WORLDS[L.world]);
     const w = stage.clientWidth, top = $('hud').hidden ? 0 : Math.ceil($('hud').getBoundingClientRect().height), h = Math.max(1, stage.clientHeight - top);
+    if (w === viewWidth && h === viewHeight && top === viewTop) return;
+    viewWidth = w; viewHeight = h; viewTop = top;
     renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
     renderer.domElement.style.top = top + 'px'; renderer.domElement.style.bottom = 'auto';
     camera.aspect = w / h;
@@ -4045,7 +4084,7 @@ window.Board = (function () {
     };
     let lo = 8, hi = 300; for (let k = 0; k < 32; k++) { const mid = (lo + hi) / 2; if (widthFits(mid)) hi = mid; else lo = mid; }
     const g1 = camGeom(1), dDepth = 0.6 * (Hh + 1.8) / (g1.bot - g1.top);
-    camD = Math.max(hi, dDepth); camRange(); camInit = false; placeCamera(0, 0);
+    camD = Math.max(hi, dDepth); camRange(); placeCamera(0, 0); // Reframe the viewport without snapping the active follow target.
   }
   window.addEventListener('resize', resize);
 
@@ -4133,7 +4172,7 @@ window.Board = (function () {
     stage.style.setProperty('--hud-bottom', height + 'px'); resize();
   }).observe($('hud'));
   new ResizeObserver(() => {
-    stage.style.setProperty('--notice-height', Math.max(56, $('flash').offsetHeight + 8) + 'px');
+    stage.style.setProperty('--notice-height', Math.max(72, $('flash').offsetHeight + 8) + 'px');
   }).observe($('flash'));
   requestAnimationFrame(loop);
 
