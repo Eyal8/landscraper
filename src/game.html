@@ -117,12 +117,14 @@ body {
 }
 
 #flash {
-  position: absolute; left: 50%; top: calc(var(--hud-bottom, 140px) - var(--notice-height, 72px) + 4px); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
+  position: absolute; left: 50%; top: calc(var(--hud-bottom, 140px) - var(--notice-height, 72px)); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
   width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; overflow-wrap: anywhere;
   font: 800 clamp(16px, 4.5vw, 20px)/1.2 var(--display); opacity: 0; transition: opacity .2s, transform .2s;
   padding: 8px 12px; border-radius: 14px; background: rgba(14,20,52,.36);
   text-shadow: 0 1px 2px rgba(10,20,50,.7), 0 1px 6px rgba(10,20,50,.5);
 }
+/* Use the empty booster row to lift notices clear of the upper board rim. */
+#hud:not([hidden]):has(#power:empty) ~ #flash { top: calc(var(--hud-bottom, 140px) - var(--notice-height, 72px) - 16px); }
 #hud[hidden] ~ #flash { top: calc(10px + env(safe-area-inset-top, 0px)); }
 #flash.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
 #flash.out { opacity: 0; transform: translate(-50%, -8px) scale(.98); transition: opacity .35s, transform .35s; }
@@ -261,7 +263,7 @@ body {
 .lvl.playing:not(.cur) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.65); }
 .card .level-choice-note { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: center; font: 500 12px/1.4 var(--mono); }
 .world-theme .world-level-title .kicker, .world-theme .level-context { color: color-mix(in srgb, var(--level-accent) 75%, white); }
-.level-select .lvl.cur, .world-theme .level-launch:not(.go) { background: linear-gradient(135deg, rgba(12,20,48,.38), rgba(12,20,48,.5)), var(--level-bg); color: #fff; text-shadow: 0 1px 2px rgba(12,20,48,.5); }
+.level-select .lvl.cur { background: linear-gradient(135deg, rgba(12,20,48,.38), rgba(12,20,48,.5)), var(--level-bg); color: #fff; text-shadow: 0 1px 2px rgba(12,20,48,.5); }
 .level-select .lvl.cur { box-shadow: inset 0 0 0 2px var(--level-accent), 0 0 12px rgba(255,255,255,.08); }
 .level-select .level-launch, .btn.pause-resume { font-weight: 700; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
@@ -2804,7 +2806,7 @@ window.Board = (function () {
       panel('<div class="result-heading"><div class="kicker level-context">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + headline + '</h2></div><div class="result-performance">' + starsSvg(stars, fill) +
         '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p></div>' + (note ? '<div class="result-note-slot">' + note + '</div>' : '') +
         '<div class="btns result-actions">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : ' go') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt shield-next" type="button" data-act="nextS">' + shieldIcon() + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
-        (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
+        (mode === 'daily' ? '<button class="btn go" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
       $('card').classList.add('results');
@@ -2877,7 +2879,7 @@ window.Board = (function () {
     if (mode === 'campaign') { fails[L.id] = (fails[L.id] || 0) + 1; prog.lives = 3; saveProg(); }
     const canSkip = mode === 'campaign' && fails[L.id] >= 3 && !L.boss && !prog.done[L.id] && LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length < 2, canShield = shieldOffer();
     panel('<div class="kicker level-context">' + (mode === 'daily' ? 'Daily' : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2>Out of lives</h2><div class="big">' + (L.boss ? 'Round ' + bossRoundNo() + '/3' : pct + '%') + '</div><p>' + (L.boss ? 'The boss got away' : 'Goal: ' + L.goal + '%') + '</p>' + captureSummary() +
-      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : '') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
+      '<div class="btns">' + (canGo ? '<button class="btn cdb" type="button" data-act="cont"><span class="cdr"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle class="cdp" cx="20" cy="20" r="17"/></svg><b id="cdN">10</b></span><span class="cdt">Continue +1 life' + adTag() + '</span></button>' : '') + '<button class="btn' + (canGo ? ' alt' : ' go') + '" type="button" data-act="retry">Try again' + (mode === 'daily' && !(dailyKey === todayKey() && dailyFree()) ? adTag() : '') + '</button>' +
       (canShield ? '<button class="btn alt shield-next" type="button" data-act="retryS"' + (canGo ? ' hidden' : '') + '>' + shieldIcon() + 'Try again with a Shield' + adTag() + '</button>' : '') +
       (canSkip ? '<button class="btn alt" type="button" data-act="skip">Skip level · ' + (2 - LEVELS.filter((x) => x.w === L.w && prog.skipped[x.id]).length) + ' left' + adTag() + '</button>' : '') +
       '<button class="btn alt" type="button" data-act="home">Home</button></div>',
@@ -2888,7 +2890,7 @@ window.Board = (function () {
   }
   function contCountdown() { // the Continue offer goes away after 10 seconds
     let n = 10; const tick = setInterval(() => { const e = $('cdN'); if (!e || state !== 'over' || $('panel').hidden) { clearInterval(tick); return; } if (continueBusy) return; n--; e.textContent = n; e.parentNode.classList.remove('tk'); void e.offsetWidth; e.parentNode.classList.add('tk'); if (n <= 3) { e.parentNode.classList.add('low'); tone(880, 0.06, 'sine', 0.04); }
-      if (n <= 0) { clearInterval(tick); showTrialReminder(finishSkinTrial()); const shield = $('card').querySelector('[data-act=retryS]'); if (shield) shield.hidden = false; const b = e.closest('button'); const nx = b.nextElementSibling; if (nx) nx.classList.remove('alt'); collapse(b, nx); } }, 1000);
+      if (n <= 0) { clearInterval(tick); showTrialReminder(finishSkinTrial()); const shield = $('card').querySelector('[data-act=retryS]'); if (shield) shield.hidden = false; const b = e.closest('button'); const nx = b.nextElementSibling; if (nx) { nx.classList.remove('alt'); nx.classList.add('go'); } collapse(b, nx); } }, 1000);
   }
   function collapse(b, nx) { // remove a button from an open card: the card shrinks from the bottom and its top stays where it was
     const c = $('card'), bh = b.offsetHeight, h = nx ? nx.getBoundingClientRect().top - b.getBoundingClientRect().top : bh, m0 = parseFloat(c.style.marginBottom) || 0; // the card is centred, so space below it holds its top in place
@@ -3180,12 +3182,12 @@ window.Board = (function () {
       const st = prog.stars[x.id] || 0, current = browsingPaused && i === cur, open = isOpen(i) || current;
       html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === selected ? ' cur' : '') + (current ? ' playing' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (browsingPaused ? ' aria-pressed="' + (i === selected) + '"' : '') + (open ? '' : ' disabled') + ' aria-label="' + (browsingPaused ? 'Level ' : 'Play level ') + x.name + (current ? ', current game' : '') + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
-    html += '</div>' + (browsingPaused ? '<p class="level-choice-note" id="levelChoiceNote" role="status" aria-live="polite"></p><button class="btn level-launch" type="button" data-act="launch"></button>' : '');
+    html += '</div>' + (browsingPaused ? '<p class="level-choice-note" id="levelChoiceNote" role="status" aria-live="polite"></p><button class="btn go level-launch" type="button" data-act="launch"></button>' : '');
     const updateChoice = () => {
       if (!browsingPaused) return;
       $('card').querySelectorAll('[data-act="lvl"]').forEach((b) => { const on = +b.dataset.i === selected; b.classList.toggle('cur', on); b.setAttribute('aria-pressed', on); });
       const cta = $('card').querySelector('[data-act="launch"]'), resume = browsingPaused && selected === cur;
-      cta.classList.toggle('go', resume); cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
+      cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
       if (browsingPaused) $('levelChoiceNote').textContent = resume ? 'Pick up where you paused' : trialActive ? 'Ends this game and skin trial' : 'Current level progress will be lost';
     };
     panel(html, { lvl: (b) => { if (!browsingPaused) { startLevel(+b.dataset.i); return; } selected = +b.dataset.i; updateChoice(); }, back: browsingPaused ? showPause : showWorlds,
