@@ -70,15 +70,16 @@ body {
 .bar { position: relative; height: 8px; margin: 7px 0 18px; border-radius: 999px; background: rgba(12,20,48,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
-.bar em { position: absolute; top: 50%; width: 28px; height: 28px; transform: translate(-50%, -50%); font-style: normal; }
-.bar em svg { width: 28px; height: 28px; fill: #ffd166; stroke: #995221; stroke-width: 1; filter: drop-shadow(0 0 5px rgba(255,209,102,.85)); }
-.bar em span { position: absolute; top: 27px; left: 50%; transform: translateX(-50%); color: #fff5cc; font: 700 12px/1 var(--mono); text-shadow: 0 1px 3px #243a54; }
-.bar.goal em svg { filter: drop-shadow(0 0 8px #fff0b3); animation: goalShine .9s ease-out both; }
-.bar.goal em::after { content: ''; position: absolute; inset: -3px; border: 2px solid #fff1b3; border-radius: 50%; animation: goalRing .9s ease-out both; }
-@keyframes goalShine { 0% { transform: scale(1); } 40% { transform: scale(1.5) rotate(12deg); filter: brightness(1.6) drop-shadow(0 0 12px #fff0b3); } 70% { transform: scale(1.05) rotate(-5deg); } 100% { transform: scale(1.15); } }
+.bar em { position: absolute; top: 50%; width: 3px; height: 20px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px #fff4ca; transform: translate(-50%, -50%); font-style: normal; }
+.bar em span { position: absolute; top: 23px; left: 50%; transform: translateX(-50%); color: #fff5cc; font: 700 12px/1 var(--mono); text-shadow: 0 1px 3px #243a54; }
+.bar .bar-milestone { position: absolute; top: 50%; width: 1.5px; height: 12px; border-radius: 1px; transform: translate(-50%, -50%); background: rgba(255,255,255,.65); }
+.bar .bar-milestone.hit { background: #fff0b3; box-shadow: 0 0 4px rgba(255,209,102,.7); }
+.bar.goal em { background: #fff2b3; box-shadow: 0 0 12px #ffe18a; animation: goalShine .9s ease-out both; }
+.bar.goal em::after { content: ''; position: absolute; inset: -7px -10px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,228,150,.8), transparent 70%); animation: goalRing .9s ease-out both; }
+@keyframes goalShine { 0% { filter: brightness(1); } 40% { filter: brightness(1.8) drop-shadow(0 0 8px #fff0b3); } 100% { filter: brightness(1); } }
 @keyframes goalRing { from { transform: scale(.6); opacity: .9; } to { transform: scale(2); opacity: 0; } }
-#hud.hud-paused .bar.goal em svg, #hud.hud-paused .bar.goal em::after { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .bar.goal em svg { animation: none; } .bar.goal em::after { display: none; } .bar i { transition: none; } }
+#hud.hud-paused .bar.goal em, #hud.hud-paused .bar.goal em::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .bar.goal em { animation: none; } .bar.goal em::after { display: none; } .bar i { transition: none; } }
 .endbar { position: relative; width: 100%; margin: 4px 0 2px; padding-bottom: 20px; }
 .endbar .track { position: relative; height: 14px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
@@ -633,7 +634,7 @@ h2.shop { color: #ffd166; }
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
       <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b><span class="hud-score" id="scoreWrap" role="img" aria-label="Score: 0 points"><span id="scoreLabel">0</span><small aria-hidden="true">PTS</small></span></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg><i id="clock"></i></span></div>
-      <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>75%</span></em></div>
+      <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><span>75%</span></em><b class="bar-milestone" hidden aria-hidden="true"></b><b class="bar-milestone" hidden aria-hidden="true"></b></div>
     </div>
     <div class="hud-status ts"><div class="lives" id="lives"></div><span id="pctLabel">0%</span></div>
     <div id="power"></div><div class="hud-notices" aria-hidden="true"></div>
@@ -2501,7 +2502,10 @@ window.Board = (function () {
     $('bar').setAttribute('aria-valuetext', pct + '% claimed; ' + (L.boss ? 'round ' + bossRoundNo() + ' of 3' : 'goal ' + L.goal + '%'));
     const goal = $('barGoal'); goal.hidden = !!L.boss; goal.title = 'Goal ' + L.goal + '%'; goal.setAttribute('aria-label', goal.title);
     goal.querySelector('span').textContent = L.goal + '%';
-    goal.querySelector('path').setAttribute('d', mode === 'rush' ? 'M5 3v18h2v-7c4-3 7 3 12 0V4c-5 3-8-3-12 0V3z' : 'M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z');
+    $('bar').querySelectorAll('.bar-milestone').forEach((mark, i) => {
+      const threshold = STAR_THRESHOLDS[i + 1]; mark.hidden = !!L.boss || mode === 'rush'; mark.style.left = threshold + '%';
+      mark.title = (i + 2) + ' stars: ' + threshold + '%'; mark.classList.toggle('hit', pct >= threshold);
+    });
     $('barFill').style.width = Math.min(100, pct) + '%'; goal.style.left = L.goal + '%';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = ''; l.setAttribute('role', 'img'); l.setAttribute('aria-label', lives + ' lives remaining, maximum 5');
@@ -3701,7 +3705,7 @@ window.Board = (function () {
   const camT = new THREE.Vector3();
   function camGeom(d) { // ground z (relative to the target) seen at the top and bottom of the usable screen
     const vf2 = camera.fov / 2 * Math.PI / 180, hgt = d * Math.sin(EL), back = d * Math.cos(EL);
-    const hudFrac = Math.min(0.15, 40 / Math.max(1, renderer.domElement.clientHeight)); // HUD has its own space above the canvas.
+    const hudFrac = Math.min(0.15, 40 / Math.max(1, viewHeight)); // Follow uses the gameplay viewport, excluding the extra scenery above it.
     const botFrac = 0.015;
     const tTop = EL - Math.atan((1 - 2 * hudFrac) * Math.tan(vf2)), tBot = EL + Math.atan((1 - 2 * botFrac) * Math.tan(vf2));
     return { top: back - hgt / Math.tan(tTop), bot: back - hgt / Math.tan(tBot) };
@@ -4089,16 +4093,18 @@ window.Board = (function () {
     placeCamera(t, dt);
   }
 
-  let viewWidth = 0, viewHeight = 0, viewTop = -1;
+  let viewWidth = 0, viewHeight = 0, viewTop = -1, viewOverscan = 0;
   function resize() {
     worldBackdrop(WORLDS[L.world]);
     const w = stage.clientWidth, top = $('hud').hidden ? 0 : Math.ceil($('hud').getBoundingClientRect().height), h = Math.max(1, stage.clientHeight - top);
-    if (w === viewWidth && h === viewHeight && top === viewTop) return;
-    viewWidth = w; viewHeight = h; viewTop = top;
-    renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
-    renderer.domElement.style.top = top + 'px'; renderer.domElement.style.bottom = 'auto';
+    // Reveal the scene behind the transparent notice band without moving or shrinking the board.
+    const overscan = $('hud').hidden ? 0 : Math.min(top, Math.ceil($('hud').querySelector('.hud-notices').getBoundingClientRect().height));
+    if (w === viewWidth && h === viewHeight && top === viewTop && overscan === viewOverscan) return;
+    viewWidth = w; viewHeight = h; viewTop = top; viewOverscan = overscan;
+    renderer.setSize(w, h + overscan, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = (h + overscan) + 'px';
+    renderer.domElement.style.top = (top - overscan) + 'px'; renderer.domElement.style.bottom = 'auto';
     camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    camera.setViewOffset(w, h, 0, -overscan, w, h + overscan);
     const asp = w / Math.max(1, h); EL = (asp < 0.62 ? 53 : asp < 0.9 ? 52 : 50) * Math.PI / 180;
     // Show a useful neighbourhood rather than the entire distant board. The follow keeps edge players in view.
     const v = new THREE.Vector3();
