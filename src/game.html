@@ -678,7 +678,7 @@ h2.shop { color: #ffd166; }
   <div id="pad"><svg viewBox="0 0 160 160"><g class="w up"><path class="wf" d="M32.4 23.3 A74 74 0 0 1 127.6 23.3 L99.3 57.0 A30 30 0 0 0 60.7 57.0 Z"/><path class="wc" d="M88.0 32.0 L80.0 21.0 L72.0 32.0"/></g><g class="w right"><path class="wf" d="M136.7 32.4 A74 74 0 0 1 136.7 127.6 L103.0 99.3 A30 30 0 0 0 103.0 60.7 Z"/><path class="wc" d="M128.0 88.0 L139.0 80.0 L128.0 72.0"/></g><g class="w down"><path class="wf" d="M127.6 136.7 A74 74 0 0 1 32.4 136.7 L60.7 103.0 A30 30 0 0 0 99.3 103.0 Z"/><path class="wc" d="M72.0 128.0 L80.0 139.0 L88.0 128.0"/></g><g class="w left"><path class="wf" d="M23.3 127.6 A74 74 0 0 1 23.3 32.4 L57.0 60.7 A30 30 0 0 0 57.0 99.3 Z"/><path class="wc" d="M32.0 72.0 L21.0 80.0 L32.0 88.0"/></g></svg><div class="knob"></div></div>
   <div id="coach"><b id="coachText"></b><svg class="finger" id="coachFinger" viewBox="0 0 48 48"><circle cx="24" cy="18" r="10" fill="#fff" fill-opacity="0.35"/><path d="M20 20V8a3 3 0 0 1 6 0v10l2-1a3 3 0 0 1 3.5 1.2l.5-.2a3 3 0 0 1 4 2.4 3 3 0 0 1 3.6 2.8V32c0 6-4 10-10 10h-3c-4 0-6-2-8-5l-5-8a3 3 0 0 1 4.6-3.6z" fill="#fff" stroke="#1d2a63" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hint" id="hint"></div>
-  <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here.</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
+  <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
   <div id="panel"><div class="card" id="card"></div></div>
 </main>
 
@@ -2097,7 +2097,7 @@ window.Board = (function () {
   }
   // Each world ends with a big, crowned version of one of its monsters. Trap it 3 times to win.
   const BOSSES = {
-    boss: { base: 'bouncer', name: 'King Puffer', text: 'Trap it 3 times to win.', size: 1.9, color: 0xff8c2a },
+    boss: { base: 'bouncer', name: 'King Puffer', text: 'Trap it 3 times to win', size: 1.9, color: 0xff8c2a },
     bstar: { base: 'splitter', name: 'Giant Starfish', text: 'Trap it 3 times. Each trap breaks off 3 babies.', size: 1.8 },
     boct: { base: 'inker', name: 'Giant Octopus', text: 'Big ink clouds. Trap it 3 times.', size: 1.7 },
     bjelly: { base: 'jelly', name: 'Jellyfish Queen', text: 'Bolts both ways. Trap it 3 times.', size: 1.6 },
@@ -2153,16 +2153,17 @@ window.Board = (function () {
     g.scale.multiplyScalar(1.22); g.userData.s = g.scale.x;
     scene.add(g); return g;
   }
+  // UI copy: no final period on a standalone line; punctuate every sentence in a multi-sentence paragraph.
   const MONSTER_INFO = { // two short lines at most: people do not read long texts
     bouncer: { name: 'Puffer', text: 'Touches your line? A fuse runs to you.' },
-    eater: { name: 'Chomper', text: 'Bites off your land.' },
+    eater: { name: 'Chomper', text: 'Bites off your land' },
     saw: { name: 'Buzzsaw', text: 'Rolls on land. Don\'t touch.' },
     zipper: { name: 'Dart', text: 'Very fast. Keep lines short.' },
-    splitter: { name: 'Starfish', text: 'Trap it, it splits in two.' },
-    hunter: { name: 'Shark', text: 'Hunts you while you draw.' },
+    splitter: { name: 'Starfish', text: 'Trap it, it splits in two' },
+    hunter: { name: 'Shark', text: 'Hunts you while you draw' },
     inker: { name: 'Octopus', text: 'Glowing means ink. Avoid ink.' },
     magnet: { name: 'Whirlpool', text: 'Keep your lines out of its ring. It pulls you in.' },
-    mini: { name: 'Baby starfish', text: 'Small and quick.' },
+    mini: { name: 'Baby starfish', text: 'Small and quick' },
     jelly: { name: 'Jellyfish', text: 'Glows, then fires a bolt. Land blocks it.' },
     crab: { name: 'Crab', text: 'Walks the shore. Don\'t touch.' },
     eel: { name: 'Eel', text: 'Long body. All of it bites.' },
@@ -2173,6 +2174,7 @@ window.Board = (function () {
 
 
   // ---------- power-ups ----------
+  // These descriptions form the first sentence of the two-sentence booster introduction.
   const POWERS = {
     slow: { label: 'Slow', color: 0x2f8bff, secs: 7, text: 'Monsters slow down.' },
     freeze: { label: 'Freeze', color: 0x6ff4ff, secs: 4, text: 'Monsters stop.' },
@@ -2592,8 +2594,8 @@ window.Board = (function () {
     const showTip = ++resultNoteCount % 3 === 0; // Occasional guidance, with no permanent save state.
     if (bestCapture >= 2) return captureSummary();
     if (!showTip) return '';
-    const tips = ['Close your trail on land to claim an area.', 'Trap several sea monsters together for a bigger bonus.', 'Replay levels to improve your best stars.'];
-    const tip = L.boss ? 'Keep your lives to earn more boss stars.' : mode === 'daily' ? 'Daily stars do not add to your campaign stars.' : tips[Math.max(0, cur) % tips.length];
+    const tips = ['Close your trail on land to claim an area', 'Trap several sea monsters together for a bigger bonus', 'Replay levels to improve your best stars'];
+    const tip = L.boss ? 'Keep your lives to earn more boss stars' : mode === 'daily' ? 'Daily stars do not add to your campaign stars' : tips[Math.max(0, cur) % tips.length];
     return '<div class="capture-highlight result-tip"><b>Tip</b><span>' + tip + '</span></div>';
   }
   function claim() {
@@ -3237,7 +3239,7 @@ window.Board = (function () {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
+    panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
       (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
@@ -3252,7 +3254,7 @@ window.Board = (function () {
     const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
     const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="6" width="17" height="12" rx="3"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M4 20 20 4" stroke="#ff4d6d" stroke-width="2.6"/></svg>';
     panel(BACK_X + '<div class="shop-heading"><div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2></div>' +
-      '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device.') + '</p><div class="pcards">' +
+      '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device') + '</p><div class="pcards">' +
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
@@ -3360,7 +3362,7 @@ window.Board = (function () {
   }
   function showRush() {
     toMenu();
-    panel(BACK_X + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Clear as many boards as you can.</p>' +
+    panel(BACK_X + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Clear as many boards as you can</p>' +
       (prog.rush ? '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + (prog.rushBoards || '–') + '</b><span>most boards</span></div></div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
@@ -3465,7 +3467,7 @@ window.Board = (function () {
   clearOwnedTrial();
   function trialReadyHtml() {
     const sk = pendingTrialSkin();
-    return sk ? '<div class="trial-ready" role="status"><b>' + sk.name + ' trial ready</b><span>Choose Campaign, Daily or Rush for your next game.</span></div>' : '';
+    return sk ? '<div class="trial-ready" role="status"><b>' + sk.name + ' trial ready</b><span>Choose Campaign, Daily or Rush for your next game</span></div>' : '';
   }
   function finishSkinTrial() {
     trialContinueOffer = false;
@@ -3675,7 +3677,7 @@ window.Board = (function () {
     if (state !== 'play' || !paused) return;
     pauseLevelsOpen = false; pauseExitPending = true;
     const game = mode === 'rush' ? 'Rush run' : mode === 'daily' ? 'Daily game' : 'level';
-    panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn go pause-resume" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
+    panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost' + (trialActive ? '. Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn go pause-resume" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
       stay: resumeGame,
       leave: () => { if (!pauseExitPending) return; pauseExitPending = false; finishSkinTrial(); destination(); }
     }, true);
