@@ -413,9 +413,20 @@ h2.shop { color: #ffd166; }
 .sect { width: 100%; font: 500 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-align: left; margin-top: 4px; }
 .row3 .btn { padding: 12px 6px; font-size: 12px; }
 .worlds { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-.world { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line); }
+.world { position: relative; isolation: isolate; overflow: hidden; cursor: pointer; border: 0; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; text-align: left; box-shadow: inset 0 0 0 1px var(--line); }
+.world::before, .world::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+.world::before { background: var(--world-art) center / 100% 100% no-repeat; }
+.world::after { background: linear-gradient(90deg, rgba(12,20,48,.4), rgba(12,20,48,.12) 65%, rgba(12,20,48,.32)); box-shadow: inset 0 0 0 1px var(--line); border-radius: inherit; }
+.world > * { position: relative; z-index: 1; text-shadow: 0 1px 3px rgba(12,20,48,.6); }
 .world b { font: 800 17px var(--display); display: block; }
 .world span { font: 500 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.world > span { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 360px) {
+  .world { padding: 12px; gap: 8px; }
+  .world b { font-size: 14px; }
+  .world span { font-size: 11px; letter-spacing: .04em; }
+  .world div > span { white-space: nowrap; }
+}
 .world[disabled] { cursor: default; filter: grayscale(0.7); opacity: 0.55; }
 .ic-star { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.25em; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
 .lvl small .ic-star { width: 1.15em; height: 1.15em; margin: 0 -0.08em; }
@@ -1085,9 +1096,9 @@ window.Board = (function () {
   const worldTex = (w) => texCache[w.tex] || (texCache[w.tex] = TEX[w.tex]());
 
   const backdropCache = {};
-  function worldBackdrop(world) { // soft, static scenery; cached independently of gameplay RNG
-    const cw = Math.min(1600, stage.clientWidth), ch = Math.min(1200, stage.clientHeight), key = cw + 'x' + ch;
-    let cached = backdropCache[world.id];
+  function worldBackdrop(world, thumbnail = false) { // soft, static scenery; cached independently of gameplay RNG
+    const cw = thumbnail ? 640 : Math.min(1600, stage.clientWidth), ch = thumbnail ? 160 : Math.min(1200, stage.clientHeight), key = cw + 'x' + ch, cacheId = world.id + (thumbnail ? '-card' : '');
+    let cached = backdropCache[cacheId];
     if (!cached || cached.key !== key) {
       const c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d'), unit = Math.min(cw, ch);
       const ridge = (y, amp, color) => {
@@ -1123,9 +1134,10 @@ window.Board = (function () {
         for(const x of [.14,.84]){g.strokeStyle='#eea17a';g.lineWidth=3;g.beginPath();g.moveTo(x*cw,ch*.46);g.lineTo((x+.025)*cw,ch*.57);g.lineTo((x-.01)*cw,ch*.66);g.stroke()}
         for(let i=0;i<12;i++)glow(i%2?.96:.04,.68+(i%5)*.06,.012,'rgba(255,211,154,.5)');
       }
-      cached = backdropCache[world.id] = {key, url:c.toDataURL()};
+      cached = backdropCache[cacheId] = {key, url:c.toDataURL()};
     }
-    stage.style.setProperty('--world-scene', 'url("' + cached.url + '")'); stage.dataset.world = world.id;
+    if (!thumbnail) { stage.style.setProperty('--world-scene', 'url("' + cached.url + '")'); stage.dataset.world = world.id; }
+    return cached.url;
   }
 
   // ---------- floor: animated water with grid and shoreline foam ----------
@@ -3038,7 +3050,7 @@ window.Board = (function () {
     let html = BACK_X + '<h2>Worlds</h2><div class="worlds">';
     WORLDS.forEach((wd, w) => {
       const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
-      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
+      html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + ';--world-art:url(\'' + worldBackdrop(wd, true) + '\')"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
     });
     html += '</div>';
     panel(html, { world: (b) => showWorld(+b.dataset.w), back: showHome });
