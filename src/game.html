@@ -239,6 +239,8 @@ body {
 .ep h3 { margin: 0 0 8px; font: 800 15px var(--display); display: flex; justify-content: space-between; align-items: baseline; }
 .ep h3 small { font: 500 11px var(--mono); letter-spacing: 0.14em; color: var(--ink-soft); }
 .grid { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.world-level-header { width: 100%; box-sizing: border-box; padding-left: 44px; min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.world-star-total { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--gold); font: 700 13px/1.3 var(--mono); white-space: nowrap; }
 .lvl { cursor: pointer; aspect-ratio: 1; border-radius: 14px; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: rgba(255,255,255,0.14); color: var(--ink); font: 800 16px var(--display); }
 .lvl { min-width: 0; font-size: clamp(16px, 6vw, 24px) !important; border-radius: 16px; position: relative; }
@@ -3139,7 +3141,8 @@ window.Board = (function () {
     if (browsingPaused) { pauseLevelsOpen = true; pauseExitPending = false; } else toMenu();
     const opened = LEVELS.map((x, i) => x.w === w && isOpen(i) ? i : -1).filter((i) => i >= 0);
     let selected = browsingPaused ? cur : opened.includes(nextLevel()) ? nextLevel() : opened[0];
-    let html = BACK_X + '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid" role="group" aria-label="Choose a level">';
+    const stars = worldStars(w);
+    let html = BACK_X + '<div class="world-level-header"><div class="kicker">World ' + (w + 1) + '</div><span class="world-star-total" role="img" aria-label="' + WORLDS[w].name + ': ' + stars + ' of 60 stars">' + STAR + ' ' + stars + ' / 60</span></div><h2>' + WORLDS[w].name + '</h2><div class="grid" role="group" aria-label="Choose a level">';
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, current = browsingPaused && i === cur, open = isOpen(i) || current;
