@@ -383,6 +383,11 @@ h2.shop { color: #ffd166; }
 .pcard.p-all .pic { grid-column: 1; grid-row: 2; }
 .pcard.p-all .pprice { grid-column: 2; grid-row: 2; align-self: center; width: auto; margin: 0; padding: 10px 18px; background: #ffe27a; color: #4a2a00; font-size: 18px; }
 .pcard.p-all::before, .pcard.p-skins::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 42%, rgba(255,255,255,.09) 43%, transparent 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.22); }
+.shop-card .pcard.p-all:not(.owned) { animation: shopGlow 9s ease-in-out 2s infinite; }
+.shop-card .pcard.p-all:not(.owned)::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255,246,215,.45) 50%, transparent 65%); opacity: 0; transform: translateX(-110%); animation: shopShimmer 9s ease-in-out 2s infinite; }
+@keyframes shopGlow { 0%,18%,100% { box-shadow: 0 4px 0 #6a2a8a, 0 8px 26px rgba(232,69,122,.32); } 7% { box-shadow: 0 4px 0 #6a2a8a, 0 8px 28px rgba(232,69,122,.42), 0 0 20px rgba(255,209,102,.22); } }
+@keyframes shopShimmer { 0% { transform: translateX(-110%); opacity: 0; } 3%,7% { opacity: .55; } 14%,100% { transform: translateX(110%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .shop-card .pcard.p-all:not(.owned), .shop-card .pcard.p-all:not(.owned)::after { animation: none; } .shop-card .pcard.p-all::after { display: none; } }
 .pcard.p-ads { background: linear-gradient(145deg, #0d8596, #18ae9b); }
 .pcard.p-skins { background: linear-gradient(145deg, #3155cb, #299be0); box-shadow: 0 4px 0 #24408d, 0 6px 18px rgba(65,157,255,.22); }
 .pcard.p-sea { background: linear-gradient(145deg, #244ba8, #168ea8); }
