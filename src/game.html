@@ -2028,7 +2028,7 @@ window.Board = (function () {
   // one outside boss levels), i Octopus, w Whirlpool, B Big Puffer (boss). Introductions keep familiar
   // monsters alongside the newcomer; Meadow adds land hazards at level 8, then mixes the three kinds.
   const LINEUPS = {
-    meadow: ['bb', 'bb', 'bbb', 'bbb', 'bbbb', 'be', 'bbe', 'bbs', 'bes', 'bbbes', 'bbee', 'bbss', 'bbees', 'bbbess', 'bbbees', 'bbes', 'bbeess', 'bbbees', 'bbbeess', 'Bess'],
+    meadow: ['bb', 'bb', 'bbb', 'bbb', 'bbbb', 'be', 'bbe', 'bbs', 'bes', 'bbbes', 'bbee', 'bbss', 'bbees', 'bbbess', 'bbbees', 'bbes', 'bbeess', 'bbbees', 'bbbeess', 'Beeess'],
     dunes: ['bz', 'bbz', 'bbzs', 'bbzes', 'bbzzes', 'bp', 'bbp', 'bpzs', 'bbpes', 'bbpzess', 'bh', 'bbhs', 'bzhs', 'bbphes', 'bbzphess', 'bbzes', 'bbpzes', 'bzphess', 'bbzpphess', 'Bbzess'],
     glacier: ['bi', 'bbi', 'bzi', 'bbizs', 'bbziess', 'bph', 'bbpis', 'bzpis', 'bbzhiss', 'bbzpiess', 'bw', 'bbws', 'bziws', 'bbpwess', 'bbzhiwss', 'bbzpis', 'bbziwess', 'bbzphiss', 'bbzphiwess', 'Bbhzzpss'],
     reef: ['bbj', 'bbzj', 'bbzjs', 'bbzpjj', 'bbbzpijj', 'bbjw', 'bbzpjws', 'bbzhjws', 'bbzpijjs', 'bbzphijjes', 'bbc', 'bbzjc', 'bbzhjcs', 'bbzpijcc', 'bbbzphijjcc', 'bbzjcs', 'bbzpjwcc', 'bbzhpijcc', 'bbbzphijjjcc', 'Bbhzzpic'],
@@ -2451,8 +2451,8 @@ window.Board = (function () {
     else if (L.boss ? bossHp <= 0 : pct >= L.goal) levelClear();
   }
   const bossRoundNo = () => 4 - Math.max(1, bossHp);
-  function newBossRound(spawn) { // the sea floods back in a wave from the trap, the boat drops in again, the boss returns a little faster
-    if (state !== 'play') return;
+  function newBossRound(spawn) { // reset the board and its original roster; each round is a little faster
+    if (state !== 'play' || !L.boss) return;
     state = 'round'; trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; dir = null; queue = [];
     flash('Round ' + bossRoundNo() + ' / 3', [spawn.some((o) => o.kind === 'bstar') ? '3 babies broke off' : 'the sea is back', '+20 seconds'], 2200); arp([392, 494, 587, 784], 110, 0.18, 'triangle'); buzz('big'); shake = 0.3;
     const [cx, cy] = [W / 2, Hh / 2];
@@ -2465,13 +2465,15 @@ window.Board = (function () {
     mask.needsUpdate = true;
     for (let k = 0; k < 18; k++) { const [wx, wz] = W2(rand(2, W - 2), rand(2, Hh - 2)); setTimeout(() => burst(wx, 0.3, wz, 0x9fe6ff, 10, 3, 4), k * 45); }
     hideT = 0; enter(1.1);
-    for (const m of monsters) if (m.kind === 'crab' && !m.dead) { m.dead = 0.0001; }
+    // Replace the original roster instead of adding to survivors. Spawned babies keep their existing lifetime.
+    for (const m of monsters) if (m.kind !== 'mini' && !m.dead) m.dead = 0.0001;
     setTimeout(() => {
       if (state !== 'round') return;
       for (const o of spawn) { const nb = spawnMonster(o.kind, [W / 2, Hh / 2 - 4]); nb.pop = 1; nb.gen = o.gen || 0; const sp = 1 + 0.08 * (bossRoundNo() - 1); nb.vx *= sp; nb.vy *= sp;
         if (o.k !== 1) { nb.mesh.userData.s *= o.k; nb.mesh.scale.setScalar(nb.mesh.userData.s); nb.sz *= o.k; nb.shadow.scale.multiplyScalar(o.k); }
         const [bx, bz] = W2(nb.x - 0.5, nb.y - 0.5); burst(bx, 0.8, bz, 0xffd23f, 50, 5, 7); }
-      for (const c of L.mon) if (c === 'crab') spawnMonster('crab');
+      const supportSpeed = 1 + 0.05 * (bossRoundNo() - 1);
+      for (const c of L.mon) if (!BOSSES[c]) { const mm = spawnMonster(c); mm.pop = 1; mm.vx *= supportSpeed; mm.vy *= supportSpeed; }
       if (spawn.some((o) => o.kind === 'bstar')) for (let k = 0; k < 3; k++) { const mm = spawnMonster('mini', [W / 2 + (k - 1) * 4, Hh / 2 + 3]); mm.pop = 1; const [wx, wz] = W2(mm.x - 0.5, mm.y - 0.5); burst(wx, 0.6, wz, 0x7be36b, 20, 3, 5); } // each trap breaks 3 babies off the giant starfish; they stay for the rest of the fight
       if (L.powers.length && powers.filter((p) => !p.taken).length < 2) spawnPower(); // a fresh booster for every round
       tone(180, 0.4, 'sawtooth', 0.06, 90); state = 'play'; sawsHome(); pct = percent(); clockT += 20; drawHud();
