@@ -42,9 +42,10 @@ body {
 .mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 2px; }
 .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
-.hud-level { min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
+.hud-level { position: relative; isolation: isolate; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
+.hud-level::before { content: ''; position: absolute; inset: -4px -6px; z-index: -1; border-radius: 10px; background: rgba(12,20,48,.38); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
 .hud-level b { font: 800 15px/1.2 var(--display); }
-.hud-score { display: inline-flex; align-items: baseline; gap: 3px; color: #fff0c2; font: 700 11px/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.hud-score { display: inline-flex; align-items: baseline; gap: 3px; color: #fff6dd; font: 700 11px/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
 .hud-score small { font: 500 8px/1 var(--mono); letter-spacing: .04em; opacity: .85; }
 #lvlLabel { color: #fff; }
 .hud-time { padding: 6px 8px; border-radius: 12px; color: #fff; background: rgba(12,20,48,.25); border: 1px solid rgba(255,255,255,.2); }
