@@ -385,7 +385,7 @@ h2.shop { color: #ffd166; }
 .shield-icon img { display: block; width: 100%; height: 100%; }
 .btn.go-daily { background: linear-gradient(180deg, #9ffbe9, #34cdb6); color: #063b35; box-shadow: 0 4px 0 #1a8a7a; }
 .btn.go-rush { background: linear-gradient(180deg, #ffc49e, #ff7e4a); color: #4a1600; box-shadow: 0 4px 0 #b84a1e; }
-.card .home-x { position: absolute; top: 16px; left: 16px; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
+.card .home-x { position: absolute; z-index: 2; top: 16px; left: 16px; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(255,255,255,0.14); box-shadow: inset 0 0 0 1px var(--line); }
 .card .home-x svg { width: 20px; height: 20px; }
 .mode span { color: var(--ink-soft); letter-spacing: 0.08em; text-transform: uppercase; }
 .mode[disabled] { cursor: default; opacity: 0.5; }
@@ -979,8 +979,8 @@ window.Board = (function () {
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   let swapRaf = 0;
   function panel(html, actions, anchorTop = false) { // switching between cards: the card glides to its new size and the new content fades in
-    const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // one way home everywhere: the house in the corner
-    if (html.includes(HB)) html = HOME_X.replace('data-act="back"', 'data-act="home"') + html.replace(HB, '');
+    const HB = '<button class="btn alt" type="button" data-act="home">Home</button>'; // Explicit Home actions keep the house; menu hierarchy uses a back arrow.
+    if (html.includes(HB)) html = HOME_X + html.replace(HB, '');
     const c = $('card'), was = !$('panel').hidden ? c.getBoundingClientRect() : null;
     c.className = 'card'; c.style.marginTop = ''; c.style.marginBottom = ''; c.innerHTML = html; $('panel').hidden = false;
     if (anchorTop && was) { // The exit confirmation keeps the pause card's top while its bottom shrinks.
@@ -3023,7 +3023,7 @@ window.Board = (function () {
       body = block('Boards', RUSH_B, RUSH_BL, b, (n) => n, 'boards') + block('Score', RUSH_S, RUSH_SL, sc, kfmt, 'points');
     }
     const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
-    panel(HOME_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
+    panel(BACK_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
     $('card').classList.add('troc');
     { const pn = $('panel'), cs = getComputedStyle(pn), inner = pn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); $('card').style.marginTop = Math.max(0, (inner - Math.min(640, inner)) / 2) + 'px'; }
@@ -3033,11 +3033,11 @@ window.Board = (function () {
         if (Math.abs(dx) > 50) { const btn = $('card').querySelector('[data-act=' + (dx > 0 ? 'mprev' : 'mnext') + ']'); if (btn && !btn.disabled) btn.click(); } }); }
   }
   const WORLD_BG = ['linear-gradient(135deg,#3f9d4a,#7fd36b)', 'linear-gradient(135deg,#c9853f,#f1c27d)', 'linear-gradient(135deg,#4a64c8,#9fb4ff)', 'linear-gradient(135deg,#d0566b,#ff9f8a)', 'linear-gradient(135deg,#3a2f45,#ff7a3a)'];
-  const HOME_X = '<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
+  const HOME_X = '<button class="home-x" type="button" data-act="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>';
   const BACK_X = '<button class="home-x" type="button" data-act="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
   function showWorlds() {
     toMenu();
-    let html = HOME_X + '<h2>Worlds</h2><div class="worlds">';
+    let html = BACK_X + '<h2>Worlds</h2><div class="worlds">';
     WORLDS.forEach((wd, w) => {
       const open = worldOpen(w), st = worldStars(w), n = LEVELS.filter((x) => x.w === w && prog.done[x.id]).length;
       html += '<button class="world" type="button" data-act="world" data-w="' + w + '" style="background:' + WORLD_BG[w] + '"' + (open ? '' : ' disabled') + '><div><b>' + (w + 1) + ' · ' + wd.name + '</b><span>' + (open ? n + ' / 20 levels' : 'Locked') + '</span></div><span>' + STAR + ' ' + st + ' / 60</span></button>';
@@ -3082,7 +3082,7 @@ window.Board = (function () {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    panel(HOME_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
+    panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open.<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
       (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
       Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
@@ -3096,7 +3096,7 @@ window.Board = (function () {
       '<div class="pic">' + icon + '</div><div class="ptx"><b>' + title + '</b><span>' + sub + '</span></div><div class="pprice">' + (owned ? 'Owned' : price) + '</div></button>';
     const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
     const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="6" width="17" height="12" rx="3"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M4 20 20 4" stroke="#ff4d6d" stroke-width="2.6"/></svg>';
-    panel(HOME_X + '<div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2>' +
+    panel(BACK_X + '<div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2>' +
       '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device.') + '</p><div class="pcards">' +
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
@@ -3169,7 +3169,7 @@ window.Board = (function () {
     const yd = new Date(); yd.setUTCDate(yd.getUTCDate() - 1); const yKey = dayKey(yd), y2 = new Date(yd); y2.setUTCDate(y2.getUTCDate() - 1);
     const doSave = async () => { const ok = await window.Ads.showRewarded('dailyRetry'); if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; } savingStreak = yKey; startDaily(yKey); flash('Save your streak', 'clear yesterday\'s level', 2000); };
     const d2 = prog.daily[dayKey(y2)], canSave = (!prog.daily[yKey] || prog.daily[yKey].late) && d2 && d2.stars > 0 && !d2.late;
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= minOff ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><div class="dchips"><span><svg viewBox="0 0 24 24" fill="#ff8a3d"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg><b>' + streak() + '</b> day streak</span><span><svg viewBox="0 0 24 24" fill="none" stroke="#7ff5e2" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>New in <b>' + untilNext() + '</b></span></div>' + cal +
+    panel(BACK_X + '<div class="calnav"><button type="button" data-act="prev"' + (mOff <= minOff ? ' disabled' : '') + '>‹</button><span class="kicker">' + shown.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + '</span><button type="button" data-act="next"' + (mOff >= 0 ? ' disabled' : '') + '>›</button></div><svg class="rbolt big cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z"/></svg><h2 class="daily">Daily</h2><div class="dchips"><span><svg viewBox="0 0 24 24" fill="#ff8a3d"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg><b>' + streak() + '</b> day streak</span><span><svg viewBox="0 0 24 24" fill="none" stroke="#7ff5e2" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>New in <b>' + untilNext() + '</b></span></div>' + cal +
       '<div class="btns">' + (canSave ? '<button class="btn" type="button" data-act="save">Save your streak' + adTag() + '</button>' : '') + '<button class="btn dplay' + (canSave ? ' alt' : ' go-daily') + '" type="button" data-act="play">' + playLbl() + '</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { save: doSave,
         play: () => (canSave && dailyPick === yKey ? doSave() : playDaily(dailyPick || today)), back: showHome, lb: () => window.Board.show('daily'), prev: () => showDaily(mOff - 1), next: () => showDaily(mOff + 1) });
@@ -3198,7 +3198,7 @@ window.Board = (function () {
   }
   function showRush() {
     toMenu();
-    panel('<button class="home-x" type="button" data-act="back" aria-label="Home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4l1.3 1.5L5 12v8.5h5.5v-5.5h3v5.5H19V12l1.1.9 1.3-1.5z"/></svg></button>' + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Clear as many boards as you can.</p>' +
+    panel(BACK_X + '<svg class="rbolt big" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg><h2 class="rush">Rush</h2><p>Clear as many boards as you can.</p>' +
       (prog.rush ? '<div class="rstats"><div><svg viewBox="0 0 24 24"><path d="' + IC.trophy + '" fill="currentColor"/></svg><b>' + prog.rush.toLocaleString('en-US') + '</b><span>best score</span></div><div><svg viewBox="0 0 24 24"><path d="' + IC.layers + '" fill="currentColor"/></svg><b>' + (prog.rushBoards || '–') + '</b><span>most boards</span></div></div>' : '') +
       '<div class="btns"><button class="btn go-rush" type="button" data-act="go">Start</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') + '</div>',
       { go: startRush, back: showHome, lb: () => window.Board.show('rush') });
@@ -3429,7 +3429,7 @@ window.Board = (function () {
     skinView = null;
     const cards = SKINS.map((k) => { const open = skinOpen(k), on = prog.skin === k.id;
       return '<button class="skin g-' + groupOf(k) + (on ? ' on' : '') + (k.id === sk.id && !on ? ' view' : '') + (open ? '' : ' locked') + (k.pack ? ' prem' : '') + '" type="button" data-skin="' + k.id + '">' + (k.pack ? GROUP_ICON[k.pack] : '<span class="gb">' + STAR + '</span>') + (open ? '' : LOCK) + (th[k.id] ? '<img alt="" src="' + th[k.id] + '">' : '<i></i>') + '<b>' + k.name + '</b><small>' + (on ? 'Selected' : open ? 'Ready' : k.pack ? PACKS[k.pack] : k.stars + ' stars') + '</small></button>'; }).join('');
-    panel(HOME_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
+    panel(BACK_X + '<div class="have" aria-label="' + have + ' stars">' + STAR + '<b>' + have + '</b></div><h2>Skins</h2>' +
       '<div class="sprev"><div class="pvh"></div><div class="info"></div><div class="skin-actions"></div></div>' +
       '<div class="skins">' + cards + '</div><div class="btns">' + (all ? '' : '<button class="btn skin-all" type="button" data-act="all">All Skin Packs · ' + st.price('allSkins') + '<small>Includes future packs</small></button>') + '</div>',
       { back: showHome, all: () => buyIt('allSkins', () => updateSkinView(skinView)) });
