@@ -88,7 +88,9 @@ body {
 .lives svg:nth-child(5) { grid-column: 4 / 6; grid-row: 2; }
 .lives svg:nth-child(4):last-child { grid-column: 3 / 5; }
 .lives svg.off { opacity: 0.28; }
-#power { position: absolute; top: calc(var(--hud-bottom, 100px) + 8px); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
+#power { grid-column: 1 / -1; justify-self: center; pointer-events: none; display: flex; gap: 8px; }
+#power:empty { display: none; }
+.hud-notices { grid-column: 1 / -1; min-height: var(--notice-height, 56px); }
 #power .pw { display: flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
 #power .pw i { position: relative; width: 30px; height: 30px; display: grid; place-items: center; }
 #power .pr { position: absolute; inset: 0; transform: rotate(-90deg); } #power .pr circle { fill: none; stroke: rgba(255,255,255,0.14); stroke-width: 4; } #power .pr .pp { stroke: var(--c); stroke-dasharray: 107; stroke-linecap: round; }
@@ -96,13 +98,13 @@ body {
 #power .ic { width: 15px; height: 15px; color: var(--c); }
 
 #flash {
-  position: absolute; left: 50%; top: calc(var(--hud-bottom, 80px) + 14px); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
+  position: absolute; left: 50%; top: calc(var(--hud-bottom, 140px) - var(--notice-height, 56px) + 4px); transform: translate(-50%, 4px) scale(.96); text-align: center; pointer-events: none;
   width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; overflow-wrap: anywhere;
-  font: 800 clamp(16px, 4.5vw, 20px)/1.2 var(--display); opacity: 0; transition: opacity .2s, transform .2s;
-  padding: 8px 12px; border-radius: 14px; background: rgba(14,20,52,.36);
+  font: 800 clamp(13px, 3.6vw, 16px)/1.2 var(--display); opacity: 0; transition: opacity .2s, transform .2s;
+  padding: 4px 8px; border-radius: 10px; background: transparent;
   text-shadow: 0 1px 2px rgba(10,20,50,.7), 0 1px 6px rgba(10,20,50,.5);
 }
-#power:not(:empty) ~ #flash { top: calc(var(--hud-bottom, 80px) + 60px); }
+#hud[hidden] ~ #flash { top: calc(10px + env(safe-area-inset-top, 0px)); }
 #flash.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
 #flash.out { opacity: 0; transform: translate(-50%, -8px) scale(.98); transition: opacity .35s, transform .35s; }
 #flash.held { visibility: hidden; }
@@ -558,8 +560,8 @@ h2.shop { color: #ffd166; }
       <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div>
     </div>
     <div class="hud-status ts"><div class="lives" id="lives"></div><span id="pctLabel">0%</span></div>
+    <div id="power"></div><div class="hud-notices" aria-hidden="true"></div>
   </div>
-  <div id="power"></div>
   <div id="vignette"></div>
   <div id="flash"></div>
   <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
@@ -959,10 +961,10 @@ window.Board = (function () {
   }
   const hidePanel = () => { $('panel').hidden = true; $('card').style.height = ''; };
   function popAt(wx, wz, text, color) {
-    const v = new THREE.Vector3(wx, 1.4, wz).project(camera);
+    const [sx, sy] = toScreen(wx, 1.4, wz);
     const d = document.createElement('div'); d.className = 'pop'; d.textContent = text;
     if (color) d.style.color = color;
-    d.style.left = ((v.x + 1) / 2 * stage.clientWidth) + 'px'; d.style.top = ((1 - v.y) / 2 * stage.clientHeight) + 'px';
+    d.style.left = sx + 'px'; d.style.top = sy + 'px';
     stage.append(d); setTimeout(() => d.remove(), 1000);
   }
 
@@ -2530,14 +2532,17 @@ window.Board = (function () {
   function eat(i, m) {
     const x = i % W, y = (i / W) | 0;
     if (fixed[i] === 2 || cells[i] !== LAND) return false; // the outer frame and the board's outline are never eaten
-    if (fixed[i]) { fixed[i] = 0; total++; } // an eaten obstacle becomes ordinary sea that you can claim back
     const under = (x === px && y === py) || (x === tx && y === ty);
     if (under && (state !== 'play' || invuln > 0 || hideT > 0 || enterT > 0 || shieldOn)) return false; // just landed, shielded or between lives: the ground holds
+    if (fixed[i]) { fixed[i] = 0; total++; } // an eaten obstacle becomes ordinary sea that you can claim back
     cells[i] = SEA; hGoal[i] = 0; hVel[i] = 0; delay[i] = 0; setMask(i); mask.needsUpdate = true;
     const [wx, wz] = W2(x, y); burst(wx, H_LAND, wz, 0xc9a27a, 14, 2.5, 4);
     chomp(); buzz('eat');
     pct = percent(); drawHud();
-    if (under) die('your land was eaten');
+    if (under) {
+      if (m.kind === 'eater') m.droppedPlayer = true; // Separate from this bite without immunity to other monsters.
+      else die('your land was eaten');
+    }
     return true;
   }
 
@@ -3066,7 +3071,7 @@ window.Board = (function () {
     setTimeout(() => { const r = $('clock').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
     setTimeout(() => { d.remove(); timePending = Math.max(0, timePending - secs); drawHud(); const l = $('clock'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
   }
-  const toScreen = (wx, wy, wz) => { const v = new THREE.Vector3(wx, wy, wz).project(camera); return [(v.x + 1) / 2 * stage.clientWidth, (1 - v.y) / 2 * stage.clientHeight]; };
+  const toScreen = (wx, wy, wz) => { const v = new THREE.Vector3(wx, wy, wz).project(camera); const c = renderer.domElement; return [(v.x + 1) / 2 * c.clientWidth, c.offsetTop + (1 - v.y) / 2 * c.clientHeight]; };
   function rushLevel(n) {
     const [w, board] = rushOrder.length ? rushOrder[n % rushOrder.length] : [0, BOARDS.meadow[0]];
     const mon = ['bouncer', 'bouncer']; for (let k = 0; k < n; k++) mon.push(['bouncer', 'zipper', 'eater', 'saw', 'splitter'][k % 5]);
@@ -3467,7 +3472,7 @@ window.Board = (function () {
   const camT = new THREE.Vector3();
   function camGeom(d) { // ground z (relative to the target) seen at the top and bottom of the usable screen
     const vf2 = camera.fov / 2 * Math.PI / 180, hgt = d * Math.sin(EL), back = d * Math.cos(EL);
-    const hudFrac = Math.min(0.3, (($('hud').offsetHeight || 64) + 10) / Math.max(1, stage.clientHeight));
+    const hudFrac = Math.min(0.15, 40 / Math.max(1, renderer.domElement.clientHeight)); // HUD has its own space above the canvas.
     const botFrac = 0.015;
     const tTop = EL - Math.atan((1 - 2 * hudFrac) * Math.tan(vf2)), tBot = EL + Math.atan((1 - 2 * botFrac) * Math.tan(vf2));
     return { top: back - hgt / Math.tan(tTop), bot: back - hgt / Math.tan(tBot) };
@@ -3536,7 +3541,7 @@ window.Board = (function () {
       if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) drawHud();
     }
     const fx = px + (tx - px) * stepP, fy = py + (ty - py) * stepP;
-    const onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
+    let onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
     const ground = (x, y) => { const i = idx(clamp(Math.round(x), 0, W - 1), clamp(Math.round(y), 0, Hh - 1)); return Math.max(0, hNow[i]); };
     const gy = Math.max(ground(px, py) * (1 - stepP) + ground(tx, ty) * stepP, 0);
     let drop = 0, entering = false;
@@ -3616,7 +3621,7 @@ window.Board = (function () {
         continue;
       }
       if (live && !testFrozen && mult > 0) {
-        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (m.under) return false; if (trailIdx[i] >= 0) lightFuse(trailIdx[i]); return true; } return c === LAND; };
+        const solid = (x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (!inside(cx, cy)) return true; const i = idx(cx, cy), c = cells[i]; if (m.kind === 'saw') return c !== LAND; if (c === TRAIL) { if (m.under) return false; if (trailIdx[i] >= 0 && !m.droppedPlayer) lightFuse(trailIdx[i]); return true; } return c === LAND; };
         const R = 0.36, step = dt * mult; // R: the body's leading edge, so it never pokes into a wall
         if (m.kind === 'jelly') { // drifts; stops, glows and shows where the bolt will go; fires along its row or column
           if (m.jPhase === undefined) { m.jPhase = 'calm'; m.jT = rand(1.5, 3); }
@@ -3709,8 +3714,11 @@ window.Board = (function () {
         }
         if ((m.vx !== vx0 || m.vy !== vy0) && m.mesh.userData.fish) m.puff = 1; // puffs up on every bounce
         if (m.kind === 'saw') { m.stuckT = (m.stuckT || 0) + dt; if (m.stuckT > 0.6) { m.stuckT = 0; if (landRegionSize(idx(clamp(Math.floor(m.x), 0, W - 1), clamp(Math.floor(m.y), 0, Hh - 1)), SAW_MIN) < SAW_MIN) resetSaw(m); } }
-        if (m.kind !== 'saw' && !m.under) { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
-        if (Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 * Math.max(1, m.sz * 0.7) && !m.under) {
+        if (m.kind !== 'saw' && !m.under && !m.droppedPlayer) { const c = idx(Math.floor(m.x), Math.floor(m.y)); if (cells[c] === TRAIL && trailIdx[c] >= 0) lightFuse(trailIdx[c]); }
+        onLand = cellAt(fx + 0.5, fy + 0.5) === LAND; // A preceding Chomper may have removed the ground this frame.
+        const touchingPlayer = Math.hypot(m.x - (fx + 0.5), m.y - (fy + 0.5)) < 0.8 * Math.max(1, m.sz * 0.7);
+        if (!touchingPlayer) m.droppedPlayer = false;
+        if (touchingPlayer && !m.under && !m.droppedPlayer) {
           if (m.kind !== 'saw' && !onLand) die(m.kind === 'magnet' ? 'the whirlpool pulled you under' : 'a monster caught you');
           if (m.kind === 'saw' && onLand) die('a buzzsaw caught you on land');
         }
@@ -3829,8 +3837,9 @@ window.Board = (function () {
   }
 
   function resize() {
-    const w = stage.clientWidth, h = stage.clientHeight;
+    const w = stage.clientWidth, top = $('hud').hidden ? 0 : Math.ceil($('hud').getBoundingClientRect().height), h = Math.max(1, stage.clientHeight - top);
     renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+    renderer.domElement.style.top = top + 'px'; renderer.domElement.style.bottom = 'auto';
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     const asp = w / Math.max(1, h); EL = (asp < 0.62 ? 53 : asp < 0.9 ? 52 : 50) * Math.PI / 180;
@@ -3931,9 +3940,12 @@ window.Board = (function () {
   if (!prog.done['meadow-01'] && !pendingTrialSkin()) startLevel(0); else showHome();
   // Booster chips and the camera follow the actual HUD height, including larger system text.
   new ResizeObserver(([entry]) => {
-    const height = Math.ceil(entry.target.getBoundingClientRect().height); if (!height) return;
+    const height = Math.ceil(entry.target.getBoundingClientRect().height);
     stage.style.setProperty('--hud-bottom', height + 'px'); resize();
   }).observe($('hud'));
+  new ResizeObserver(() => {
+    stage.style.setProperty('--notice-height', Math.max(56, $('flash').offsetHeight + 8) + 'px');
+  }).observe($('flash'));
   requestAnimationFrame(loop);
 
   // Test hook (headless checks and store screenshots)
