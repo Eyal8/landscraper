@@ -3615,7 +3615,7 @@ window.Board = (function () {
     if (state !== 'play' || !paused) return;
     pauseLevelsOpen = false; pauseExitPending = true;
     const game = mode === 'rush' ? 'Rush run' : mode === 'daily' ? 'Daily game' : 'level';
-    panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
+    panel('<h2>Leave game?</h2><p>Your current ' + game + ' progress will be lost.' + (trialActive ? ' Your skin trial will also end.' : '') + '</p><div class="btns"><button class="btn go pause-resume" type="button" data-act="stay">Back to game</button><button class="btn alt" type="button" data-act="leave">' + label + '</button></div>', {
       stay: resumeGame,
       leave: () => { if (!pauseExitPending) return; pauseExitPending = false; finishSkinTrial(); destination(); }
     }, true);
