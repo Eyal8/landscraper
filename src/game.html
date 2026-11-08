@@ -2145,6 +2145,7 @@ window.Board = (function () {
     monsters.forEach((m) => { scene.remove(m.mesh); scene.remove(m.shadow); if (m.warn) scene.remove(m.warn); }); monsters = [];
     powers.forEach((p) => scene.remove(p.mesh)); powers = [];
     px = tx = Math.floor(W / 2); py = ty = Hh - 1; stepP = 1; dir = null; queue = []; drawing = false; trail = []; fuse = null;
+    dashes.count = 0; burnt.count = 0; spark.visible = false; // A fresh attempt also clears the old trail's rendered meshes.
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = nextPowerDelay(true); powersSeen = false;
     clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; ironT = 0; bossHp = L.boss ? 3 : 0; drawHud();
