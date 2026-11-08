@@ -29,24 +29,42 @@ body {
 
 /* HUD */
 #hud {
-  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; pointer-events: none;
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 6px 8px; pointer-events: none;
   padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px));
 }
 #pauseBtn {
+  grid-column: 1; grid-row: 1;
   pointer-events: auto; width: 40px; height: 40px; border-radius: 14px; border: 0; cursor: pointer; display: grid; place-items: center;
   background: var(--shade); color: var(--ink); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 #pauseBtn svg { width: 16px; height: 16px; }
-.mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.mid .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
-.mid .row b { font: 800 15px var(--display); letter-spacing: 0; }
-#clock { font: 800 15px var(--display); font-style: normal; margin-left: 8px; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
+.mid { display: contents; }
+.hud-level, .hud-time { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 12px; background: rgba(16,24,56,.72); white-space: nowrap; box-sizing: border-box; }
+.hud-level { grid-column: 2; grid-row: 1; justify-self: start; color: var(--ink-soft); }
+.hud-level b { font: 800 13px/1.2 var(--display); color: var(--ink); }
+.hud-time { grid-column: 3; grid-row: 1; justify-self: end; justify-content: center; color: var(--gold); }
+.hud-level svg, .hud-time svg { width: 14px; height: 14px; flex: none; }
+#clock { font: 800 16px/1.2 var(--display); font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
+.hud-time.low { color: #ff8798; }
 #clock.low { color: #ff6b7d; animation: lowt 1s ease-in-out infinite; }
 #clock.bump { transform: scale(1.3); color: #ffd166; }
 @keyframes lowt { 50% { transform: scale(1.15); } }
-#pctLabel { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: none; }
-#pctLabel b { font: 800 17px var(--display); }
+.hud-progress { grid-column: 1 / 3; grid-row: 2; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 5px 8px; border-radius: 12px; background: rgba(16,24,56,.72); }
+#pctLabel { display: flex; align-items: baseline; gap: 4px; font: 500 11px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; }
+#pctLabel b { font: 800 16px/1.2 var(--display); color: #7cf3c4; }
 #pctLabel span { opacity: 0.85; }
+#pctLabel .hud-board { margin-left: auto; }
+.hud-progress:has(.bar.goal) #pctLabel b { color: var(--gold); }
+#hud .bar { height: 8px; }
+#hud[data-mode="rush"] .hud-progress { grid-column: 1 / -1; }
+@media (min-width: 640px) {
+  #hud { grid-template-columns: 40px auto minmax(0, 1fr) auto auto; gap: 10px; }
+  .hud-level { grid-column: 2; }
+  .hud-time { grid-column: 4; }
+  .hud-progress, #hud[data-mode="rush"] .hud-progress { grid-column: 3; grid-row: 1; }
+  #hud .lives { grid-column: 5; grid-row: 1; }
+}
+@media (prefers-reduced-motion: reduce) { #clock.low { animation: none; } #clock.bump { transform: none; } }
 .bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
@@ -65,10 +83,11 @@ body {
 .endbar .tk.hit { background: #fff; box-shadow: 0 0 6px rgba(255,209,102,0.9); }
 .endbar .tk.hit span { color: var(--gold); transform: translateX(-50%) scale(1.15); }
 .card .more { transition: opacity 0.4s; }
-.lives { display: flex; gap: 4px; }
+.lives { grid-column: 3; grid-row: 2; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+.lives:empty { display: none; }
 .lives svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 4px rgba(10,20,50,0.4)); }
 .lives svg.off { opacity: 0.28; }
-#power { position: absolute; top: calc(66px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
+#power { position: absolute; top: calc(var(--hud-bottom, 100px) + 8px); left: 50%; transform: translateX(-50%); pointer-events: none; display: flex; gap: 8px; }
 #power .pw { display: flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border-radius: 999px; background: rgba(12,20,48,0.78); color: var(--c); font: 700 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
 #power .pw i { position: relative; width: 30px; height: 30px; display: grid; place-items: center; }
 #power .pr { position: absolute; inset: 0; transform: rotate(-90deg); } #power .pr circle { fill: none; stroke: rgba(255,255,255,0.14); stroke-width: 4; } #power .pr .pp { stroke: var(--c); stroke-dasharray: 107; stroke-linecap: round; }
@@ -531,8 +550,9 @@ h2.shop { color: #ffd166; }
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <div class="row"><span><b id="lvlLabel">1-1</b> <i id="clock"></i></span><span id="pctLabel">0% · goal 75%</span></div>
-      <div class="bar" id="bar"><i id="barFill"></i><em id="barGoal"></em></div>
+      <span class="hud-level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V3m0 1c5-3 9 3 14 0v10c-5 3-9-3-14 0"/></svg><b id="lvlLabel">1-1</b></span>
+      <span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><i id="clock"></i></span>
+      <div class="hud-progress"><span id="pctLabel">0% / 75%</span><div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div></div>
     </div>
     <div class="lives" id="lives"></div>
   </div>
@@ -2286,9 +2306,19 @@ window.Board = (function () {
     monsters.push(m); return m;
   }
   function drawHud() {
+    $('hud').dataset.mode = mode;
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
-    const ck = $('clock'); ck.hidden = !clockOn(); if (clockOn()) { const shown = mode === 'daily' ? clockT : Math.ceil(Math.max(0, clockT - timePending)); ck.textContent = mode === 'daily' ? fmtClock(shown, true) : fmtClock(shown); ck.classList.toggle('low', mode === 'campaign' && shown <= 10); }
-    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + Math.ceil(Math.max(0, rushTime - timePending)) + 's</b> <span>· board ' + (rushBoard + 1) + ' · ' + pct + '% / ' + RUSH_GOAL + '%</span>' : L.boss ? '<b>Round ' + bossRoundNo() + '/3</b>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
+    const ck = $('clock'), timeBox = $('clockWrap'), timed = clockOn() || mode === 'rush';
+    ck.hidden = timeBox.hidden = !timed;
+    if (timed) {
+      const shown = mode === 'rush' ? Math.ceil(Math.max(0, rushTime - timePending)) : mode === 'daily' ? clockT : Math.ceil(Math.max(0, clockT - timePending));
+      ck.textContent = fmtClock(shown, mode === 'daily');
+      const low = mode !== 'daily' && shown <= 10; ck.classList.toggle('low', low); timeBox.classList.toggle('low', low);
+      timeBox.setAttribute('aria-label', (mode === 'daily' ? 'Elapsed time ' : low ? 'Low time remaining ' : 'Time remaining ') + ck.textContent);
+    }
+    $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b> <span>/ ' + RUSH_GOAL + '%</span><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>Round ' + bossRoundNo() + '/3</b>' : '<b>' + pct + '%</b> <span>/ ' + L.goal + '%</span>';
+    $('bar').setAttribute('aria-valuenow', Math.min(100, pct));
     $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = '';
@@ -3007,8 +3037,8 @@ window.Board = (function () {
     const d = document.createElement('div'); d.className = 'tplus'; d.textContent = '+' + secs + 's';
     d.style.left = sx + 'px'; d.style.top = sy + 'px'; stage.append(d);
     requestAnimationFrame(() => d.classList.add('on'));
-    setTimeout(() => { const r = $(mode === 'rush' ? 'pctLabel' : 'clock').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
-    setTimeout(() => { d.remove(); timePending = Math.max(0, timePending - secs); drawHud(); const l = $(mode === 'rush' ? 'pctLabel' : 'clock'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
+    setTimeout(() => { const r = $('clock').getBoundingClientRect(), st = stage.getBoundingClientRect(); d.classList.add('go'); d.style.left = (r.left - st.left + 20) + 'px'; d.style.top = (r.top - st.top + r.height / 2) + 'px'; }, 450);
+    setTimeout(() => { d.remove(); timePending = Math.max(0, timePending - secs); drawHud(); const l = $('clock'); l.classList.remove('bump'); void l.offsetWidth; l.classList.add('bump'); setTimeout(() => l.classList.remove('bump'), 180); tone(1046, 0.12, 'triangle', 0.05); buzz('soft'); }, 1050);
   }
   const toScreen = (wx, wy, wz) => { const v = new THREE.Vector3(wx, wy, wz).project(camera); return [(v.x + 1) / 2 * stage.clientWidth, (1 - v.y) / 2 * stage.clientHeight]; };
   function rushLevel(n) {
@@ -3859,6 +3889,11 @@ window.Board = (function () {
   }
   resize(); build(nextLevel());
   if (!prog.done['meadow-01'] && !pendingTrialSkin()) startLevel(0); else showHome();
+  // Booster chips and the camera follow the actual HUD height, including larger system text.
+  new ResizeObserver(([entry]) => {
+    const height = Math.ceil(entry.target.getBoundingClientRect().height); if (!height) return;
+    stage.style.setProperty('--hud-bottom', height + 'px'); resize();
+  }).observe($('hud'));
   requestAnimationFrame(loop);
 
   // Test hook (headless checks and store screenshots)
