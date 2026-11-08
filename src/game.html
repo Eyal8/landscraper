@@ -1779,20 +1779,28 @@ window.Board = (function () {
   const bubbleRim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.07, 10, 56), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 1, depthWrite: false }));
   bubbleRim.rotation.x = Math.PI / 2; bubble.add(bubbleRim);
   let bubbleK = 0;
-  // ---------- the landing pad: every level start and every respawn drops the drone in here ----------
+  // ---------- a shared, playful landing, tinted for each skin family ----------
   const SPAWN_X = Math.floor(W / 2), SPAWN_Y = Hh - 1, ENTER = 1.7;
-  const padMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
-  const padG = new THREE.Group();
-  padG.add(new THREE.Mesh(new THREE.RingGeometry(0.5, 0.64, 40).rotateX(-Math.PI / 2), padMat));
-  for (let k = 0; k < 4; k++) { const tick = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.22).rotateX(-Math.PI / 2), padMat); const a = k * Math.PI / 2; tick.position.set(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.36); tick.rotation.y = -a; padG.add(tick); }
-  padG.position.set(SPAWN_X + ox, H_LAND + 0.015, SPAWN_Y + oz); padG.renderOrder = 2; scene.add(padG);
-  const beamMat = new THREE.MeshBasicMaterial({ color: 0x9ff4ff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 16, 24, 1, true).translate(0, 8, 0), beamMat);
-  beam.position.set(SPAWN_X + ox, H_LAND, SPAWN_Y + oz); scene.add(beam);
+  const LANDING_COLORS = { boat: 0xff82b4, raft: 0xffcf82, duck: 0xffdf52, drone: 0x65e6ff, turtle: 0x65e6a2, kayak: 0xffa36a, hovercraft: 0x65f4ed, dragonboat: 0xffbe69, goldenboat: 0xffd34f, sea: 0x6fe7ff, space: 0xc4a1ff, pool: 0xffa1d9 };
+  const padMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
+  const padG = new THREE.Group(); padG.name = 'landing-pad';
+  padG.add(new THREE.Mesh(new THREE.RingGeometry(0.46, 0.53, 48).rotateX(-Math.PI / 2), padMat));
+  padG.add(new THREE.Mesh(new THREE.RingGeometry(0.75, 0.78, 48).rotateX(-Math.PI / 2), padMat));
+  const landingSparkMat = new THREE.MeshBasicMaterial({ color: 0xfff4ca, transparent: true, opacity: 0, depthWrite: false });
+  const landingSparkGeo = new THREE.OctahedronGeometry(0.085);
+  const landingSparks = [];
+  for (let k = 0; k < 6; k++) { const spark = new THREE.Mesh(landingSparkGeo, landingSparkMat); spark.scale.set(0.65, 1.6, 0.65); padG.add(spark); landingSparks.push(spark); }
+  padG.position.set(SPAWN_X + ox, H_LAND + 0.025, SPAWN_Y + oz); padG.renderOrder = 2; padG.visible = false; scene.add(padG);
   const shockMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
-  const shock = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.66, 40).rotateX(-Math.PI / 2), shockMat);
-  shock.position.set(SPAWN_X + ox, H_LAND + 0.03, SPAWN_Y + oz); scene.add(shock);
-  let hideT = 0, enterT = 0, shockT = 0, heroX = 0, heroZ = 0, heroInit = false;
+  const shock = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.48, 48).rotateX(-Math.PI / 2), shockMat);
+  shock.name = 'landing-ripple'; shock.position.set(SPAWN_X + ox, H_LAND + 0.03, SPAWN_Y + oz); shock.visible = false; scene.add(shock);
+  const shockMat2 = shockMat.clone(), shock2 = new THREE.Mesh(shock.geometry, shockMat2);
+  shock2.name = 'landing-ripple-echo'; shock2.position.copy(shock.position); shock2.visible = false; scene.add(shock2);
+  let hideT = 0, enterT = 0, shockT = 0, landingTouched = false, heroX = 0, heroZ = 0, heroInit = false;
+  function resetLanding() {
+    body.scale.set(1, 1, 1); body.rotation.x = body.rotation.z = 0; drone.scale.setScalar(1.45);
+    padG.visible = shock.visible = shock2.visible = false; padMat.opacity = landingSparkMat.opacity = 0; shockT = 0;
+  }
   // direction chevron on the ground in front of the drone
   const chev = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0.28), new THREE.Vector2(0.24, -0.02), new THREE.Vector2(0.1, -0.02), new THREE.Vector2(0, 0.1), new THREE.Vector2(-0.1, -0.02), new THREE.Vector2(-0.24, -0.02)])).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
   chev.renderOrder = 2; scene.add(chev);
@@ -2244,7 +2252,7 @@ window.Board = (function () {
     for (const kind of L.mon) spawnMonster(kind);
     invuln = 1.2; lastLand = [px, py]; pct = 0; slowT = frozenT = boostT = 0; powerTimer = nextPowerDelay(true); powersSeen = false;
     clockT = L.time || 0; timePending = 0; continued = false; const sStart = startShield; startShield = false; lives = mode === 'campaign' ? Math.min(5, Math.max(1, prog.lives || 3)) : L.lives || 3; startLives = lives; score = 0; shieldOn = sStart; bubbleK = 0; ironT = 0; bossHp = L.boss ? 3 : 0; drawHud();
-    hideT = 0; enterT = 0;
+    hideT = 0; enterT = 0; resetLanding();
   }
   const ringGeo = new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.95, depthWrite: false });
   const glowGeo = new THREE.RingGeometry(0.76, 1.12, 40).rotateX(-Math.PI / 2), glowMat = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -2844,15 +2852,25 @@ window.Board = (function () {
     }
     banner();
   }
-  function enter(delay) { // hide for a moment, then drop in on the landing pad
+  function enter(delay) { // one readable landing for every skin, with the existing control/protection timing
     px = tx = SPAWN_X; py = ty = SPAWN_Y; stepP = 1; dir = null; queue = []; lastLand = [SPAWN_X, SPAWN_Y];
+    resetLanding(); landingTouched = false;
+    const color = LANDING_COLORS[skinNow.id] || LANDING_COLORS[skinNow.pack] || 0xffd166;
+    padMat.color.setHex(color); shockMat.color.setHex(color); shockMat2.color.setHex(0xfff4ca);
     hideT = delay; enterT = ENTER; invuln = delay + ENTER + 0.9;
   }
+  function landingImpact() {
+    if (landingTouched) return; landingTouched = true;
+    if (!reduceMotion) {
+      const [wx, wz] = W2(SPAWN_X, SPAWN_Y);
+      burst(wx, H_LAND + 0.12, wz, padMat.color, 14, 2.2, 2.8); burst(wx, H_LAND + 0.12, wz, 0xfff4ca, 8, 1.5, 2);
+      shockT = 0.65;
+    }
+    tone(520, 0.12, 'sine', 0.045); tone(780, 0.16, 'triangle', 0.025); buzz('tick');
+  }
   function landed() {
-    const [wx, wz] = W2(SPAWN_X, SPAWN_Y);
-    burst(wx, H_LAND + 0.1, wz, 0xfff6e0, 22, 3, 1.2); burst(wx, H_LAND + 0.1, wz, 0x9ff4ff, 12, 2, 2.5);
-    shockT = 0.6; setTimeout(() => { if (touchHeld && touchDir && touchDir !== 'any') steer(touchDir); else for (const k of keysHeld) if (KEYS[k]) steer(KEYS[k]); }, 0); // a direction chosen during the drop counts
-    tone(330, 0.12, 'sine', 0.08); setTimeout(() => tone(660, 0.16, 'sine', 0.07), 70); setTimeout(() => tone(990, 0.2, 'sine', 0.05), 140); buzz('tick');
+    landingImpact();
+    setTimeout(() => { if (touchHeld && touchDir && touchDir !== 'any') steer(touchDir); else for (const k of keysHeld) if (KEYS[k]) steer(KEYS[k]); }, 0); // a direction chosen during the drop counts
   }
   function banner() {
     if (mode === 'rush') flash('Rush', 'claim fast · +5s per claim', 2400);
@@ -2873,7 +2891,7 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { pauseExitPending = pauseLevelsOpen = false; closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { hideT = enterT = 0; resetLanding(); pauseExitPending = pauseLevelsOpen = false; closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if ($('skinUnlock')) return;
     if (badgeClose) { badgeClose(); return; }
@@ -3630,6 +3648,8 @@ window.Board = (function () {
   // ---------- update ----------
   const zero = new THREE.Vector3();
   function update(dt, t) {
+    if (paused && state === 'play') return; // A paused landing holds its exact pose, just like gameplay.
+    if ((hideT > 0 || enterT > 0) && (state === 'menu' || state === 'over')) { hideT = enterT = 0; resetLanding(); }
     floorMat.uniforms.uTime.value = t;
     powerHud(); trapFx(t);
     if (shake > 0) shake = Math.max(0, shake - dt);
@@ -3674,29 +3694,47 @@ window.Board = (function () {
     let onLand = cellAt(fx + 0.5, fy + 0.5) === LAND;
     const ground = (x, y) => { const i = idx(clamp(Math.round(x), 0, W - 1), clamp(Math.round(y), 0, Hh - 1)); return Math.max(0, hNow[i]); };
     const gy = Math.max(ground(px, py) * (1 - stepP) + ground(tx, ty) * stepP, 0);
-    let drop = 0, entering = false;
-    if (hideT > 0) { entering = true; if (!paused) { hideT -= dt; if (hideT <= 0) tone(220, 0.9, 'sine', 0.06, 880); } }
+    let drop = 0, landingX = 0, landingZ = 0, landingPitch = 0, entering = false;
+    if (hideT > 0) { entering = true; if (!paused) { hideT = Math.max(0, hideT - dt); if (hideT === 0) tone(430, 0.12, 'sine', 0.035, 700); } }
     else if (enterT > 0) {
-      entering = true; const k = clamp(1 - enterT / ENTER, 0, 1);
-      // falls fast, then the rotors brake it into a slow, gentle touchdown with a little float at the end
-      const e = 1 - Math.pow(1 - k, 4);
-      drop = 9 * (1 - e) + Math.sin(k * Math.PI) * 0.25 * (k > 0.7 ? (1 - k) / 0.3 : 1);
-      drone.rotation.y = Math.PI + Math.pow(1 - k, 2) * Math.PI * 4; // spins in and lands facing up, toward the open sea drone.scale.setScalar(1.45 * (1 + 0.9 * Math.pow(1 - k, 3)));
-      body.rotation.z = Math.sin(k * 18) * 0.12 * (1 - k);
-      const q = k > 0.93 ? (k - 0.93) / 0.07 : 0; body.scale.set(1 + Math.sin(q * Math.PI) * 0.08, 1 - Math.sin(q * Math.PI) * 0.1, 1 + Math.sin(q * Math.PI) * 0.08);
-      if (!paused && k > 0.55 && Math.random() < 0.5) { const [wx, wz] = W2(SPAWN_X, SPAWN_Y); const a = rand(0, 6.28); burst(wx + Math.cos(a) * 0.5, H_LAND + 0.05, wz + Math.sin(a) * 0.5, 0xfff6e0, 1, 2.2, 0.6); } // rotor wash
-      if (!paused) { enterT -= dt; if (enterT <= 0) { body.scale.set(1, 1, 1); body.rotation.z = 0; drone.scale.setScalar(1.45); landed(); } }
+      entering = true; const k = clamp(1 - enterT / ENTER, 0, 1), contact = 0.58;
+      if (!reduceMotion) {
+        if (k < contact) {
+          const q = k / contact;
+          drop = 3.2 * (1 - q * q); landingX = -1.15 * (1 - q); landingZ = 0.3 * (1 - q);
+          drone.rotation.y = Math.PI + 0.65 * Math.pow(1 - q, 2);
+          landingPitch = -0.12 * Math.sin(q * Math.PI); body.rotation.z = -0.15 * (1 - q);
+          drone.scale.setScalar(1.45 * (0.88 + 0.12 * q));
+        } else {
+          const q = (k - contact) / (1 - contact);
+          drop = q < 0.65 ? 0.38 * Math.sin(q / 0.65 * Math.PI) : 0;
+          const squash = q < 0.18 ? 0.18 * Math.cos(q / 0.18 * Math.PI / 2) : q > 0.58 && q < 0.82 ? 0.07 * Math.sin((q - 0.58) / 0.24 * Math.PI) : 0;
+          body.scale.set(1 + squash * 0.5, 1 - squash, 1 + squash * 0.5); body.rotation.z = 0;
+          drone.rotation.y = Math.PI; drone.scale.setScalar(1.45);
+        }
+      } else { drone.rotation.y = Math.PI; }
+      if (!paused && k >= contact) landingImpact();
+      if (!paused) { enterT = Math.max(0, enterT - dt); if (enterT === 0) { body.scale.set(1, 1, 1); body.rotation.z = 0; drone.scale.setScalar(1.45); landed(); } }
     }
-    beamMat.opacity = hideT > 0 ? 0.5 + 0.2 * Math.sin(t * 20) : enterT > 0 ? 0.6 * (enterT / ENTER) : 0; beam.visible = beamMat.opacity > 0.01;
-    padMat.opacity = entering ? 0.6 + 0.35 * Math.sin(t * 14) : Math.max(0, padMat.opacity - dt * 2); // the pad fades once you have landed
-    if (shockT > 0) { shockT -= dt; const q = 1 - shockT / 0.6; shock.scale.setScalar(1 + q * 4); shockMat.opacity = Math.max(0, 1 - q); } else shockMat.opacity = 0;
+    const landingPhase = clamp(1 - enterT / ENTER, 0, 1), landingVisible = state === 'play' || state === 'round';
+    padG.visible = landingVisible && (entering || padMat.opacity > 0.01);
+    if (!paused) padMat.opacity = entering ? (reduceMotion ? 0.4 : 0.55 + 0.15 * Math.sin(landingPhase * Math.PI)) : Math.max(0, padMat.opacity - dt * 2.5);
+    padG.scale.setScalar(reduceMotion ? 1 : 1 + 0.12 * Math.sin(landingPhase * Math.PI));
+    padG.rotation.y = reduceMotion ? 0 : landingPhase * 0.7;
+    landingSparkMat.opacity = !reduceMotion && entering ? 0.8 * Math.sin(landingPhase * Math.PI) : 0;
+    landingSparks.forEach((spark, i) => { const a = i * Math.PI / 3, r = 0.85 + 0.12 * Math.sin(landingPhase * Math.PI); spark.position.set(Math.cos(a) * r, 0.15 + 0.12 * Math.sin(landingPhase * Math.PI + i), Math.sin(a) * r); });
+    if (!paused) shockT = Math.max(0, shockT - dt);
+    const shockPhase = 1 - shockT / 0.65, echoPhase = clamp((shockPhase - 0.16) / 0.84, 0, 1);
+    shock.visible = shock2.visible = landingVisible && shockT > 0 && !reduceMotion;
+    shock.scale.setScalar(1 + shockPhase * 3.2); shockMat.opacity = (1 - shockPhase) * 0.85;
+    shock2.scale.setScalar(1 + echoPhase * 2.5); shockMat2.opacity = shockPhase > 0.16 ? (1 - echoPhase) * 0.65 : 0;
     const tgx = fx + ox, tgz = fy + oz, ease = 1 - Math.exp(-dt * 28);
     if (entering || !heroInit || Math.hypot(tgx - heroX, tgz - heroZ) > 2) { heroX = tgx; heroZ = tgz; heroInit = true; } else { heroX += (tgx - heroX) * ease; heroZ += (tgz - heroZ) * ease; }
     const floaty = ['drone', 'ufo', 'rocket', 'astro'].includes(skinNow.id);
-    drone.position.set(heroX, gy + skinNow.lift + drop + Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025), heroZ);
+    drone.position.set(heroX + landingX, gy + skinNow.lift + drop + (reduceMotion || entering ? 0 : Math.sin(t * (floaty ? 4 : 2.6)) * (floaty ? 0.05 : 0.025)), heroZ + landingZ);
     const mdx = tx - px, mdy = ty - py;
     if (dir && !entering) { const want = Math.atan2(DIRS[dir][0], DIRS[dir][1]); let d = want - drone.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); drone.rotation.y += d * Math.min(1, dt * 14); }
-    body.rotation.x = (stepP < 1 && (mdx || mdy)) ? (skinNow.id === 'drone' ? 0.22 : -0.08) : 0; // drone leans in, boats lift the bow
+    body.rotation.x = entering ? landingPitch : (stepP < 1 && (mdx || mdy)) ? (skinNow.id === 'drone' ? 0.22 : -0.08) : 0; // drone leans in, boats lift the bow
     const moving = stepP < 1 && (mdx || mdy) && live;
     const sg = skinGroups[skinNow.id]; if (sg.userData.anim) sg.userData.anim(t, paused ? 0 : dt, moving);
     if (boostT > 0 && moving && !paused && !entering && Math.random() < dt * 40) { const [bx, bz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP); burst(bx, 0.5, bz, 0xa6ff4d, 2, 1.5, 1.5); } // speed sparks
@@ -3704,10 +3742,10 @@ window.Board = (function () {
       const a = drone.rotation.y; burst(heroX - Math.sin(a) * 0.7 + rand(-0.15, 0.15), gy + 0.12, heroZ - Math.cos(a) * 0.7 + rand(-0.15, 0.15), 0xffffff, 1, 0.6, 0.6);
     }
     drone.visible = hideT > 0 ? false : enterT > 0 ? true : !(invuln > 0 && state === 'play' && Math.floor(t * 12) % 2);
-    droneShadow.position.set(fx + ox, gy + 0.02, fy + oz); droneShadow.visible = drone.visible;
+    droneShadow.position.set(fx + ox + landingX, gy + 0.02, fy + oz + landingZ); droneShadow.visible = drone.visible;
     bubble.visible = shieldOn && hideT <= 0 && state !== 'over';
     if (bubble.visible) { bubbleK = Math.min(1, bubbleK + dt * 4); const pop = bubbleK < 1 ? 1 + Math.sin(bubbleK * Math.PI) * 0.25 : 1; bubble.position.set(drone.position.x, drone.position.y + 0.1, drone.position.z); bubble.scale.setScalar(bubbleK * pop * (1 + Math.sin(t * 3) * 0.03)); bubbleRim.rotation.z += dt * 0.8; bubbleMat.uniforms.uT.value = t; if (Math.random() < dt * 6) { const a = rand(0, 6.28); burst(bubble.position.x + Math.cos(a) * 0.9, bubble.position.y + rand(-0.3, 0.5), bubble.position.z + Math.sin(a) * 0.9, 0xffe9a8, 1, 0.4, 1); } }
-    halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !(hideT > 0); const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
+    halo.position.set(fx + ox, gy + 0.03, fy + oz); halo.visible = drone.visible && !entering; const hs = 1.9 + Math.sin(t * 3) * 0.08; halo.scale.set(hs, 1, hs); droneShadow.scale.setScalar(1.4 * (1 - Math.min(0.75, drop / 10)));
     chev.visible = !!dir && live; if (dir) { const [dx, dy] = DIRS[dir]; chev.position.set(fx + ox + dx * 0.85, gy + 0.03, fy + oz + dy * 0.85); chev.rotation.y = Math.atan2(-dx, -dy); }
     // fuse
     if (fuse && live) {
