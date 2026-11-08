@@ -401,9 +401,9 @@ h2.shop { color: #ffd166; }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
 .rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
 .tbody.daily .sect { margin-top: 4px; }
-.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
-.tab { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
-.tab.on { color: #1d2a63; background: #ffd166; } .tab.daily.on { background: #7ff5e2; color: #063b35; } .tab.rush.on { background: #ffb48a; color: #4a1600; }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(300px, 100%); box-sizing: border-box; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
+.tab { all: unset; box-sizing: border-box; min-width: 0; cursor: pointer; padding: 8px 10px; border-radius: 999px; text-align: center; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.tab.on { color: #1d2a63; background: #ffd166; } .tab.tab-daily.on { background: #7ff5e2; color: #063b35; } .tab.tab-rush.on { background: #ffb48a; color: #4a1600; }
 .btn small.adt { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
 .btn small.adt svg { width: 12px; height: 12px; padding: 2px 5px; border-radius: 4px; background: currentColor; box-sizing: content-box; }
 .btn small.adt svg path { fill: #fff; } .btn.alt small.adt svg path { fill: #2a3560; } .btn.go-daily small.adt svg path { fill: #9ffbe9; } .btn.go-rush small.adt svg path { fill: #ffc49e; }
@@ -3168,7 +3168,7 @@ window.Board = (function () {
           '<div class="rrow">' + list.map((n, j) => '<div class="rb">' + badge(looks[j], have >= n, null, 54, 'Rush · ' + RUSH_NAMES[j] + '|' + lab(n) + ' ' + unit + ' in one run') + '<small' + (have >= n ? ' class="on"' : '') + '>' + lab(n) + '</small></div>').join('') + '</div></div>'; };
       body = block('Boards', RUSH_B, RUSH_BL, b, (n) => n, 'boards') + block('Score', RUSH_S, RUSH_SL, sc, kfmt, 'points');
     }
-    const tb = (k, l) => '<button type="button" class="tab ' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
+    const tb = (k, l) => '<button type="button" class="tab tab-' + k + (troTab === k ? ' on' : '') + '" data-act="t_' + k + '">' + l + '</button>';
     panel(BACK_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
     $('card').classList.add('troc');
