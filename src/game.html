@@ -256,7 +256,11 @@ body {
 .lvl.boss { box-shadow: inset 0 0 0 2px rgba(255,209,102,0.7); }
 .lvl.cur { background: #fff; color: #1d2a63; }
 .lvl.playing:not(.cur) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.65); }
-.level-choice-note { min-height: 32px; font: 500 11px/1.4 var(--mono); }
+.card .level-choice-note { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: center; font: 500 12px/1.4 var(--mono); }
+.level-select .world-level-header .kicker { color: color-mix(in srgb, var(--level-accent) 75%, white); }
+.level-select .lvl.cur, .level-select .level-launch { background: linear-gradient(135deg, rgba(12,20,48,.38), rgba(12,20,48,.5)), var(--level-bg); color: #fff; text-shadow: 0 1px 2px rgba(12,20,48,.5); }
+.level-select .lvl.cur { box-shadow: inset 0 0 0 2px var(--level-accent), 0 0 12px rgba(255,255,255,.08); }
+.level-select .level-launch { font-weight: 700; }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
@@ -3156,17 +3160,21 @@ window.Board = (function () {
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, current = browsingPaused && i === cur, open = isOpen(i) || current;
-      html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === selected ? ' cur' : '') + (current ? ' playing' : '') + '" type="button" data-act="lvl" data-i="' + i + '" aria-pressed="' + (i === selected) + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + (current ? ', current game' : '') + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
+      html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === selected ? ' cur' : '') + (current ? ' playing' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (browsingPaused ? ' aria-pressed="' + (i === selected) + '"' : '') + (open ? '' : ' disabled') + ' aria-label="' + (browsingPaused ? 'Level ' : 'Play level ') + x.name + (current ? ', current game' : '') + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
-    html += '</div>' + (browsingPaused ? '<p class="level-choice-note" id="levelChoiceNote" role="status" aria-live="polite"></p>' : '') + '<button class="btn" type="button" data-act="launch"></button>';
+    html += '</div>' + (browsingPaused ? '<p class="level-choice-note" id="levelChoiceNote" role="status" aria-live="polite"></p><button class="btn level-launch" type="button" data-act="launch"></button>' : '');
     const updateChoice = () => {
+      if (!browsingPaused) return;
       $('card').querySelectorAll('[data-act="lvl"]').forEach((b) => { const on = +b.dataset.i === selected; b.classList.toggle('cur', on); b.setAttribute('aria-pressed', on); });
       const cta = $('card').querySelector('[data-act="launch"]'), resume = browsingPaused && selected === cur;
       cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
-      if (browsingPaused) $('levelChoiceNote').textContent = resume ? 'Your paused game will continue from the same point.' : trialActive ? 'New game · current progress and this skin trial will end.' : 'New game · current level progress will be lost.';
+      if (browsingPaused) $('levelChoiceNote').textContent = resume ? 'Pick up where you paused' : trialActive ? 'Ends this game and skin trial' : 'Current level progress will be lost';
     };
-    panel(html, { lvl: (b) => { selected = +b.dataset.i; updateChoice(); }, back: browsingPaused ? showPause : showWorlds,
+    panel(html, { lvl: (b) => { if (!browsingPaused) { startLevel(+b.dataset.i); return; } selected = +b.dataset.i; updateChoice(); }, back: browsingPaused ? showPause : showWorlds,
       launch: () => { if (selected === undefined) return; if (browsingPaused && selected === cur) resumeGame(); else { if (browsingPaused) finishSkinTrial(); startLevel(selected); } } });
+    $('card').classList.add('level-select');
+    $('card').style.setProperty('--level-bg', WORLD_BG[w]);
+    $('card').style.setProperty('--level-accent', WORLD_BG[w].match(/#[0-9a-f]{6}/gi)[1]);
     updateChoice();
   }
   const SND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
