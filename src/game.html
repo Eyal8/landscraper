@@ -41,14 +41,16 @@ body {
 #pauseBtn svg { width: 16px; height: 16px; }
 .mid { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 2px; }
 .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; padding: 5px 7px; border-radius: 9px; white-space: nowrap; }
-.hud-level { min-width: 0; }
+.hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.hud-level { min-width: 0; padding: 6px 0; }
+.hud-level::before { content: ''; width: 4px; height: 18px; border-radius: 3px; background: var(--world-gradient); box-shadow: 0 0 5px rgba(255,255,255,.25); }
 .hud-level b { font: 800 15px/1.2 var(--display); }
-#lvlLabel { background-image: linear-gradient(rgba(12,20,48,.4), rgba(12,20,48,.4)), var(--world-gradient); color: #fff; padding: 5px 7px; border-radius: 9px; }
-.hud-time { color: #fff; background: rgba(12,20,48,.65); }
+#lvlLabel { color: #fff; }
+.hud-time { padding: 6px 8px; border-radius: 12px; color: #fff; background: rgba(12,20,48,.25); border: 1px solid rgba(255,255,255,.2); }
+.clock-icon { width: 13px; height: 13px; flex: none; opacity: .85; }
 .hud-status { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 #clock { font: 800 16px/1.2 var(--display); font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
-.hud-time.low { color: #ffad82; }
+.hud-time.low { color: #ffad82; background: rgba(12,20,48,.6); }
 #clock.low { color: #ffad82; animation: lowt 1s ease-in-out infinite; }
 #clock.bump { transform: scale(1.3); color: #ffd166; }
 @keyframes lowt { 50% { transform: scale(1.15); } }
@@ -57,17 +59,19 @@ body {
 #pctLabel .hud-board { color: var(--ink-soft); }
 @media (max-width: 360px) {
   #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; }
-  .hud-level b { font-size: 13px; }
-  #clock { font-size: 14px; }
-  #hud[data-mode="daily"] .hud-level b { font-size: 12px; }
-  .hud-level { padding: 0; }
-  #lvlLabel, .hud-time { padding: 5px; }
+  .hud-level b { font-size: 12px; }
+  #clock { font-size: 13px; }
+  #hud[data-mode="daily"] #clock { font-size: 12px; }
+  .hud-row, .hud-time { gap: 4px; }
+  .hud-time { padding: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { #clock.low { animation: none; } #clock.bump { transform: none; } }
-.bar { position: relative; height: 12px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.bar { position: relative; height: 8px; margin: 7px 0 18px; border-radius: 999px; background: rgba(12,20,48,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
-.bar em { position: absolute; top: -2px; bottom: -2px; width: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.8); }
+.bar em { position: absolute; top: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); font-style: normal; }
+.bar em svg { width: 20px; height: 20px; fill: #ffd166; stroke: #995221; stroke-width: .8; filter: drop-shadow(0 0 5px rgba(255,209,102,.85)); }
+.bar em span { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #fff5cc; font: 500 9px/1 var(--mono); text-shadow: 0 1px 3px #243a54; }
 .endbar { position: relative; width: 100%; margin: 4px 0 2px; padding-bottom: 20px; }
 .endbar .track { position: relative; height: 14px; border-radius: 999px; background: var(--shade); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .endbar .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); }
@@ -235,7 +239,8 @@ body {
 .lvl .crown { position: absolute; top: -7px; right: -5px; width: 20px; height: 20px; color: #ffd166; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 .lvl.boss { box-shadow: inset 0 0 0 2px rgba(255,209,102,0.7); }
 .lvl.cur { background: #fff; color: #1d2a63; }
-.lvl .resume-label { color: #1d2a63; font-size: 9px; }
+.lvl.playing:not(.cur) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.65); }
+.level-choice-note { min-height: 32px; font: 500 11px/1.4 var(--mono); }
 .lvl[disabled] { cursor: default; opacity: 0.4; }
 .modes { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { cursor: pointer; border: 0; border-radius: 20px; padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.12); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font: 500 11px var(--mono); }
@@ -530,6 +535,32 @@ h2.shop { color: #ffd166; }
 .capture-highlight { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 14px; background: rgba(255,209,102,.1); border: 1px solid rgba(255,209,102,.3); }
 .capture-highlight b { font: 800 13px/1.4 var(--display); color: var(--gold); }
 .capture-highlight span { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
+.result-heading, .result-performance { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.result-heading { gap: 6px; }
+#card.results { gap: 12px; padding: 20px 16px 16px; }
+#card.results > * { flex-shrink: 0; }
+#card.results .result-heading { animation: resultChunkIn .3s ease-out both; }
+#card.results .result-performance { animation: resultChunkIn .4s ease-out .12s both; }
+#card.results .result-actions, #card.results .result-note-slot { animation: none; opacity: 1; }
+.result-note-slot { width: 100%; min-height: 60px; }
+#card.results .result-note-slot > * { animation: resultNoteIn .45s cubic-bezier(.2,.8,.3,1.15) 1.4s both; }
+.result-performance .big { font-size: clamp(32px, 9vw, 44px); }
+.result-performance .stars svg { width: 38px; height: 38px; }
+.result-tip { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.14); }
+.result-tip b { color: var(--ink-soft); }
+@media (max-height: 640px) {
+  #card.results { gap: 8px; padding: 16px 16px 12px; }
+  #card.results h2 { font-size: 22px; }
+  .result-performance { gap: 5px; }
+  .result-performance .stars svg { width: 32px; height: 32px; }
+  .result-performance .big { font-size: 32px; }
+  .result-performance .got { font-size: 15px; }
+  .result-performance p { font-size: 12px; }
+  .result-actions .btn { padding: 11px 14px; }
+}
+@keyframes resultChunkIn { from { opacity: 0; transform: translateY(6px); } }
+@keyframes resultNoteIn { 0% { opacity: 0; transform: translateY(14px) scale(.97); } 80% { opacity: 1; transform: translateY(-2px) scale(1.01); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #card.results .result-heading, #card.results .result-performance, #card.results .result-note-slot > * { animation: none; opacity: 1; transform: none; } }
 .trial-ready, .trial-reminder { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 18px; background: rgba(90,175,255,.14); border: 1px solid rgba(140,200,255,.35); overflow-wrap: anywhere; flex-shrink: 0; }
 .trial-ready b, .trial-reminder b { display: block; font: 800 14px/1.3 var(--display); }
 .trial-ready span, .trial-reminder p { font: 500 11px/1.5 var(--mono); color: var(--ink-soft); }
@@ -562,8 +593,8 @@ h2.shop { color: #ffd166; }
   <div id="hud" hidden>
     <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="2" width="3.5" height="12" rx="1.2"/><rect x="9.5" y="2" width="3.5" height="12" rx="1.2"/></svg></button>
     <div class="mid ts">
-      <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><i id="clock"></i></span></div>
-      <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal"></em></div>
+      <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg><i id="clock"></i></span></div>
+      <div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>75%</span></em></div>
     </div>
     <div class="hud-status ts"><div class="lives" id="lives"></div><span id="pctLabel">0%</span></div>
     <div id="power"></div><div class="hud-notices" aria-hidden="true"></div>
@@ -2371,7 +2402,7 @@ window.Board = (function () {
   }
   function drawHud() {
     $('hud').dataset.mode = mode;
-    $('lvlLabel').style.setProperty('--world-gradient', WORLD_BG[L.world]);
+    $('lvlLabel').parentElement.style.setProperty('--world-gradient', WORLD_BG[L.world]);
     $('lvlLabel').textContent = mode === 'rush' ? 'Rush' : mode === 'daily' ? 'Daily' : L.name;
     $('lvlLabel').setAttribute('aria-label', mode === 'campaign' ? 'Campaign level ' + L.name : mode === 'daily' ? 'Daily challenge' : 'Rush');
     const ck = $('clock'), timeBox = $('clockWrap'), timed = clockOn() || mode === 'rush';
@@ -2384,9 +2415,11 @@ window.Board = (function () {
     }
     $('pctLabel').innerHTML = mode === 'rush' ? '<b>' + pct + '%</b><span class="hud-board">Board ' + (rushBoard + 1) + '</span>' : L.boss ? '<b>' + bossRoundNo() + '/3</b><span class="hud-board">Rounds</span>' : '<b>' + pct + '%</b>';
     $('bar').setAttribute('aria-valuenow', Math.min(100, pct));
-    $('bar').setAttribute('aria-valuetext', pct + '% claimed; goal ' + L.goal + '%');
-    $('barGoal').title = 'Goal ' + L.goal + '%';
-    $('barFill').style.width = Math.min(100, pct) + '%'; $('barGoal').style.left = 'calc(' + L.goal + '% - 1px)';
+    $('bar').setAttribute('aria-valuetext', pct + '% claimed; ' + (L.boss ? 'round ' + bossRoundNo() + ' of 3' : 'goal ' + L.goal + '%'));
+    const goal = $('barGoal'); goal.hidden = !!L.boss; goal.title = 'Goal ' + L.goal + '%'; goal.setAttribute('aria-label', goal.title);
+    goal.querySelector('span').textContent = L.goal + '%';
+    goal.querySelector('path').setAttribute('d', mode === 'rush' ? 'M5 3v18h2v-7c4-3 7 3 12 0V4c-5 3-8-3-12 0V3z' : 'M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z');
+    $('barFill').style.width = Math.min(100, pct) + '%'; goal.style.left = L.goal + '%';
     $('bar').classList.toggle('goal', pct >= L.goal);
     const l = $('lives'); l.innerHTML = ''; l.setAttribute('role', 'img'); l.setAttribute('aria-label', lives + ' lives remaining, maximum 5');
     if (mode !== 'rush') for (let i = 0; i < Math.max(3, lives); i++) { const s = document.createElement('span'); s.innerHTML = HEART; if (i >= lives) s.firstChild.classList.add('off'); if (i >= 3) s.firstChild.setAttribute('fill', '#ffc93a'); l.append(s.firstChild); }
@@ -2424,6 +2457,12 @@ window.Board = (function () {
   const captureTitle = (n) => n === 1 ? 'Trapped!' : n === 2 ? 'Double trap!' : n === 3 ? 'Triple trap!' : n === 4 ? 'Quadruple trap!' : n.toLocaleString() + '× trap!';
   function captureSummary() {
     return bestCapture < 2 ? '' : '<div class="capture-highlight"><b>Best capture · ' + captureTitle(bestCapture) + '</b><span>' + bestCapture + ' monsters at once · +' + bestCaptureBonus.toLocaleString() + ' capture bonus</span></div>';
+  }
+  function levelResultNote() {
+    if (bestCapture >= 2) return captureSummary();
+    const tips = ['Close your trail on land to claim an area.', 'Trap several sea monsters together for a bigger bonus.', 'Replay levels to improve your best stars.'];
+    const tip = L.boss ? 'Keep your lives to earn more boss stars.' : mode === 'daily' ? 'Daily stars do not add to your campaign stars.' : tips[Math.max(0, cur) % tips.length];
+    return '<div class="capture-highlight result-tip"><b>Tip</b><span>' + tip + '</span></div>';
   }
   function claim() {
     // the part the fuse already burnt turns back to sea; only the rest of the line becomes land
@@ -2652,12 +2691,13 @@ window.Board = (function () {
       const lo = th[0] - 15, hi = 100, pos = (v) => clamp((v - lo) / (hi - lo) * 100, 0, 100); // the bar shows only the part that matters, so the stars sit apart
       const bar = fill ? '<div class="endbar ' + mode + '"><div class="track"><i id="endFill"></i></div>' + th.map((v, k) => '<div class="tk" data-k="' + k + '" style="left:' + pos(v) + '%"><svg class="tks" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span>' + v + '%</span></div>').join('') + '</div>' : '';
       const tip = '<b class="got"><span id="gotN">' + (fill ? 0 : pct) + '</span>% claimed</b><br><span class="more" id="moreTxt"' + (fill ? ' style="opacity:0"' : '') + '>' + more + '</span>';
-      panel('<div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2>' + starsSvg(stars, fill) +
-        '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p>' + captureSummary() +
-        '<div class="btns">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : '') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
+      panel('<div class="result-heading"><div class="kicker">' + (mode === 'daily' ? 'Daily · ' + dailyKey : WORLDS[L.world].name + ' · ' + L.name) + '</div><h2 class="win">' + (newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : 'Level clear!') + '</h2></div><div class="result-performance">' + starsSvg(stars, fill) +
+        '<div class="big">' + score.toLocaleString('en-US') + '</div>' + bar + '<p>' + tip + '</p></div><div class="result-note-slot">' + levelResultNote() + '</div>' +
+        '<div class="btns result-actions">' + (hasNext ? '<button class="btn' + (nextIsNewWorld ? ' world-next' : '') + '"' + (nextIsNewWorld ? ' style="--next-world-bg:' + WORLD_BG[LEVELS[cur + 1].w] + '"' : '') + ' type="button" data-act="next">' + (nextIsNewWorld ? 'Go to ' + WORLDS[LEVELS[cur + 1].w].name : 'Next level') + '</button>' + (shieldOffer() ? '<button class="btn alt" type="button" data-act="nextS">' + SHIELD_I + 'Next with a Shield' + adTag() + '</button>' : '') : '') +
         (mode === 'daily' ? '<button class="btn" type="button" data-act="dretry">Try again' + (dailyKey === todayKey() && dailyFree() ? '' : adTag()) + '</button><button class="btn alt" type="button" data-act="cal">Calendar</button>' + (window.Board.available ? '<button class="btn alt" type="button" data-act="lb">Leaderboard</button>' : '') : '<button class="btn alt" type="button" data-act="retry">Replay</button>') +
         '<button class="btn alt" type="button" data-act="home">Home</button></div>',
         { next: adBreak(() => startLevel(cur + 1)), nextS: withShield(() => startLevel(cur + 1)), retry: adBreak(() => startLevel(cur)), home: adBreak(showHome), cal: adBreak(showDaily), dretry: () => playDaily(dailyKey), lb: () => window.Board.show('daily') });
+      $('card').classList.add('results');
       showTrialReminder(trialReward);
       const results = $('card').firstElementChild;
       setTimeout(() => { if (results.isConnected && state === 'clear') showSkinUnlock(); }, reduceMotion ? 650 : 2100);
@@ -3000,20 +3040,24 @@ window.Board = (function () {
   function showWorld(w, fromPause = false) {
     const browsingPaused = fromPause && state === 'play' && paused && mode === 'campaign' && w === L.w;
     if (browsingPaused) { pauseLevelsOpen = true; pauseExitPending = false; } else toMenu();
-    let html = BACK_X + '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid">';
+    const opened = LEVELS.map((x, i) => x.w === w && isOpen(i) ? i : -1).filter((i) => i >= 0);
+    let selected = browsingPaused ? cur : opened.includes(nextLevel()) ? nextLevel() : opened[0];
+    let html = BACK_X + '<div class="kicker">World ' + (w + 1) + '</div><h2>' + WORLDS[w].name + '</h2><div class="grid" role="group" aria-label="Choose a level">';
     LEVELS.forEach((x, i) => {
       if (x.w !== w) return;
       const st = prog.stars[x.id] || 0, current = browsingPaused && i === cur, open = isOpen(i) || current;
-      html += '<button class="lvl' + (x.boss ? ' boss' : '') + ((browsingPaused ? current : i === nextLevel()) ? ' cur' : '') + '" type="button" data-act="lvl" data-i="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="' + (current ? 'Resume level ' : 'Level ') + x.name + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small' + (current ? ' class="resume-label"' : '') + '>' + (current ? 'Resume' : st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
+      html += '<button class="lvl' + (x.boss ? ' boss' : '') + (i === selected ? ' cur' : '') + (current ? ' playing' : '') + '" type="button" data-act="lvl" data-i="' + i + '" aria-pressed="' + (i === selected) + '"' + (open ? '' : ' disabled') + ' aria-label="Level ' + x.name + (current ? ', current game' : '') + '">' + (x.l + 1) + (x.boss ? '<svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>' : '') + '<small>' + (st ? STAR.repeat(st) : prog.skipped[x.id] ? 'Skipped' : '') + '</small></button>';
     });
-    html += '</div>';
-    if (browsingPaused) html += '<button class="btn" type="button" data-act="resume">Resume ' + L.name + '</button>';
-    panel(html, { lvl: (b) => {
-      const i = +b.dataset.i;
-      if (!browsingPaused) startLevel(i);
-      else if (i === cur) resumeGame();
-      else confirmLeaveGame(() => startLevel(i), 'Play ' + LEVELS[i].name);
-    }, back: browsingPaused ? showPause : showWorlds, resume: resumeGame });
+    html += '</div>' + (browsingPaused ? '<p class="level-choice-note" id="levelChoiceNote" role="status" aria-live="polite"></p>' : '') + '<button class="btn" type="button" data-act="launch"></button>';
+    const updateChoice = () => {
+      $('card').querySelectorAll('[data-act="lvl"]').forEach((b) => { const on = +b.dataset.i === selected; b.classList.toggle('cur', on); b.setAttribute('aria-pressed', on); });
+      const cta = $('card').querySelector('[data-act="launch"]'), resume = browsingPaused && selected === cur;
+      cta.disabled = selected === undefined; cta.textContent = selected === undefined ? 'Locked' : (resume ? 'Resume ' : 'Play ') + LEVELS[selected].name;
+      if (browsingPaused) $('levelChoiceNote').textContent = resume ? 'Your paused game will continue from the same point.' : trialActive ? 'New game · current progress and this skin trial will end.' : 'New game · current level progress will be lost.';
+    };
+    panel(html, { lvl: (b) => { selected = +b.dataset.i; updateChoice(); }, back: browsingPaused ? showPause : showWorlds,
+      launch: () => { if (selected === undefined) return; if (browsingPaused && selected === cur) resumeGame(); else { if (browsingPaused) finishSkinTrial(); startLevel(selected); } } });
+    updateChoice();
   }
   const SND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const VIB = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7.5" y="3" width="9" height="18" rx="2.2"/><path class="on" d="M4.5 8v8M2 10v4M19.5 8v8M22 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="no" d="M3 3l18 18" stroke="#ff5a7a" stroke-width="2.4" stroke-linecap="round"/></svg>';
