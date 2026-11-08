@@ -359,6 +359,13 @@ body {
 .shopbag svg { width: 28px; height: 28px; }
 h2.shop { color: #ffd166; }
 .pcards { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.shop-packs { width: 100%; }
+.shop-packs summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.07); font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.shop-packs summary::-webkit-details-marker { display: none; }
+.shop-packs summary::after { content: ''; width: 7px; height: 7px; flex: none; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+.shop-packs[open] summary::after { transform: rotate(225deg); }
+.shop-packs[open] .pcards { margin-top: 12px; }
+.shop-packs summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .pcard { all: unset; box-sizing: border-box; position: relative; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 14px; border-radius: 22px; text-align: left; color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
 .pcard:active { transform: translateY(2px); }
 .pcard.p-all { background: linear-gradient(120deg, #7a3cff, #e8457a 60%, #ffb21e); padding: 20px 14px; box-shadow: 0 5px 0 #6a2a8a, 0 10px 30px rgba(232,69,122,0.35); }
@@ -684,6 +691,9 @@ window.Store = (function () {
   const NP = native && window.capacitorExports ? window.capacitorExports.registerPlugin('NativePurchases') : null;
   const owns = {};
   for (const k in PRODUCTS) { try { owns[k] = localStorage.getItem(PRODUCTS[k].cache) === '1'; } catch (e) { owns[k] = false; } }
+  // Completing the ORIGINAL three packs grants All Skin Packs benefits, including future packs.
+  // Keep this fixed as the catalog grows. Derive from real entitlements so restore/refunds still work.
+  const allPacksOwned = () => !!(owns.allSkins || owns.bundle || (owns.sea && owns.space && owns.pool));
 
   function set(k, v) {
     owns[k] = !!v;
@@ -756,8 +766,8 @@ window.Store = (function () {
   return {
     owns: (k) => !!owns[k],
     noAds: () => !!(owns.noAds || owns.bundle),
-    pack: (k) => !!(owns[k] || owns.allSkins || owns.bundle), // a skin pack: bought alone, or with All Skins or Everything
-    allSkins: () => !!(owns.allSkins || owns.bundle || (owns.sea && owns.space && owns.pool)),
+    pack: (k) => !!owns[k] || allPacksOwned(),
+    allSkins: allPacksOwned,
     price: (k) => PRODUCTS[k || 'noAds'].price,
     buy: (k) => buy(k || 'noAds'),
     restore, refresh, isNative: native
@@ -3222,7 +3232,7 @@ window.Board = (function () {
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
-  function showShop() {
+  function showShop(packsOpen = false) {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
     const nSk = SKINS.filter((k) => k.pack).length;
     const thumbs = ['sub', 'ufo', 'swan', 'unicorn'].map((k) => th[k] ? '<img alt="" src="' + th[k] + '">' : '').join('');
@@ -3235,13 +3245,14 @@ window.Board = (function () {
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
+      '</div><details class="shop-packs"' + (packsOpen === true ? ' open' : '') + '><summary>Individual packs</summary><div class="pcards">' +
       Object.keys(PACKS).map((pack) => { const skins = SKINS.filter((k) => k.pack === pack);
         const icons = skins.map((sk) => th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '').join('');
         return card('buy_' + pack, 'p-pack p-' + pack, '<div class="thumbs">' + icons + '</div>', PACKS[pack], skins.length + ' skins', st.price(pack), st.pack(pack));
       }).join('') +
-      '</div><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
+      '</div></details><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
-        ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, showShop)])),
+        ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, () => showShop(true))])),
         restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
   }
 
