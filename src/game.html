@@ -355,38 +355,49 @@ body {
 .rbolt { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.05em; margin-right: 4px; }
 .rbolt.big.cal { fill: #7ff5e2; width: 38px; height: 38px; filter: drop-shadow(0 0 12px rgba(80,240,210,0.5)); }
 .rbolt.big { width: 46px; height: 46px; fill: #ffb48a; margin: 0 0 -6px; filter: drop-shadow(0 0 12px rgba(255,140,80,0.6)); }
-.shopbag { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #3a2400; background: linear-gradient(180deg, #ffe680, #ffb21e); box-shadow: 0 4px 0 #b8740a, 0 0 24px rgba(255,190,60,0.45); margin-bottom: -6px; }
-.shopbag svg { width: 28px; height: 28px; }
+.shop-card > * { flex-shrink: 0; }
+.shop-heading { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 54px; }
+.shopbag { width: 48px; height: 48px; flex: none; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; color: #3a2400; background: linear-gradient(180deg, #ffe680, #ffb21e); box-shadow: 0 4px 0 #b8740a, 0 0 24px rgba(255,190,60,.35); }
+.shopbag svg { width: 26px; height: 26px; }
 h2.shop { color: #ffd166; }
-.pcards { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.shop-card > p { font-size: 12px; }
+.pcards { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .shop-packs { width: 100%; }
-.shop-packs summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.07); font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.shop-packs summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.07); font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .shop-packs summary::-webkit-details-marker { display: none; }
 .shop-packs summary::after { content: ''; width: 7px; height: 7px; flex: none; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
 .shop-packs[open] summary::after { transform: rotate(225deg); }
-.shop-packs[open] .pcards { margin-top: 12px; }
-.shop-packs summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.pcard { all: unset; box-sizing: border-box; position: relative; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 14px; border-radius: 22px; text-align: left; color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+.shop-packs .pcards { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; gap: 8px; }
+.shop-packs summary:focus-visible, .pcard:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.pcard { all: unset; box-sizing: border-box; position: relative; isolation: isolate; overflow: hidden; cursor: pointer; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; border-radius: 20px; text-align: left; color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+.pcard > * { position: relative; z-index: 1; }
 .pcard:active { transform: translateY(2px); }
-.pcard.p-all { background: linear-gradient(120deg, #7a3cff, #e8457a 60%, #ffb21e); padding: 20px 14px; box-shadow: 0 5px 0 #6a2a8a, 0 10px 30px rgba(232,69,122,0.35); }
-.pcard.p-ads { background: linear-gradient(120deg, #0f8fa0, #22c7b0); }
-.pcard.p-skins { background: linear-gradient(120deg, #2a5fd6, #3fb0ff); }
-.pcard.p-sea { background: linear-gradient(120deg, #244ba8, #168ea8); }
-.pcard.p-space { background: linear-gradient(120deg, #6233b4, #9157c9); }
-.pcard.p-pool { background: linear-gradient(120deg, #ac337c, #358f98); }
-.pcard.p-pack .ptx b { white-space: normal; overflow-wrap: anywhere; }
-.pcard.owned { opacity: 0.55; cursor: default; }
-.pcard .pic { width: 46px; height: 46px; flex: none; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,0.2); color: #fff; }
-.pcard.p-all .pic { width: 50px; height: 50px; color: #ffe27a; background: rgba(0,0,0,0.18); }
+.pcard.p-all { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 34px 16px 16px; gap: 12px; background: linear-gradient(120deg, #7937df, #dc3e86 62%, #ffac28); box-shadow: 0 4px 0 #6a2a8a, 0 8px 26px rgba(232,69,122,.32); }
+.pcard.p-all .ptx { grid-column: 1 / -1; grid-row: 1; }
+.pcard.p-all .pic { grid-column: 1; grid-row: 2; }
+.pcard.p-all .pprice { grid-column: 2; grid-row: 2; align-self: center; width: auto; margin: 0; padding: 10px 18px; background: #ffe27a; color: #4a2a00; font-size: 18px; }
+.pcard.p-all::before, .pcard.p-skins::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 42%, rgba(255,255,255,.09) 43%, transparent 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.22); }
+.pcard.p-ads { background: linear-gradient(145deg, #0d8596, #18ae9b); }
+.pcard.p-skins { background: linear-gradient(145deg, #3155cb, #299be0); box-shadow: 0 4px 0 #24408d, 0 6px 18px rgba(65,157,255,.22); }
+.pcard.p-sea { background: linear-gradient(145deg, #244ba8, #168ea8); }
+.pcard.p-space { background: linear-gradient(145deg, #6233b4, #9157c9); }
+.pcard.p-pool { background: linear-gradient(145deg, #ac337c, #358f98); }
+.pcard.owned { opacity: .55; cursor: default; }
+.pcard .pic { width: 42px; height: 42px; flex: none; border-radius: 13px; display: grid; place-items: center; background: rgba(255,255,255,.16); color: #fff; }
+.pcard.p-all .pic { width: 48px; height: 48px; color: #ffe27a; background: rgba(34,9,75,.25); }
 .pcard .pic svg { width: 60%; height: 60%; }
-.pcard .thumbs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; } .pcard .thumbs img { width: 100%; height: 100%; object-fit: contain; }
-.pcard .ptx { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.pcard .ptx b { font: 800 17px var(--display); white-space: nowrap; } .pcard.p-all .ptx b { font-size: 19px; }
-.pcard { gap: 12px; padding: 14px 12px; }
-.pcard .ptx span { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
-.pcard .pprice { flex: none; padding: 8px 11px; border-radius: 999px; background: #fff; color: #1d2a63; font: 800 15px var(--display); }
-.pcard.p-all .pprice { background: #ffe27a; color: #4a2a00; font-size: 15px; }
-.pcard .ribbon { position: absolute; top: -9px; right: 18px; padding: 4px 10px; border-radius: 999px; background: #fff; color: #c2185b; font: 500 10px var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+.pcard .thumbs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; }
+.pcard .thumbs img { width: 100%; height: 100%; object-fit: contain; }
+.pcard .ptx { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.pcard .ptx b { font: 800 15px/1.25 var(--display); overflow-wrap: anywhere; }
+.pcard.p-all .ptx b { font-size: 23px; }
+.pcard .ptx span { font: 500 10px/1.4 var(--mono); letter-spacing: .03em; text-transform: uppercase; opacity: .9; }
+.pcard .pprice { align-self: stretch; box-sizing: border-box; margin-top: auto; padding: 8px 6px; border-radius: 12px; background: #fff; color: #1d2a63; text-align: center; font: 800 15px/1.2 var(--display); }
+.pcard .ribbon { position: absolute; top: 10px; right: 12px; z-index: 2; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.93); color: #a0165b; font: 500 9px/1 var(--mono); font-style: normal; letter-spacing: .1em; text-transform: uppercase; }
+.pcard.p-pack { align-items: center; text-align: center; padding: 12px 6px 10px; gap: 8px; border-radius: 16px; }
+.pcard.p-pack .ptx b { font-size: 11px; }
+.pcard.p-pack .ptx span { font-size: 9px; letter-spacing: 0; }
+.pcard.p-pack .pprice { font-size: 11px; padding: 7px 3px; border-radius: 10px; }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
 .rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
 .tbody.daily .sect { margin-top: 4px; }
@@ -630,7 +641,6 @@ h2.shop { color: #ffd166; }
 .trial-reminder button { min-height: 44px; box-sizing: border-box; }
 .trial-reminder .btn { padding: 12px; font-size: 11px; letter-spacing: .05em; }
 .trial-reminder .linkbtn { display: grid; place-items: center; font-size: 10px; line-height: 1.4; }
-.pcard.p-skins .ptx b { white-space: normal; overflow-wrap: anywhere; }
 
 /* Earned rewards sit above the results without replacing them. */
 #skinUnlock { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; box-sizing: border-box; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(8,15,38,.78); }
@@ -3240,11 +3250,11 @@ window.Board = (function () {
       '<div class="pic">' + icon + '</div><div class="ptx"><b>' + title + '</b><span>' + sub + '</span></div><div class="pprice">' + (owned ? 'Owned' : price) + '</div></button>';
     const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
     const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="6" width="17" height="12" rx="3"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M4 20 20 4" stroke="#ff4d6d" stroke-width="2.6"/></svg>';
-    panel(BACK_X + '<div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2>' +
+    panel(BACK_X + '<div class="shop-heading"><div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2></div>' +
       '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device.') + '</p><div class="pcards">' +
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
-      card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
+      card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
       '</div><details class="shop-packs"' + (packsOpen === true ? ' open' : '') + '><summary>Individual packs</summary><div class="pcards">' +
       Object.keys(PACKS).map((pack) => { const skins = SKINS.filter((k) => k.pack === pack);
         const icons = skins.map((sk) => th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '').join('');
@@ -3254,6 +3264,7 @@ window.Board = (function () {
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
         ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, () => showShop(true))])),
         restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
+    $('card').classList.add('shop-card');
   }
 
 
