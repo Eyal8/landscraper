@@ -261,9 +261,8 @@ body {
 .rbest span { font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
 .rbest b { font: 800 30px/1.1 var(--display); color: var(--gold); }
 .btn .bi { width: 18px; height: 18px; vertical-align: -4px; margin-right: 8px; }
-.card.troc { width: min(400px, 100%); height: min(640px, 100%); overflow: hidden; align-self: flex-start; }
-.card.troc.short { height: auto; max-height: min(640px, 100%); } /* Daily and Rush: only as tall as they need, top edge where Worlds has it */
-#panel:has(.card.troc) { align-items: flex-start; }
+.card.troc { width: min(400px, 100%); height: min(640px, 100%); overflow: hidden; }
+.card.troc.short { height: auto; max-height: min(640px, 100%); } /* Daily and Rush: only as tall as they need */
 .card.troc .tbody > * { flex-shrink: 0; }
 .card.troc .tbody { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; box-sizing: border-box; }
 .trow { display: grid; grid-template-columns: 1.25fr repeat(4, 1fr); align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: rgba(255,255,255,0.06); }
@@ -3026,7 +3025,6 @@ window.Board = (function () {
     panel(BACK_X + '<h2>Trophies</h2><div class="tabs">' + tb('worlds', 'Worlds') + tb('daily', 'Daily') + tb('rush', 'Rush') + '</div><div class="tbody ' + troTab + '">' + body + '</div>',
       { back: showHome, t_worlds: () => showTrophies('worlds'), t_daily: () => showTrophies('daily'), t_rush: () => showTrophies('rush'), mprev: () => { troMonth--; showTrophies(); }, mnext: () => { troMonth++; showTrophies(); } });
     $('card').classList.add('troc');
-    { const pn = $('panel'), cs = getComputedStyle(pn), inner = pn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); $('card').style.marginTop = Math.max(0, (inner - Math.min(640, inner)) / 2) + 'px'; }
     $('card').querySelectorAll('.bdg.got[data-t]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); showBadge(el); }));
     if (troTab === 'daily') { const el = $('card').querySelector('.tbody'); let sx = null; // swipe between months
       el.addEventListener('pointerdown', (e) => { sx = e.clientX; }); el.addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx; sx = null;
