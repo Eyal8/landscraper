@@ -3211,7 +3211,7 @@ window.Board = (function () {
     const act = on ? '<button class="btn alt" type="button" disabled>Selected</button>' : open ? '<button class="btn" type="button" data-act="use">Choose</button>' :
       sk.pack ? '<button class="btn skin-buy" type="button" data-act="buy"><span>Get the pack</span> <strong>' + window.Store.price(sk.pack) + '</strong></button>' +
         (waiting ? '<button class="btn alt" type="button" data-act="trialReady">Trial ready · choose a mode</button>' : '<button class="btn alt" type="button" data-act="try">Try for 1 game' + adTag() + '</button>') :
-      '<button class="btn alt" type="button" disabled>Earn stars to unlock</button>';
+      '<button class="btn" type="button" data-act="earn">Play to earn stars</button>';
     return { html: tag + '<b>' + sk.name + '</b>' + (line ? '<span>' + line + '</span>' : ''), actions: act };
   }
   function updateSkinView(id) {
@@ -3260,6 +3260,15 @@ window.Board = (function () {
       const button = e.target.closest('[data-act]'); if (!button) return;
       e.stopPropagation(); buzz('select'); const viewed = SKINS.find((k) => k.id === skinView);
       if (button.dataset.act === 'use') chooseSkin(viewed);
+      else if (button.dataset.act === 'earn') {
+        let next = nextLevel();
+        // After clearing the campaign, replay a level where more stars are still available.
+        if (prog.done[LEVELS[next].id]) {
+          const improve = LEVELS.findIndex((level, i) => isOpen(i) && (prog.stars[level.id] || 0) < 3);
+          if (improve >= 0) next = improve;
+        }
+        startLevel(next);
+      }
       else if (button.dataset.act === 'buy') buyIt(viewed.pack, () => chooseSkin(viewed));
       else if (button.dataset.act === 'trialReady') showHome();
       else if (button.dataset.act === 'try') {
