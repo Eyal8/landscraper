@@ -40,32 +40,33 @@ body {
   background: var(--shade); color: var(--ink); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 #pauseBtn svg { width: 16px; height: 16px; }
-.mid { grid-column: 2; grid-row: 1; min-width: 0; padding-top: 2px; }
+.mid { grid-column: 2; grid-row: 1; min-width: 0; }
 .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .hud-level, .hud-time { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
-.hud-level { position: relative; isolation: isolate; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
-.hud-level::before { content: ''; position: absolute; inset: -4px -6px; z-index: -1; border-radius: 10px; background: rgba(12,20,48,.38); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
-.hud-level b { font: 800 15px/1.2 var(--display); }
+.hud-level { min-width: 0; height: 40px; padding-left: 6px; }
+.hud-level b { font: 800 22px/1.2 var(--display); }
+#hud:not([data-mode="campaign"]) .hud-level b { font-size: 18px; }
 .hud-score { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; padding: 2px 4px; border-radius: 10px; background: rgba(12,20,48,.28); gap: 2px; color: #fff6dd; font: 700 17px/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; white-space: nowrap; }
-.hud-score small { font: 500 8px/1 var(--mono); letter-spacing: .04em; opacity: .85; }
+.hud-score small { font: 500 10px/1 var(--mono); letter-spacing: .04em; opacity: .9; }
 #lvlLabel { color: #fff; }
 .hud-time { padding: 6px 8px; border-radius: 12px; color: #fff; background: rgba(12,20,48,.25); border: 1px solid rgba(255,255,255,.2); }
 .clock-icon { width: 13px; height: 13px; flex: none; opacity: .85; }
 .hud-status { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 .hud-progress { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: 76px minmax(0, 1fr) 76px; align-items: start; gap: 10px; min-width: 0; }
 .hud-progress .bar { min-width: 0; }
-.hud-progress #pctLabel { min-width: 40px; padding-top: 1px; }
+.hud-progress #pctLabel { min-width: 40px; padding-top: 3px; }
 #clock { font: 800 16px/1.2 var(--display); font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-block; transition: transform 0.15s, color 0.15s; }
 .hud-time.low { color: #ffad82; background: rgba(12,20,48,.6); }
 #clock.low { color: #ffad82; animation: lowt 1s ease-in-out infinite; }
 #clock.bump { transform: scale(1.3); color: #ffd166; }
 @keyframes lowt { 50% { transform: scale(1.15); } }
 #pctLabel { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font: 500 10px/1.2 var(--mono); letter-spacing: 0; white-space: nowrap; }
-#pctLabel b { font: 800 16px/1.2 var(--display); color: var(--ink); }
+#pctLabel b { font: 800 20px/1.2 var(--display); color: var(--ink); }
 #pctLabel .hud-board { color: var(--ink-soft); }
 @media (max-width: 360px) {
   #hud { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); gap: 8px; row-gap: 4px; }
-  .hud-level b { font-size: 12px; }
+  .hud-level b { font-size: 20px; }
+  #hud:not([data-mode="campaign"]) .hud-level b { font-size: 16px; }
   .hud-score { font-size: 16px; }
   .hud-progress { grid-template-columns: 68px minmax(0, 1fr) 68px; gap: 8px; }
   #clock { font-size: 13px; }
@@ -74,12 +75,12 @@ body {
   .hud-time { padding: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { #clock.low { animation: none; } #clock.bump { transform: none; } }
-.bar { position: relative; height: 8px; margin: 7px 0 18px; border-radius: 999px; background: rgba(12,20,48,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.bar { position: relative; height: 12px; margin: 9px 0 18px; border-radius: 999px; background: rgba(12,20,48,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7cf3c4, #4fd2ff); transition: width 0.45s cubic-bezier(.2,.9,.3,1.2); }
 .bar.goal i { background: linear-gradient(90deg, #ffd166, #ff9f5a); }
 .bar em { position: absolute; top: 50%; width: 3px; height: 20px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px #fff4ca; transform: translate(-50%, -50%); font-style: normal; }
-.bar em span { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); color: #fff; font: 700 13px/1 var(--mono); text-shadow: 0 1px 2px rgba(10,20,50,.9), 0 1px 5px rgba(10,20,50,.7); white-space: nowrap; }
-.bar .bar-milestone { position: absolute; top: 50%; width: 1.5px; height: 12px; border-radius: 1px; transform: translate(-50%, -50%); background: rgba(255,255,255,.65); }
+.bar em span { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); color: #243653; font: 700 13px/1 var(--mono); white-space: nowrap; }
+.bar .bar-milestone { position: absolute; top: 50%; width: 2px; height: 16px; border-radius: 1px; transform: translate(-50%, -50%); background: rgba(255,255,255,.75); }
 .bar .bar-milestone.hit { background: #fff0b3; box-shadow: 0 0 4px rgba(255,209,102,.7); }
 .bar.goal em { background: #fff2b3; box-shadow: 0 0 12px #ffe18a; animation: goalShine .9s ease-out both; }
 .bar.goal em::after { content: ''; position: absolute; inset: -7px -10px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,228,150,.8), transparent 70%); animation: goalRing .9s ease-out both; }
@@ -697,7 +698,7 @@ h2.shop { color: #ffd166; }
     <div class="mid ts">
       <div class="hud-row"><span class="hud-level"><b id="lvlLabel">1-1</b></span><span class="hud-time" id="clockWrap" role="timer" aria-live="off"><svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg><i id="clock"></i></span></div>
     </div>
-    <div class="hud-progress"><span class="hud-score ts" id="scoreWrap" role="img" aria-label="Score: 0 points"><span id="scoreLabel">0</span><small aria-hidden="true">PTS</small></span><div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><span>75%</span></em><b class="bar-milestone" hidden aria-hidden="true"></b><b class="bar-milestone" hidden aria-hidden="true"></b></div><span id="pctLabel">0%</span></div>
+    <div class="hud-progress"><span class="hud-score" id="scoreWrap" role="img" aria-label="Score: 0 points"><span id="scoreLabel">0</span><small aria-hidden="true">PTS</small></span><div class="bar" id="bar" role="progressbar" aria-label="Territory claimed" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i><em id="barGoal" role="img"><span>75%</span></em><b class="bar-milestone" hidden aria-hidden="true"></b><b class="bar-milestone" hidden aria-hidden="true"></b></div><span id="pctLabel">0%</span></div>
     <div class="hud-status ts"><div class="lives" id="lives"></div></div>
     <div id="power"></div><div class="hud-notices" aria-hidden="true"></div>
   </div>
