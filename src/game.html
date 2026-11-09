@@ -206,7 +206,7 @@ body {
 #coach.success .coach-icon { color: #ffd166; }
 #coach.success .coach-icon { background: rgba(255,209,102,.15); }
 #coach .coach-copy.changed { animation: coachIn .23s ease-out; }
-#hud.coaching ~ #flash, #hud.hud-paused ~ #coach { visibility: hidden; }
+#hud.coaching:not(.capture-notice) ~ #flash, #hud.hud-paused ~ #coach, #hud.capture-notice ~ #coach { visibility: hidden; }
 @keyframes coachIn { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { #coach { transition: none; } #coach .coach-copy.changed { animation: none; } }
 
@@ -231,7 +231,7 @@ body {
 .card h2 { margin: 0; font: 800 26px/1.05 var(--display); text-wrap: balance; }
 .card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
 .card .kicker { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
-.card .level-context { font-size: 14px; line-height: 1.3; letter-spacing: 0.16em; }
+.card .level-context { font-weight: 700; font-size: 14px; line-height: 1.3; letter-spacing: 0.16em; }
 .card .big { font: 800 44px/1 var(--display); font-variant-numeric: tabular-nums; }
 .card .got { font: 800 17px var(--display); color: var(--gold); letter-spacing: 0; }
 
@@ -1058,22 +1058,32 @@ window.Board = (function () {
 
   // ---------- HUD helpers ----------
   let flashT = 0;
-  let flashLeft = 0, flashAt = 0;
-  function flashOut() { clearTimeout(flashT); flashT = 0; flashLeft = 0; const f = $('flash'); f.classList.add('out'); f.classList.remove('show', 'held'); }
+  let flashLeft = 0, flashAt = 0, flashProtected = false;
+  const flashQueue = [];
+  const flashRemaining = () => Math.max(0, flashLeft - ($('flash').classList.contains('held') ? 0 : performance.now() - flashAt));
+  function flashNext() {
+    const next = flashQueue.shift();
+    flashProtected = false; $('hud').classList.remove('capture-notice');
+    if (next) flash(...next); else flashOut();
+  }
+  function flashOut() { flashQueue.length = 0; flashProtected = false; $('hud').classList.remove('capture-notice'); clearTimeout(flashT); flashT = 0; flashLeft = 0; const f = $('flash'); f.classList.add('out'); f.classList.remove('show', 'held'); }
   function flashHold(on) { // hide and stop the banner during pause, then carry on after
     const f = $('flash'); if (on && f.classList.contains('held')) return;
     clearTimeout(flashT); flashT = 0;
     if (on && flashLeft > 0) flashLeft = Math.max(0, flashLeft - (performance.now() - flashAt));
     if (flashLeft <= 0) { flashOut(); return; } // Pause can cancel a timer just as it becomes due.
     f.classList.toggle('held', on);
-    if (!on) { flashAt = performance.now(); flashT = setTimeout(flashOut, flashLeft); }
+    if (!on) { flashAt = performance.now(); flashT = setTimeout(flashNext, flashLeft); }
   }
-  function flash(text, small, ms, bad) {
+  function flash(text, small, ms, bad, protect = false) {
+    // Let capture rewards finish before another announcement replaces them.
+    if (flashProtected && flashRemaining() > 0) { flashQueue.push([text, small, ms, bad, protect]); return; }
+    flashProtected = protect; $('hud').classList.toggle('capture-notice', protect);
     const f = $('flash'); ms = Math.max(ms || 1000, small ? 1800 : 1200);
     f.innerHTML = ''; f.append(text); f.classList.toggle('bad', !!bad);
     if (small) for (const t of [].concat(small)) { const s = document.createElement('small'); s.textContent = t; f.append(s); } // a second line is a bonus, in green
     f.classList.remove('show', 'out'); f.classList.toggle('held', state === 'play' && paused); void f.offsetWidth; f.classList.add('show');
-    clearTimeout(flashT); flashLeft = ms || 1000; flashAt = performance.now(); flashT = f.classList.contains('held') ? 0 : setTimeout(flashOut, flashLeft); // drifts up and fades
+    clearTimeout(flashT); flashLeft = ms || 1000; flashAt = performance.now(); flashT = f.classList.contains('held') ? 0 : setTimeout(flashNext, flashLeft); // drifts up and fades
   }
   const HEART = '<svg viewBox="0 0 24 24" fill="#ff5a7a"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.2 0 3.6 1.2 4.7 2.6C12.1 5.2 13.5 4 15.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/></svg>';
   let swapRaf = 0;
@@ -2705,7 +2715,7 @@ window.Board = (function () {
       trapped.forEach((m) => { m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xff8fb1, 40, 5, 6); burst(mx, 0.6, mz, 0xffffff, 20, 3, 7); });
       const bonus = 250 * trapped.length * trapped.length; score += bonus;
       if (trapped.length > bestCapture) { bestCapture = trapped.length; bestCaptureBonus = bonus; }
-      flash(captureTitle(trapped.length), '+' + bonus.toLocaleString() + ' capture bonus', 1300);
+      flash(captureTitle(trapped.length), '+' + bonus.toLocaleString() + ' capture bonus', 2200, false, true);
       arp([392, 523, 784, 1047], 60, 0.16, 'triangle'); buzz('trap'); shake = 0.25;
     } else if (gained >= 12) { flash('Huge claim!', '+' + gained + '%'); arp([523, 659, 784, 1047], 70); buzz('big'); shake = 0.2; }
     else if (fresh.length) { tone(560 + gained * 30, 0.16, 'triangle'); buzz('claim'); }
@@ -2837,6 +2847,7 @@ window.Board = (function () {
     const headline = newWorld ? 'World unlocked!' : L.boss ? 'World clear!' : clearHeadline(stars);
     monsters.forEach((m, k) => setTimeout(() => { if (m.dead) return; m.dead = 0.0001; const [mx, mz] = W2(m.x - 0.5, m.y - 0.5); burst(mx, 0.6, mz, 0xffd166, 30, 4, 6); tone(700 + k * 80, 0.1, 'triangle'); }, 300 + k * 140));
     setTimeout(() => { for (let i = 0; i < N; i++) if (cells[i] !== LAND) { const x = i % W, y = (i / W) | 0; cells[i] = LAND; hGoal[i] = H_LAND; delay[i] = Math.hypot(x - px, y - py) * 0.03; flashC[i] = 1; setMask(i); } mask.needsUpdate = true; dashes.count = 0; burnt.count = 0; spark.visible = false; }, 900);
+    const resultsDelay = 2600 + (flashProtected ? flashRemaining() + flashQueue.reduce((sum, item) => sum + Math.max(item[2] || 1000, item[1] ? 1800 : 1200), 0) : 0);
     flash(headline, mode === 'daily' ? fmtClock(clockT, true) : pct + '% claimed', 1600);
     arp([523, 659, 784, 1047, 1319], 90, 0.22); buzz('clear');
     if (!reduceMotion) { const cols = [0xffd166, 0xff5f8f, 0x5ff6ff, 0x7be36b, 0xb98cff, 0xffffff]; for (let k = 0; k < 26; k++) setTimeout(() => { const [wx, wz] = W2(rand(1, W - 1), rand(1, Hh - 1)); burst(wx, H_LAND + 2.5, wz, cols[k % cols.length], 26, 5, 8); if (k % 5 === 0) tone(900 + k * 30, 0.08, 'triangle', 0.04); }, 250 + k * 70); }
@@ -2892,7 +2903,7 @@ window.Board = (function () {
         if (q < 1) requestAnimationFrame(step); else { while (lit < stars) { const k = lit++; card.querySelector('.tk[data-k="' + k + '"]').classList.add('hit'); card.querySelector('.stars svg[data-k="' + k + '"]').classList.add('on'); } $('moreTxt').style.opacity = 1; }
       };
       requestAnimationFrame(step);
-    }, 2600);
+    }, resultsDelay);
   }
   function timeUp() {
     if (state !== 'play') return;
@@ -3759,12 +3770,12 @@ window.Board = (function () {
     if (!tut) return;
     if (ev === 'draw' && tut === 'move') { tut = 'turn'; tutT = 0; tutDir = dir; tutorialHint(); }
     else if (ev === 'claim') {
-      tutClaims++; flashOut();
+      tutClaims++;
       if (tutClaims === 1 || tut === 'danger' || tut === 'retry') { tut = 'claimed'; tutT = 3; tutorialHint(); }
-    } else if (ev === 'hit' && tut !== 'retry') { flashOut(); tut = 'retry'; tutT = 3; tutorialHint(); }
+    } else if (ev === 'hit' && tut !== 'retry') { if (!flashProtected) flashOut(); tut = 'retry'; tutT = 3; tutorialHint(); }
   }
   function tutorialUpdate(dt) {
-    if (!tut) return;
+    if (!tut || flashProtected) return;
     // Gameplay time freezes message lifetimes during pause, backgrounding and landing.
     if (tut === 'turn' && drawing && dir && dir !== tutDir) tut = 'close';
     if (fuse && drawing && tut !== 'danger') { tut = 'danger'; tutT = 0; }
