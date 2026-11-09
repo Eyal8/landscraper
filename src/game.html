@@ -191,7 +191,7 @@ body {
 
 /* First-game coaching lives in the HUD's reserved notice space, never over the board. */
 #hud.learning .hud-notices { min-height: 104px; }
-#coach { position: absolute; top: calc(var(--hud-bottom, 160px) - 104px); left: 50%; width: min(360px, calc(100% - 32px)); height: 70px; box-sizing: border-box; transform: translate(-50%, 5px); display: flex; align-items: center; gap: 11px; padding: 10px 13px; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: rgba(14,20,52,.4); color: #fff; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, transform .2s; }
+#coach { position: absolute; top: calc(var(--hud-bottom, 160px) - 120px); left: 50%; width: min(360px, calc(100% - 32px)); height: 70px; box-sizing: border-box; transform: translate(-50%, 5px); display: flex; align-items: center; gap: 11px; padding: 10px 13px; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: rgba(14,20,52,.56); color: #fff; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, transform .2s; }
 #coach.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
 #coach .coach-copy { min-width: 0; flex: 1; }
 #coach b { display: block; font: 800 14px/1.3 var(--display); }
@@ -3716,11 +3716,13 @@ window.Board = (function () {
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
   let tut = null, tutT = 0, tutDir = null, tutClaims = 0, tutShown = null, tutReadT = 0;
   let tutKeyboard = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  function coach(title = '', detail = '', arrow = 'up', success = false) {
+  function coach(title = '', detail = '', arrow = 'up', success = false, animate = true) {
     const el = $('coach');
     if ($('coachText').textContent !== title || $('coachDetail').textContent !== detail) {
       $('coachText').textContent = title; $('coachDetail').textContent = detail;
-      const copy = el.querySelector('.coach-copy'); copy.classList.remove('changed'); void copy.offsetWidth; copy.classList.add('changed');
+      if (animate) {
+        const copy = el.querySelector('.coach-copy'); copy.classList.remove('changed'); void copy.offsetWidth; copy.classList.add('changed');
+      }
     }
     el.style.setProperty('--coach-angle', ({ up: 0, right: 90, down: 180, left: -90 })[arrow] + 'deg');
     el.classList.toggle('success', success); el.classList.toggle('on', !!title); $('hud').classList.toggle('coaching', !!title);
@@ -3728,18 +3730,21 @@ window.Board = (function () {
   function tutorialHint() {
     // Coalesce fast actions into the latest useful prompt, after time to read the current one.
     if (tut !== tutShown && tutReadT > 0) return;
-    if (tut !== tutShown) { tutShown = tut; tutReadT = tut === 'practice' ? 0 : 3; }
+    const stepChanged = tut !== tutShown;
+    if (stepChanged) { tutShown = tut; tutReadT = tut === 'practice' ? 0 : 3; }
+    // Input-method copy updates in place; only a new lesson replays the entrance.
+    const show = (title, detail, arrow, success) => coach(title, detail, arrow, success, stepChanged);
     const swipe = tutKeyboard ? 'Press' : 'Swipe';
-    if (tut === 'move') coach(swipe + ' up', 'Draw into the water');
+    if (tut === 'move') show(swipe + ' up', 'Draw into the water');
     else if (tut === 'turn') {
       const vertical = tutDir === 'up' || tutDir === 'down';
-      coach(swipe + (vertical ? ' left or right' : ' up or down'), 'Turn your line', vertical ? 'right' : 'up');
-    } else if (tut === 'close') coach('Return to land', 'Close your line to claim', dir || 'up');
-    else if (tut === 'claimed') coach('Land claimed!', '', 'up', true);
-    else if (tut === 'goal') coach('Claim ' + STAR_THRESHOLDS[0] + '% to win', '', 'up', true);
-    else if (tut === 'danger') coach('Beat the spark to land', '', dir || 'up');
-    else if (tut === 'retry') coach('Try again', 'No life lost');
-    else coach();
+      show(swipe + (vertical ? ' left or right' : ' up or down'), 'Turn your line', vertical ? 'right' : 'up');
+    } else if (tut === 'close') show('Return to land', 'Close your line to claim', dir || 'up');
+    else if (tut === 'claimed') show('Land claimed!', '', 'up', true);
+    else if (tut === 'goal') show('Claim ' + STAR_THRESHOLDS[0] + '% to win', '', 'up', true);
+    else if (tut === 'danger') show('Beat the spark to land', '', dir || 'up');
+    else if (tut === 'retry') show('Try again', 'No life lost');
+    else show();
   }
   function tutorialStart() {
     tutorialEnd();
