@@ -191,17 +191,17 @@ body {
 
 /* First-game coaching lives in the HUD's reserved notice space, never over the board. */
 #hud.learning .hud-notices { min-height: 104px; }
-#coach { position: absolute; top: calc(var(--hud-bottom, 160px) - 120px); left: 50%; width: min(360px, calc(100% - 32px)); height: 70px; box-sizing: border-box; transform: translate(-50%, 5px); display: flex; align-items: center; gap: 11px; padding: 10px 13px; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: rgba(14,20,52,.56); color: #fff; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, transform .2s; }
+#coach { position: absolute; top: calc(var(--hud-bottom, 160px) - 120px); left: 50%; width: max-content; max-width: calc(100% - 32px); min-height: 66px; box-sizing: border-box; transform: translate(-50%, 5px); display: flex; align-items: center; gap: 11px; padding: 12px 16px; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: rgba(14,20,52,.64); color: #fff; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, transform .2s; }
 #coach.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
-#coach .coach-copy { min-width: 0; flex: 1; }
-#coach b { display: block; font: 800 14px/1.3 var(--display); }
+#coach .coach-copy { min-width: 0; }
+#coach b { display: block; font: 800 16px/1.25 var(--display); }
 #coach p:empty { display: none; }
-#coach p { margin: 4px 0 0; color: #e1edf4; font: 500 11px/1.4 var(--mono); }
+#coach p { margin: 4px 0 0; color: #fff; font: 700 13px/1.35 var(--mono); }
 #coach .coach-icon { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; border-radius: 50%; background: rgba(127,245,226,.15); color: #7ff5e2; }
 #coach svg { width: 24px; height: 24px; }
 #coach .coach-arrow { transform: rotate(var(--coach-angle, 0deg)); }
-#coach .coach-check, #coach.success .coach-arrow { display: none; }
-#coach.success .coach-check { display: block; }
+#coach .coach-spark, #coach .coach-goal, #coach.success .coach-arrow, #coach.goal .coach-arrow { display: none; }
+#coach.success .coach-spark, #coach.goal .coach-goal { display: block; }
 #coach.success { border-color: rgba(255,209,102,.55); }
 #coach.success .coach-icon { color: #ffd166; }
 #coach.success .coach-icon { background: rgba(255,209,102,.15); }
@@ -703,7 +703,7 @@ h2.shop { color: #ffd166; }
   <div id="flash"></div>
   <div id="dpad" hidden><b class="up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="down"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b><b class="right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 21 15h-6v5H9v-5H3z"/></svg></b></div>
   <div id="pad"><svg viewBox="0 0 160 160"><g class="w up"><path class="wf" d="M32.4 23.3 A74 74 0 0 1 127.6 23.3 L99.3 57.0 A30 30 0 0 0 60.7 57.0 Z"/><path class="wc" d="M88.0 32.0 L80.0 21.0 L72.0 32.0"/></g><g class="w right"><path class="wf" d="M136.7 32.4 A74 74 0 0 1 136.7 127.6 L103.0 99.3 A30 30 0 0 0 103.0 60.7 Z"/><path class="wc" d="M128.0 88.0 L139.0 80.0 L128.0 72.0"/></g><g class="w down"><path class="wf" d="M127.6 136.7 A74 74 0 0 1 32.4 136.7 L60.7 103.0 A30 30 0 0 0 99.3 103.0 Z"/><path class="wc" d="M72.0 128.0 L80.0 139.0 L88.0 128.0"/></g><g class="w left"><path class="wf" d="M23.3 127.6 A74 74 0 0 1 23.3 32.4 L57.0 60.7 A30 30 0 0 0 57.0 99.3 Z"/><path class="wc" d="M32.0 72.0 L21.0 80.0 L32.0 88.0"/></g></svg><div class="knob"></div></div>
-  <div id="coach" role="status" aria-live="polite" aria-atomic="true"><div class="coach-icon" aria-hidden="true"><svg class="coach-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11 12 4l7 7M12 4v16"/></svg><svg class="coach-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><div class="coach-copy"><b id="coachText"></b><p id="coachDetail"></p></div></div>
+  <div id="coach" role="status" aria-live="polite" aria-atomic="true"><div class="coach-icon" aria-hidden="true"><svg class="coach-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11 12 4l7 7M12 4v16"/></svg><svg class="coach-spark" viewBox="0 0 24 24" fill="currentColor"><path d="m12 3 2.6 5.4 6 .9-4.3 4.2 1 6L12 16.7l-5.3 2.8 1-6L3.4 9.3l6-.9z"/><path d="M2 2h2v3H2zm18 0h2v3h-2zM1 19h3v2H1zm19 1h3v2h-3z"/></svg><svg class="coach-goal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V3m0 1c5-4 9 4 14 0v10c-5 4-9-4-14 0"/></svg></div><div class="coach-copy"><b id="coachText"></b><p id="coachDetail"></p></div></div>
   <div class="hint" id="hint"></div>
   <div id="adSim" hidden role="dialog" aria-label="Test ad"><div class="adbox"><span class="kicker">Test ad</span><div class="big" id="adCount">5</div><p>In the app, a real AdMob video plays here</p><button type="button" class="btn" id="adClose" disabled>Close ad</button></div></div>
   <div id="panel"><div class="card" id="card"></div></div>
@@ -3714,9 +3714,9 @@ window.Board = (function () {
   }
   // ---------- tutorial (first level only) ----------
   const tutorialSafe = () => mode === 'campaign' && L.id === 'meadow-01' && !prog.done['meadow-01'];
-  let tut = null, tutT = 0, tutDir = null, tutClaims = 0, tutShown = null, tutReadT = 0;
+  let tut = null, tutT = 0, tutDir = null, tutClaims = 0, tutShown = null;
   let tutKeyboard = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  function coach(title = '', detail = '', arrow = 'up', success = false, animate = true) {
+  function coach(title = '', detail = '', arrow = 'up', tone = 'guide', animate = true) {
     const el = $('coach');
     if ($('coachText').textContent !== title || $('coachDetail').textContent !== detail) {
       $('coachText').textContent = title; $('coachDetail').textContent = detail;
@@ -3725,23 +3725,23 @@ window.Board = (function () {
       }
     }
     el.style.setProperty('--coach-angle', ({ up: 0, right: 90, down: 180, left: -90 })[arrow] + 'deg');
-    el.classList.toggle('success', success); el.classList.toggle('on', !!title); $('hud').classList.toggle('coaching', !!title);
+    el.classList.toggle('success', tone === 'success'); el.classList.toggle('goal', tone === 'goal'); el.classList.toggle('on', !!title); $('hud').classList.toggle('coaching', !!title);
   }
   function tutorialHint() {
-    // Coalesce fast actions into the latest useful prompt, after time to read the current one.
-    if (tut !== tutShown && tutReadT > 0) return;
+    // Instructions describe the current action, never queue behind an obsolete lesson.
     const stepChanged = tut !== tutShown;
-    if (stepChanged) { tutShown = tut; tutReadT = tut === 'practice' ? 0 : 3; }
-    // Input-method copy updates in place; only a new lesson replays the entrance.
-    const show = (title, detail, arrow, success) => coach(title, detail, arrow, success, stepChanged);
-    const swipe = tutKeyboard ? 'Press' : 'Swipe';
-    if (tut === 'move') show(swipe + ' up', 'Draw into the water');
+    tutShown = tut;
+    // Input-method changes update copy in place; intermediate turns need no entrance animation.
+    const animate = stepChanged && !['turn', 'close'].includes(tut);
+    const show = (title, detail, arrow, tone) => coach(title, detail, arrow, tone, animate);
+    if (tut === 'move') show('Draw a path', tutKeyboard ? 'Arrow keys to move into water' : 'Swipe to move into water');
     else if (tut === 'turn') {
       const vertical = tutDir === 'up' || tutDir === 'down';
-      show(swipe + (vertical ? ' left or right' : ' up or down'), 'Turn your line', vertical ? 'right' : 'up');
-    } else if (tut === 'close') show('Return to land', 'Close your line to claim', dir || 'up');
-    else if (tut === 'claimed') show('Land claimed!', '', 'up', true);
-    else if (tut === 'goal') show('Claim ' + STAR_THRESHOLDS[0] + '% to win', '', 'up', true);
+      const directions = vertical ? 'left or right' : 'up or down';
+      show('Turn your line', tutKeyboard ? 'Press ' + directions : 'Swipe ' + directions, vertical ? 'right' : 'up');
+    } else if (tut === 'close') show('Return to land', 'Close your path to claim', dir || 'up');
+    else if (tut === 'claimed') show('Land claimed!', '', 'up', 'success');
+    else if (tut === 'goal') show('Claim ' + STAR_THRESHOLDS[0] + '% to win', '', 'up', 'goal');
     else if (tut === 'danger') show('Beat the spark to land', '', dir || 'up');
     else if (tut === 'retry') show('Try again', 'No life lost');
     else show();
@@ -3753,11 +3753,11 @@ window.Board = (function () {
     $('hud').classList.add('learning'); tutorialHint();
   }
   function tutorialEnd() {
-    tut = tutShown = null; tutT = tutReadT = 0; tutDir = null; coach(); $('hud').classList.remove('learning');
+    tut = tutShown = null; tutT = 0; tutDir = null; coach(); $('hud').classList.remove('learning');
   }
   function tutorialStep(ev) {
     if (!tut) return;
-    if (ev === 'draw' && tut === 'move') { tut = 'turn'; tutDir = dir; tutorialHint(); }
+    if (ev === 'draw' && tut === 'move') { tut = 'turn'; tutT = 0; tutDir = dir; tutorialHint(); }
     else if (ev === 'claim') {
       tutClaims++; flashOut();
       if (tutClaims === 1 || tut === 'danger' || tut === 'retry') { tut = 'claimed'; tutT = 3; tutorialHint(); }
@@ -3765,8 +3765,7 @@ window.Board = (function () {
   }
   function tutorialUpdate(dt) {
     if (!tut) return;
-    // Gameplay time freezes reading and message lifetimes during pause, backgrounding and landing.
-    tutReadT = Math.max(0, tutReadT - dt);
+    // Gameplay time freezes message lifetimes during pause, backgrounding and landing.
     if (tut === 'turn' && drawing && dir && dir !== tutDir) tut = 'close';
     if (fuse && drawing && tut !== 'danger') { tut = 'danger'; tutT = 0; }
     const wasShown = tutShown === tut;
