@@ -777,7 +777,10 @@ window.Store = (function () {
 
   // Returns 'bought', 'cancelled' or 'error'.
   async function buy(k) {
-    if (!NP) { set(k, true); return 'bought'; } // browser preview: simulated purchase
+    if (!NP) {
+      if (native) return 'error';
+      set(k, true); return 'bought'; // browser preview only
+    }
     try {
       const t = await NP.purchaseProduct({ productIdentifier: PRODUCTS[k].id, productType: 'inapp', isConsumable: false, autoAcknowledgePurchases: true });
       if (t && keyFor(t.productIdentifier) === k && valid(t)) { set(k, true); return 'bought'; }
@@ -914,7 +917,10 @@ window.Ads = (function () {
   async function showRewarded(unit) {
     if (adFree()) return true;
     if (unit && unit !== rewardedUnit) { rewardedUnit = unit; ready.rewarded = false; }
-    if (!AdMob) { const ok = await simulate(5); if (ok) lastRewarded = Date.now(); return ok; }
+    if (!AdMob) {
+      if (native) return false;
+      const ok = await simulate(5); if (ok) lastRewarded = Date.now(); return ok;
+    }
     if (!ready.rewarded) { await preload('rewarded'); if (!ready.rewarded) return false; }
     ready.rewarded = false;
     let earned = false;
@@ -937,7 +943,7 @@ window.Ads = (function () {
     const spaced = Date.now() - lastInterstitial > gap && Date.now() - lastRewarded > gap;
     if (!due || !spaced) return;
     lastInterstitial = Date.now();
-    if (!AdMob) { await simulate(3); return; }
+    if (!AdMob) { if (!native) await simulate(3); return; }
     if (!ready.interstitial) { preload('interstitial'); return; }
     ready.interstitial = false;
     const done = waitFor({ interstitialAdDismissed: true, interstitialAdFailedToShow: true }, null, 120000);

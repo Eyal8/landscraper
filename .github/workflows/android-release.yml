@@ -22,7 +22,10 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: npm ci
-      - run: ADS_TEST=${{ inputs.real_ads && 'false' || 'true' }} npm run build && npx cap sync android
+      - name: Build and check native startup
+        env:
+          ADS_TEST: ${{ inputs.real_ads && 'false' || 'true' }}
+        run: npm run build && npm run test:native && npx cap sync android
       - name: Restore upload key
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/upload.jks"
       - name: Build signed bundle
