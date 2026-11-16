@@ -3,9 +3,15 @@ name: Build Android APK
 on:
   push:
   workflow_dispatch:
+    inputs:
+      ios_only:
+        description: 'Validate iOS Firebase integration without uploading to TestFlight'
+        type: boolean
+        default: false
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || !inputs.ios_only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,8 +24,52 @@ jobs:
           java-version: 21
       - run: npm ci
       - run: npm run build && npx cap sync android
+      - run: npm run test:analytics && npm run test:native
       - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: landscraper-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+  ios-analytics:
+    if: github.event_name == 'workflow_dispatch' && inputs.ios_only
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: ANALYTICS_TEST=true npm run build && npx cap sync ios
+      - run: npm run test:analytics && npm run test:native
+      - name: Build unsigned iOS Simulator app
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/analytics-build" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/analytics-build.log"
+      - name: Verify packaged Firebase configuration
+        run: |
+          APP="$RUNNER_TEMP/analytics-build/Build/Products/Debug-iphonesimulator/App.app"
+          plutil -lint "$APP/Info.plist" "$APP/GoogleService-Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :PROJECT_ID' "$APP/GoogleService-Info.plist")" = beno74-landscraper
+          test "$(/usr/libexec/PlistBuddy -c 'Print :FIREBASE_ANALYTICS_COLLECTION_ENABLED' "$APP/Info.plist")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE' "$APP/Info.plist")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA' "$APP/Info.plist")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS' "$APP/Info.plist")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED' "$APP/Info.plist")" = false
+          grep -q AnalyticsWithoutAdIdSupport ios/App/CapApp-SPM/Package.swift
+          grep -q FirebaseAnalyticsPlugin ios/App/App/capacitor.config.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-analytics-validation
+          path: |
+            ${{ runner.temp }}/analytics-build.log
+            ios/App/CapApp-SPM/Package.swift
+            ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
