@@ -170,7 +170,8 @@ Private QA artifacts (November 16, 2026):
 - iOS signed archive and internal-only TestFlight upload succeeded: version 1.0
   build 196, run 43910265817. Export explicitly used
   testFlightInternalTestingOnly=true and no certificate cleanup. Apple processing
-  and internal-group installation availability are verified separately.
+  completed; the internal group Me tester row showed Installed 1.0 (196).
+  No external group or public App Store version was changed.
   https://github.com/Eyal8/landscraper/actions/runs/43910265817 .
-- Additional unsigned Simulator/device validation: run 43909876177.
+- Additional unsigned Simulator/device validation passed: run 43909876177.
 - No device behavior or sandbox purchase result is claimed from these builds.
