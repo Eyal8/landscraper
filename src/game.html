@@ -753,9 +753,9 @@ window.GameAnalytics = (() => {
       if (['OBTAINED', 'NOT_REQUIRED'].includes(consentStatus) && consent) {
         try { modes = (await consent.getConsentModes()).values || ''; } catch (_) {}
       }
-      // A current grant or UMP-confirmed not-required result permits measurement.
+      // A current analytics grant or purpose-specific not-applicable signal permits measurement.
       // Missing, denied and unconfigured values never substitute for permission.
-      const analyticsPermitted = modes[3] === '1' || (modes[3] === '3' && consentStatus === 'NOT_REQUIRED');
+      const analyticsPermitted = modes[3] === '1' || modes[3] === '3';
       const allow = available && !paused && /^[0-4]{4}$/.test(modes) && analyticsPermitted;
       // Gameplay measurement never grants advertising consent.
       for (const type of ['AD_STORAGE', 'AD_USER_DATA', 'AD_PERSONALIZATION']) {
@@ -3476,7 +3476,7 @@ window.Board = (function () {
       (window.UMPTest ? '<button class="btn alt" type="button" data-act="umpTest">UMP test controls</button>' : '') +
       '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
       (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, umpTest: showUMPTestSettings, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
+      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }

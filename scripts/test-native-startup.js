@@ -190,13 +190,15 @@ async function testNative(platform) {
   await testNative('android');
   await testNative('ios');
   for (const platform of ['android', 'ios']) {
-    for (const consentOptions of [{ modes: '2222' }, { modes: '2223' }, { modes: '3334', consentStatus: 'NOT_REQUIRED' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
+    for (const consentOptions of [{ modes: '2222' }, { modes: '3334', consentStatus: 'NOT_REQUIRED' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
       const { context: c } = await boot(platform, false, consentOptions);
       assert.equal(c.GameAnalytics.enabled(), false, 'denial, no regional signal or failed/incomplete UMP keeps collection off');
     }
-    const { context: noPrompt, calls: noPromptCalls } = await boot(platform, false, { modes: '3333', consentStatus: 'NOT_REQUIRED' });
-    if (noPrompt.GameAnalytics.available) assert.equal(noPrompt.GameAnalytics.enabled(), true, 'measure when UMP confirms no consent required');
-    assert.ok(!noPromptCalls.some(x => x.method === 'showConsentForm'), 'do not add a consent prompt');
+    for (const consentStatus of ['OBTAINED', 'NOT_REQUIRED']) {
+      const { context: noPrompt, calls: noPromptCalls } = await boot(platform, false, { modes: '3333', consentStatus });
+      if (noPrompt.GameAnalytics.available) assert.equal(noPrompt.GameAnalytics.enabled(), true, 'purpose-specific not-applicable signal permits measurement');
+      assert.ok(!noPromptCalls.some(x => x.method === 'showConsentForm'), 'do not add a consent prompt');
+    }
     const { context: c, calls: privacyCalls } = await boot(platform);
     await c.Ads.showPrivacyOptions();
     assert.equal(c.GameAnalytics.enabled(), false, 'revocation in UMP is reflected in Analytics');

@@ -22,11 +22,12 @@ there is no home-screen analytics offer or separate Allow analytics permission.
 Firebase initializes with collection off before UMP. After a successful current
 UMP update/form, the native AnalyticsConsent bridge reads `UMP_consentModeValues`
 from Android default shared preferences or iOS standard UserDefaults. A well-formed four-digit signal permits Analytics storage when its fourth digit
-is `1` (granted), or is `3` (not applicable) AND the successful current UMP result
-is NOT_REQUIRED. No additional consent request is shown for NOT_REQUIRED.
+is `1` (granted) or `3` (not applicable), after a successful current UMP update
+with status OBTAINED or NOT_REQUIRED. iPhone build 196 device QA showed
+OBTAINED + 3333; requiring the broader NOT_REQUIRED status was too restrictive. No additional consent request is shown for NOT_REQUIRED.
 `0` (unknown), `2` (denied), `4` (not configured), missing or malformed values,
-failed updates and unresolved REQUIRED forms stay off. Value `3` alone, or
-NOT_REQUIRED with a missing/unconfigured/denied analytics value, never enables.
+failed updates and unresolved REQUIRED forms stay off. Cached value `3` without a successful resolved update, or NOT_REQUIRED with a
+missing/unconfigured/denied analytics value, never enables.
 US ad-sale/sharing opt-outs and ATT remain distinct from service-provider
 gameplay measurement. Existing GA products/services sharing is off, applicable
 data processing terms are accepted and Analytics advertising consent is denied.
@@ -76,7 +77,7 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## Combined UMP migration validation — November 16, 2026
 
-- Nine consent-boundary tests passed, including explicit grants, NOT_REQUIRED
+- Ten consent-boundary tests passed, including explicit grants, not-applicable
   measurement without a prompt, stale grants, malformed/missing signals, errors,
   device pause, revocation and queued events. NOT_REQUIRED never overrides denial
   or an unconfigured purpose. The region-handling correction changes JS only;
@@ -97,7 +98,7 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## Before the first analytics release
 - On iOS and Android, verify DebugView: no collection before consent/after
-  withdrawal; a UMP grant or successful NOT_REQUIRED + analytics value 3 enables
+  withdrawal; a UMP grant or successful resolved update + analytics value 3 enables
   collection, while denial, missing/unconfigured values and failed updates do not. Device pause persists.
   UMP/ATT never implicitly grant Analytics advertising purposes. Exercise a level start, loss,
   completion, abandonment and real test ad reward. Check actual installation ID.
@@ -175,3 +176,15 @@ Private QA artifacts (November 16, 2026):
   https://github.com/Eyal8/landscraper/actions/runs/43910265817 .
 - Additional unsigned Simulator/device validation passed: run 43909876177.
 - No device behavior or sandbox purchase result is claimed from these builds.
+
+## iPhone 196 device finding and correction
+
+Owner screenshots reproduced OBTAINED + modes 3333 + collection false + paused
+false. The extra NOT_REQUIRED condition incorrectly blocked this documented
+not-applicable purpose signal. The correction accepts analytics value 1 or 3
+after either resolved status, while still blocking unresolved/error states,
+denials, missing/unconfigured values and device pause. A regression test uses
+this exact device observation on both platform startup paths. Also wrapped the
+UMP test-menu callback so the clicked button is not rendered as a message.
+Native SDK code and live privacy-page wording are unchanged. Studio standard
+v1.9 is proposed separately; no new website main merge is authorized.

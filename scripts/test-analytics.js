@@ -99,11 +99,11 @@ test('an obsolete in-flight consent read cannot enable collection after suspensi
   assert.ok(!s.calls.some(x => x.options?.enabled === true));
 });
 
-test('not-required analytics works without a prompt only after UMP confirms NOT_REQUIRED', async () => {
+test('not-applicable analytics works after a resolved UMP update with either completed status', async () => {
   const s = boot({ modes: '3333' });
   await settle();
   assert.equal(s.analytics.enabled(), false, 'cached values do not enable startup');
-  for (const status of ['OBTAINED', 'REQUIRED', 'UNKNOWN', false]) {
+  for (const status of ['REQUIRED', 'UNKNOWN', false]) {
     await s.analytics.reconcile(status);
     assert.equal(s.analytics.enabled(), false, status);
   }
@@ -122,4 +122,17 @@ test('NOT_REQUIRED never overrides an explicit denial or missing/unconfigured an
     await s.analytics.reconcile('NOT_REQUIRED');
     assert.equal(s.analytics.enabled(), false, modes);
   }
+});
+
+test('iPhone build 196 regression: OBTAINED with 3333 permits analytics and pause still wins', async () => {
+  const s = boot({ modes: '3333' });
+  await s.analytics.reconcile('OBTAINED');
+  assert.equal(s.analytics.enabled(), true);
+  s.analytics.track('level_start', { level_name: 'meadow-01' });
+  await settle();
+  assert.equal(events(s).length, 1);
+  assert.ok(!s.calls.some(x => x.options?.type?.startsWith('AD_') && x.options.status !== 'DENIED'));
+  await s.analytics.setPaused(true);
+  await s.analytics.reconcile('OBTAINED');
+  assert.equal(s.analytics.enabled(), false);
 });
