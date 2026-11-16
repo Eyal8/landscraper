@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build-web.js",
     "test:native": "node scripts/test-native-startup.js",
+    "test:ump-build": "node scripts/test-ump-build.js",
     "test:analytics": "node --test scripts/test-analytics.js",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",

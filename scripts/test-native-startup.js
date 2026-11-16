@@ -48,7 +48,12 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
     },
     AdMob: {
       async initialize(options) { record('AdMob', 'initialize', options); },
-      async requestConsentInfo() {
+      async resetConsentInfo() {
+        assert.equal(context.GameAnalytics.enabled(), false, 'test reset must stop collection first');
+        record('AdMob', 'resetConsentInfo');
+      },
+      async requestConsentInfo(options) {
+        record('AdMob', 'requestConsentInfo', options);
         if (state.consentFailure) throw Error('UMP unavailable');
         return { status: state.consentStatus, privacyOptionsRequirementStatus: 'REQUIRED' };
       },
@@ -107,7 +112,7 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
           return plugins[name];
         };
       }
-    } else if (code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
+    } else if (code.includes('window.UMPTest =') || code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
       vm.runInContext(code, context);
     }
   }
@@ -192,9 +197,23 @@ async function testNative(platform) {
     const { context: noPrompt, calls: noPromptCalls } = await boot(platform, false, { modes: '3333', consentStatus: 'NOT_REQUIRED' });
     if (noPrompt.GameAnalytics.available) assert.equal(noPrompt.GameAnalytics.enabled(), true, 'measure when UMP confirms no consent required');
     assert.ok(!noPromptCalls.some(x => x.method === 'showConsentForm'), 'do not add a consent prompt');
-    const { context: c } = await boot(platform);
+    const { context: c, calls: privacyCalls } = await boot(platform);
     await c.Ads.showPrivacyOptions();
     assert.equal(c.GameAnalytics.enabled(), false, 'revocation in UMP is reflected in Analytics');
+    if (c.UMPTest) {
+      assert.throws(() => c.UMPTest.save(1, ''), /test device ID/);
+      const device = 'A'.repeat(32);
+      c.UMPTest.save(1, device);
+      await c.Ads.resetConsentForTest();
+      const options = (await boot(platform)).calls; // startup remains independent of another device's config
+      assert.ok(options.filter(x => x.method === 'requestConsentInfo').every(x => !x.options.debugGeography));
+      assert.equal(c.UMPTest.options().debugGeography, 1);
+      assert.ok(privacyCalls.some(x => x.method === 'resetConsentInfo'));
+      const request = privacyCalls.filter(x => x.method === 'requestConsentInfo').at(-1);
+      assert.equal(request.options.debugGeography, 1);
+      assert.equal(request.options.testDeviceIdentifiers[0], device);
+      assert.equal(c.GameAnalytics.enabled(), false, 'a test reset does not manufacture analytics consent');
+    }
   }
   console.log('PASS Android/iOS: UMP startup, not-required measurement, missing signals, errors, incomplete consent and withdrawal');
   for (const platform of ['android', 'ios']) {

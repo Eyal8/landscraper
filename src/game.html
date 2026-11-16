@@ -782,11 +782,41 @@ window.GameAnalytics = (() => {
       if (result.appInstanceId) localStorage.setItem('ls_analytics_id', result.appInstanceId);
     } catch (_) {}
   }
+  async function diagnostics() {
+    let modes = '';
+    try { modes = consent ? (await consent.getConsentModes()).values || '' : ''; } catch (_) {}
+    return { status: consentStatus || 'UNKNOWN', modes: modes || 'missing', collection: enabled, paused };
+  }
   reconcile(false);
-  return { available, track, setPaused, reconcile, paused: () => paused, enabled: () => enabled,
+  return { diagnostics, available, track, setPaused, reconcile, paused: () => paused, enabled: () => enabled,
     refreshRequestId, requestId: () => read('ls_analytics_id') || '' };
 })();
 </script>
+<!-- UMP test controls start -->
+<script>
+// Included only in explicit UMP_TEST builds; removed from every ordinary/store build.
+window.UMPTest = (() => {
+  const key = 'ls_ump_test_config';
+  const normalize = (value = {}) => ({
+    geography: [0, 1, 3, 4].includes(Number(value.geography)) ? Number(value.geography) : 0,
+    testDeviceIdentifiers: Array.isArray(value.testDeviceIdentifiers) ? value.testDeviceIdentifiers.filter(x => typeof x === 'string' && /^[a-zA-Z0-9-]{8,128}$/.test(x)).slice(0, 10) : []
+  });
+  function config() { try { return normalize(JSON.parse(localStorage.getItem(key) || '{}')); } catch (_) { return normalize(); } }
+  function save(geography, ids) {
+    const value = normalize({ geography: Number(geography), testDeviceIdentifiers: ids.split(/[\s,]+/).filter(Boolean) });
+    if (value.geography && !value.testDeviceIdentifiers.length) throw Error('Enter the UMP test device ID from the native device log before forcing a region.');
+    localStorage.setItem(key, JSON.stringify(value));
+    return value;
+  }
+  function options() {
+    const value = config();
+    if (!value.testDeviceIdentifiers.length) return {};
+    return { debugGeography: value.geography, testDeviceIdentifiers: value.testDeviceIdentifiers };
+  }
+  return { config, save, options };
+})();
+</script>
+<!-- UMP test controls end -->
 <script>
 // ---------- In-app purchase: Remove Ads, one-time (non-consumable) ----------
 // Apple and Google keep the ownership record, tied to the player's Apple ID / Google account.
@@ -918,19 +948,29 @@ window.Ads = (function () {
   let lastRewarded = 0; // a player who just watched a rewarded ad doesn't get a forced one next
   let privacyRequired = false; // UMP says players must be able to reopen ad privacy choices
 
+  let lastConsentError = '';
+  const consentOptions = () => window.UMPTest ? window.UMPTest.options() : {};
+  async function updateConsent() {
+    await window.GameAnalytics.reconcile(false);
+    lastConsentError = '';
+    try {
+      let info = await AdMob.requestConsentInfo(consentOptions());
+      if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
+      privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      await window.GameAnalytics.reconcile(info && info.status);
+    } catch (e) {
+      lastConsentError = String(e.message || e).slice(0, 300);
+      await window.GameAnalytics.reconcile(false);
+    }
+    document.dispatchEvent(new Event('ads:privacy'));
+  }
   async function init() {
     if (!AdMob) return;
     try {
       // Initialize Firebase and block collection before UMP may change consent.
       await window.GameAnalytics.reconcile(false);
       await AdMob.initialize({ initializeForTesting: CONFIG.testing });
-      try {
-        let info = await AdMob.requestConsentInfo();
-        if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
-        privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
-        await window.GameAnalytics.reconcile(info && info.status);
-        document.dispatchEvent(new Event('ads:privacy'));
-      } catch (e) { await window.GameAnalytics.reconcile(false); }
+      await updateConsent();
       if (platform === 'ios') {
         try {
           const t = await AdMob.trackingAuthorizationStatus();
@@ -1045,14 +1085,21 @@ window.Ads = (function () {
     await window.GameAnalytics.reconcile(false);
     try {
       await AdMob.showPrivacyOptionsForm();
-      const info = await AdMob.requestConsentInfo();
+      const info = await AdMob.requestConsentInfo(consentOptions());
       privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
       await window.GameAnalytics.reconcile(info && info.status);
     } catch (e) { await window.GameAnalytics.reconcile(false); }
     document.dispatchEvent(new Event('ads:privacy'));
   }
 
+  async function resetConsentForTest() {
+    if (!window.UMPTest || !AdMob) throw Error('UMP testing is unavailable in this build.');
+    await window.GameAnalytics.reconcile(false);
+    await AdMob.resetConsentInfo();
+    await updateConsent();
+  }
   return {
+    resetConsentForTest, consentError: () => lastConsentError,
     showRewarded, maybeInterstitial, showPrivacyOptions,
     privacyRequired: () => privacyRequired,
     isOpen: () => !document.getElementById('adSim').hidden
@@ -3426,11 +3473,32 @@ window.Board = (function () {
     toMenu(); const sb = settingsButtons();
     panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
       (window.GameAnalytics.available ? '<button class="btn alt" type="button" data-act="analytics">Gameplay analytics: ' + (window.GameAnalytics.enabled() ? 'On' : 'Off') + '</button>' : '') +
+      (window.UMPTest ? '<button class="btn alt" type="button" data-act="umpTest">UMP test controls</button>' : '') +
       '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
       (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
+      Object.assign({ back: showHome, umpTest: showUMPTestSettings, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
+  }
+  async function showUMPTestSettings(message = '') {
+    if (!window.UMPTest) return;
+    toMenu();
+    const config = window.UMPTest.config(), state = await window.GameAnalytics.diagnostics();
+    const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    panel(BACK_X + '<h2>UMP test controls</h2><p>Private test build · test ads only. These controls are absent from store builds.</p>' +
+      '<label for="umpRegion">Test region</label><select id="umpRegion">' + [[0, 'Actual location'], [1, 'EEA'], [3, 'US regulated state'], [4, 'Other']].map(([value, name]) => '<option value="' + value + '"' + (config.geography === value ? ' selected' : '') + '>' + name + '</option>').join('') + '</select>' +
+      '<label for="umpDevices">UMP test device IDs</label><input id="umpDevices" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + escape(config.testDeviceIdentifiers.join(', ')) + '"><p>Copy the UMP test device ID printed in Android Logcat or the iPhone device console. AdMob ad-test IDs and the Analytics ID are different. Forced regions require a registered test device.</p>' +
+      '<p role="status">' + escape(message || window.Ads.consentError()) + '</p><pre style="white-space:pre-wrap;text-align:left;user-select:text">' + escape(JSON.stringify(state, null, 2)) + '</pre>' +
+      '<p>Mode digits: ad storage, ad user data, ad personalization, analytics. Values: 0 unknown · 1 granted · 2 denied · 3 not applicable · 4 unconfigured. This view reads the signal; it never grants consent.</p>' +
+      '<div class="btns"><button class="btn alt" type="button" data-act="apply">Apply and reset UMP consent</button><button class="btn alt" type="button" data-act="refresh">Refresh status</button><button class="btn alt" type="button" data-act="back">Back</button></div><p>Reset affects UMP consent only. It does not delete progress, purchases or previously collected Analytics data.</p>',
+      { back: showSettings, refresh: () => showUMPTestSettings(), apply: async (button) => {
+        button.disabled = true;
+        try {
+          window.UMPTest.save($('umpRegion').value, $('umpDevices').value);
+          await window.Ads.resetConsentForTest();
+          await showUMPTestSettings(window.Ads.consentError() || 'UMP update completed. Check the effective status above.');
+        } catch (error) { await showUMPTestSettings(String(error.message || error)); }
+      } });
   }
   async function showAnalyticsSettings() {
     const analytics = window.GameAnalytics;
