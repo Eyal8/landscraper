@@ -68,6 +68,12 @@ async function boot(platform, missingRuntime = false) {
         return Promise.resolve({ remove() { listeners.get(name).delete(callback); } });
       }
     },
+    FirebaseAnalytics: {
+      async setEnabled(options) { record('FirebaseAnalytics', 'setEnabled', options); },
+      async setConsent(options) { record('FirebaseAnalytics', 'setConsent', options); },
+      async getAppInstanceId() { return { appInstanceId: 'test-installation' }; },
+      async logEvent(options) { record('FirebaseAnalytics', 'logEvent', options); }
+    },
     Games: {}
   };
   const context = {
@@ -93,7 +99,7 @@ async function boot(platform, missingRuntime = false) {
           return plugins[name];
         };
       }
-    } else if (code.includes('window.Store =') || code.includes('window.Ads =')) {
+    } else if (code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
       vm.runInContext(code, context);
     }
   }
@@ -107,6 +113,8 @@ async function testNative(platform) {
     assert.ok(calls.some((x) => x.plugin === name && x.method === 'register'), `${platform}: ${name} must register at startup`);
   }
   assert.equal(c.Store.isNative, true);
+  if (c.GameAnalytics.available) await c.GameAnalytics.setChoice(true);
+  const analyticsEvents = (name) => calls.filter(x => x.method === 'logEvent' && x.options.name === name);
   assert.equal(c.Store.owns('sea'), false, 'unpaid cached ownership must be cleared after store refresh');
   assert.equal(c.Store.price('sea'), '₪10.90', 'use the native store price');
   assert.equal(calls.find((x) => x.method === 'initialize').options.initializeForTesting, testing);
@@ -119,6 +127,8 @@ async function testNative(platform) {
   assert.equal(await c.Store.buy('sea'), 'bought');
   assert.ok(calls.some((x) => x.method === 'purchaseProduct' && x.options.autoAcknowledgePurchases));
   assert.equal(c.Store.owns('sea'), true);
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('purchase_completed').length, 1);
   state.purchaseError = 'user cancelled';
   assert.equal(await c.Store.buy('space'), 'cancelled');
   assert.equal(c.Store.owns('space'), false);
@@ -143,6 +153,8 @@ async function testNative(platform) {
   state.purchases[0].revocationDate = '2026-11-15';
   await c.Store.refresh();
   assert.equal(c.Store.owns('pool'), false, 'revoked purchase must not stay unlocked');
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('purchase_completed').length, 1, 'cancelled, failed, pending and restored purchases must not count as new purchases');
 
   assert.equal(await c.Ads.showRewarded('continue'), false, 'closing an ad without reward gives no reward');
   state.reward = true;
@@ -153,6 +165,8 @@ async function testNative(platform) {
   state.adFailure = true;
   assert.equal(await c.Ads.showRewarded('rushTime'), false, 'no fill gives no reward');
   assert.equal(elements.adSim.hidden, true, 'native ads must never open the browser simulator');
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('rewarded_ad_completed').length, 1, 'only earned real ad rewards count as completed videos');
   console.log(`PASS ${platform}: startup, prices, purchases, cancellation/failure, restore/revocation, rewarded/interstitial ads`);
 }
 

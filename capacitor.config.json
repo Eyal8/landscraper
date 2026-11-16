@@ -2,5 +2,18 @@
   "appId": "com.beno74.landscraper",
   "appName": "Landscraper",
   "webDir": "www",
-  "backgroundColor": "#1f2a5a"
+  "backgroundColor": "#1f2a5a",
+  "experimental": {
+    "ios": {
+      "spm": {
+        "swiftToolsVersion": "6.1",
+        "packageOptions": {
+          "@capacitor-firebase/analytics": { "symlink": true }
+        },
+        "packageTraits": {
+          "@capacitor-firebase/analytics": ["AnalyticsWithoutAdIdSupport"]
+        }
+      }
+    }
+  }
 }

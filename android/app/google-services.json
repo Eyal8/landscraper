@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "273290471243",
+    "project_id": "beno74-landscraper",
+    "storage_bucket": "beno74-landscraper.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:273290471243:android:eaae0610eaf96a7e05eace",
+        "android_client_info": {
+          "package_name": "com.beno74.landscraper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7j6KiIAiAPxiPWeRj9sBeL-tr227eAhI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

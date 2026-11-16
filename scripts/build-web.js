@@ -21,6 +21,8 @@ if (game.includes('fonts.googleapis.com')) throw new Error('Google Fonts link no
 
 // Real ads only in store builds: ADS_TEST=false. Everything else shows Google's test ads.
 const realAds = process.env.ADS_TEST === 'false';
+if (!game.includes('const ANALYTICS_ALLOWED = false;')) throw new Error('analytics build flag not found');
+if (realAds || process.env.ANALYTICS_TEST === 'true') game = game.replace('const ANALYTICS_ALLOWED = false;', 'const ANALYTICS_ALLOWED = true;');
 // Developer mode exists only in test builds.
 if (realAds) { // first, so a store build can never keep it
   if (!game.includes('const DEV_ALLOWED = true;')) throw new Error('DEV_ALLOWED flag not found');
