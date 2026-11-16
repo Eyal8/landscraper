@@ -17,22 +17,33 @@ other games migrate in their own chats and repositories.
 
 ## Collection contract
 
-Collection is off until the player explicitly allows it. The menu offers a
-review of the choice; Settings → Gameplay analytics allows withdrawal and shows
-an installation ID for access/deletion requests. Keep this ID available after
-withdrawal. Turning collection off does not delete previously uploaded records.
+Analytics consent is integrated with the existing Google UMP privacy message;
+there is no home-screen analytics offer or separate Allow analytics permission.
+Firebase initializes with collection off before UMP. After a successful current
+UMP update/form, the native AnalyticsConsent bridge reads `UMP_consentModeValues`
+from Android default shared preferences or iOS standard UserDefaults. Only a
+well-formed four-digit signal with fourth digit `1` permits Analytics storage.
+`0` (unknown), `2` (denied), `3` (not applicable), `4` (not configured), missing
+or malformed values, failed updates and unresolved REQUIRED forms stay off.
+This deliberately means no analytics in regions without an explicit UMP grant;
+US privacy messages and ATT are not substituted for that grant.
+
+Settings → Privacy choices reopens UMP where required. Collection stops before
+opening the form and is reconciled afterwards. Settings → Gameplay analytics
+shows status and an installation ID for access/deletion requests, plus a device
+pause. Removing that pause never substitutes for a UMP grant. The old separate
+`ls_analytics_consent_v1` choice is ignored. Historical request IDs are retained;
+stopping collection does not delete previously uploaded records.
 
 Native Firebase only; browser previews and default tester builds do not collect.
-Store builds enable the consent UI, not collection itself. To test analytics
-with test ads, build with `ANALYTICS_TEST=true npm run build`, then sync.
+To test analytics with test ads: `ANALYTICS_TEST=true npm run build`, then sync.
 Use Firebase DebugView on a test device; do not test with real ads.
 
 No account User-ID, analytics advertising identifiers, replay or Crashlytics.
-iOS uses the plugin's AnalyticsWithoutAdIdSupport SPM trait and disables IDFV;
-Android disables Analytics AD_ID collection. Analytics ad storage, ad user data
-and ad personalization remain denied by the app. Reapply these choices after UMP
-returns. Do not enable UMP Consent Mode account-wide as part of this change.
-AdMob's existing independent advertising behavior is unchanged.
+iOS uses AnalyticsWithoutAdIdSupport and disables IDFV; Android disables
+Analytics AD_ID collection. Analytics ad storage, ad user data and ad
+personalization remain denied by the app even when UMP grants them. Reapply
+these restrictions before enabling collection and after privacy changes.
 
 | Event | Meaning |
 |---|---|
@@ -49,7 +60,7 @@ Use custom purchase/ad events for behavior counts, not as an additional revenue
 total on top of automatic `in_app_purchase`/`ad_impression` events.
 Reports represent opted-in installations, not all players.
 
-## Native CI validation — November 16, 2026
+## Native CI validation — November 16, 2026 (earlier separate-consent revision)
 
 Eyal authorized the CI pivot and website merge on November 16.
 - Android sync, targeted tests and APK build passed: https://github.com/Eyal8/landscraper/actions/runs/43850587369 .
@@ -60,8 +71,9 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## Before the first analytics release
 - On iOS and Android, verify DebugView: no collection before consent/after
-  withdrawal; opt-in persists; UMP choices never grant gameplay analytics or
-  analytics advertising purposes implicitly. Exercise a level start, loss,
+  withdrawal; explicit UMP grant enables collection while denial, missing values,
+  non-applicable regions and failed updates do not. Device pause persists.
+  UMP/ATT never implicitly grant Analytics advertising purposes. Exercise a level start, loss,
   completion, abandonment and real test ad reward. Check actual installation ID.
 - Sandbox purchase/restore checks remain required before release; mocked purchase
   boundary checks passed, but no store sandbox transaction was performed.
@@ -73,12 +85,24 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## AdMob and other settings
 
-EU/US/IDFA messages are not replaced by analytics. An independent opt-in is used,
-so enabling AdMob's global Consent Mode analytics purpose is not required.
-If switching to UMP-managed analytics later, review both consent-mode toggles,
-SDK versions and initialization order first: the settings affect all apps.
-Check the existing message's Landscraper policy URL points to the game-specific
-page; do not change unrelated apps' messages here.
+Owner approved account-wide combined AdMob consent on November 16, 2026.
+Required account settings: Privacy & messaging → European regulations → Settings
+→ enable Consent Mode for advertising purposes, then analytics purposes → Save.
+These settings affect all configured European messages, not just Landscraper.
+**Not activated/verified yet:** the embedded settings form stayed blank/loading
+on initial navigation and one reload; stopped after two focused attempts, with
+no account settings changed. Complete these two toggles manually and verify the
+saved state before device testing. Existing EU/US/IDFA message definitions and
+ad units were not replaced. Verify the new analytics purpose is presented to
+returning users too; never treat an old ads-only consent as analytics consent.
+
+Current wrapper 8.2.1 declares Android UMP 4.0.0 and iOS UMP 3.1.x, above Google's
+required versions. Shapescraper and other games must implement their own native
+initialization, consent read, collection gate and disclosure migration before
+shipping Analytics. Shared settings alone do not implement those safeguards.
+Website policy/standard wording for this migration is prepared in a separate
+website PR; the live policy still describes the earlier separate opt-in until
+that PR is approved and merged. No public app release is authorized.
 
 Linking AdMob to Firebase is optional for richer revenue reports, not required
 for the custom behavior events above. It has not been enabled. Google Ads links,

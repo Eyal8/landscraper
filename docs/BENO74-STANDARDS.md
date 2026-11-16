@@ -1,6 +1,6 @@
 <!-- Synced copy. Do not edit here: the source is beno-studio-site/standards/BENO74-STANDARDS.md -->
 
-# BENO74 Studios: Legal, Privacy, Ads & Branding Standard (v1.6, November 16, 2026)
+# BENO74 Studios: Legal, Privacy, Ads & Branding Standard (v1.7, November 16, 2026)
 
 Single source of truth for every BENO74 game (Shapescraper, Pair by Pair, Sorté, Tile Wave, Landscraper and future titles).
 Every chat, handoff and coding agent (Claude, Codex) follows this document. A game may deviate only if the deviation is written in its row in section 10 with a reason.
@@ -44,6 +44,8 @@ Not legal advice: this is the studio's product policy. Items marked **[VERIFY]**
 - Google UMP runs at launch, **before the first ad request**. Ads are requested only when `canRequestAds` is true.
 - Messages configured in AdMob Privacy & messaging for every app: **EU/UK (GDPR)** and **US state regulations**. **[VERIFY]** US messages are published for each app.
 - Every game has a menu entry **"Ad privacy choices"** that opens the UMP privacy options form (shown when required, harmless otherwise).
+- Analytics consent migration approved Nov 16, 2026: use the existing UMP message instead of a separate analytics request. AdMob Consent Mode advertising + analytics settings affect every European-regulations message in the account; activation must be recorded as verified, not inferred from code. Firebase must initialize before UMP. Android UMP >=3.2.0; iOS UMP >=3.0.0. Keep Analytics collection off while consent is unresolved or privacy choices are being changed.
+- Conservative analytics rule: enable only on an explicit analytics-storage grant after a successful UMP update; unknown, denied, not configured and not applicable signals remain off, including regions without a grant. This deliberately limits reporting coverage. Do not infer analytics consent from ad eligibility, ad personalization or ATT. A local pause may further restrict collection but never grants consent. Reconcile after privacy changes; keep analytics advertising consent denied and analytics ad identifiers disabled. Other games migrate in their own repositories before release.
 - UMP covers consent; it does not replace the privacy policy, store disclosures or age-related obligations.
 - iOS ATT (decided Nov 3, 2026, studio-wide): enable the **IDFA explainer message** in AdMob Privacy & messaging for every iOS app, so UMP shows Google's short explainer right before the system ATT prompt (higher opt-in → better ad revenue). In code: UMP consent first; afterwards, if ATT is still `notDetermined`, request it once. No home-made pre-prompt screens, no repeated asking. `NSUserTrackingUsageDescription` must be present and honest.
 - Local save data stays on device unless a game explicitly provides cloud saves. Optional analytics is permitted only as recorded in section 10, with accurate disclosures and collection controls; analytics is not a cloud save.
@@ -81,7 +83,7 @@ Not legal advice: this is the studio's product policy. Items marked **[VERIFY]**
 ## 7. Data disclosure (store forms)
 - Play **Data safety** and Apple **App Privacy** must reflect the ads SDK (device/advertising ID, diagnostics, approximate location via IP, used for advertising and analytics by Google). Use AdMob's official disclosure guidance for the SDK version in use. **[VERIFY]** per release.
 - Analytics standard: Google Analytics for Firebase, one project per game with separate iOS and Android app registrations. Use consistent gameplay event names. Adding Analytics does not authorize other Firebase services.
-- Landscraper: optional gameplay analytics, off until explicit opt-in, separate from ads consent. Disable advertising identifiers and deny analytics advertising consent. App-instance IDs and events are pseudonymous data, including automatic lifecycle, purchase and general-location collection. No account User-ID, session replay or Crashlytics. Turning off collection does not delete historical records; provide an access/deletion request path using the app-instance ID.
+- Landscraper: optional gameplay analytics, off until an explicit UMP analytics grant; no separate analytics request. Disable advertising identifiers and deny analytics advertising consent. App-instance IDs and events are pseudonymous data, including automatic lifecycle, purchase and general-location collection. No account User-ID, session replay or Crashlytics. Turning off collection does not delete historical records; provide an access/deletion request path using the app-instance ID.
 - Other games retain their current data practices until their own code, policy and store disclosures are updated.
 
 ## 8. Privacy policy & studio info
@@ -113,7 +115,7 @@ Not legal advice: this is the studio's product policy. Items marked **[VERIFY]**
 | Pair by Pair | Expo React Native, repo `Eyal8/number-match` (former name) | 13+ | **B** (ad-free rewards) | UMP tested Android + iOS; US messages pending | R4C.2A revision: remove blanket age blocking; audit rewarded entry points (hints, hammer, Daily Attempt); **open: buyer cap vs unlimited**; check launch screen is not the Expo default (section 11) |
 | Sorté | repo `Eyal8/sorte` (see its docs/ADMOB.md) | 13+ | — | — | Not yet aligned |
 | Tile Wave | Expo React Native, repo `Eyal8/tile-wave` (see docs/ads-privacy-consent.md) | 13+ | — | — | Not yet aligned |
-| Landscraper | Capacitor 8; Firebase Analytics via @capacitor-firebase/analytics 8.6.0 | 13+ | Existing rewards unchanged | Analytics opt-in separate from UMP | Analytics approved Nov 16, 2026. No analytics IDFA/AD_ID; analytics advertising consent denied. Policy and store disclosures required before the first analytics release. Other studio alignment outside this change. |
+| Landscraper | Capacitor 8; Firebase Analytics via @capacitor-firebase/analytics 8.6.0 | 13+ | Existing rewards unchanged | Analytics consent integrated with UMP; device pause | Analytics + studio-wide UMP consent migration approved Nov 16, 2026; account activation still needs verification. No analytics IDFA/AD_ID; analytics advertising consent denied. Policy and store disclosures required before the first analytics release. Other studio alignment outside this change. |
 
 ## 11. Branding & launch
 Based on Apple HIG (Launching, Branding) and the Android 12+ SplashScreen API. Goal: the studio is visible, but nothing delays play.
@@ -125,6 +127,7 @@ Based on Apple HIG (Launching, Branding) and the Android 12+ SplashScreen API. G
 5. Never add a separate studio splash at every launch, and never hold the player on any branding screen while the game is already ready.
 
 ## Changelog
+- v1.7 (Nov 16, 2026): owner approved account-wide AdMob Consent Mode for combined analytics consent; Landscraper implementation first, Shapescraper handoff next. Explicit-grant-only collection and device pause replace the separate analytics request. Account activation and device validation remain release gates.
 - v1.6 (Nov 16, 2026): Firebase Analytics chosen as studio standard; Landscraper first, with explicit opt-in and no analytics advertising identifiers. Clarified server-side analytics and local-save separation. Other games migrate separately.
 - v1.5 (Nov 3, 2026): monetisation stance; interstitial studio default (grace 3, every 2, 45 s); ATT decided with UMP IDFA explainer; Shapescraper Remove Ads exceptions decided with store text.
 - v1.4 (Nov 3, 2026): ATT behaviour proposed studio-wide (UMP first, then system prompt if not determined); Shapescraper Remove Ads audited and recorded as Model A with written exceptions; Shapescraper 1.1 branding/launch items done.

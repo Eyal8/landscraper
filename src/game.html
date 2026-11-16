@@ -719,7 +719,8 @@ window.GameAnalytics = (() => {
   const plugin = native && window.capacitorExports ? window.capacitorExports.registerPlugin('FirebaseAnalytics') : null;
   const available = !!plugin && ANALYTICS_ALLOWED;
   const read = (key) => { try { return localStorage.getItem(key); } catch (_) { return null; } };
-  let choice = read('ls_analytics_consent_v1'), enabled = false, revision = 0;
+  const consent = native && window.capacitorExports ? window.capacitorExports.registerPlugin('AnalyticsConsent') : null;
+  let paused = read('ls_analytics_paused') === '1', enabled = false, revision = 0, consentReady = false;
   let serial = Promise.resolve();
   const enqueue = (fn) => { serial = serial.then(fn).catch(() => {}); return serial; };
   const schema = {
@@ -741,12 +742,20 @@ window.GameAnalytics = (() => {
     }
     enqueue(async () => { if (enabled && version === revision) await plugin.logEvent({ name, params: safe }); });
   }
-  function applyChoice() {
+  function reconcile(ready = consentReady) {
+    consentReady = ready;
     enabled = false;
-    const version = ++revision, allow = available && choice === 'granted';
+    const version = ++revision;
     return enqueue(async () => {
       if (!plugin) return;
       await plugin.setEnabled({ enabled: false });
+      let modes = '';
+      if (consentReady && consent) {
+        try { modes = (await consent.getConsentModes()).values || ''; } catch (_) {}
+      }
+      // Only an explicit UMP analytics grant permits collection. Unknown, denied,
+      // not applicable (3) and not configured (4) all fail closed.
+      const allow = available && !paused && /^[0-4]{4}$/.test(modes) && modes[3] === '1';
       // Gameplay measurement never grants advertising consent.
       for (const type of ['AD_STORAGE', 'AD_USER_DATA', 'AD_PERSONALIZATION']) {
         await plugin.setConsent({ type, status: 'DENIED' });
@@ -759,14 +768,11 @@ window.GameAnalytics = (() => {
       refreshRequestId();
     });
   }
-  function setChoice(allow) {
-    try { localStorage.setItem('ls_analytics_consent_v1', allow ? 'granted' : 'denied'); }
-    catch (_) {
-      if (allow) return Promise.resolve(); // Never enable collection when consent cannot be saved.
-      try { localStorage.removeItem('ls_analytics_consent_v1'); } catch (_) {}
-    }
-    choice = allow ? 'granted' : 'denied';
-    return applyChoice();
+  function setPaused(value) {
+    paused = !!value;
+    try { localStorage.setItem('ls_analytics_paused', paused ? '1' : '0'); }
+    catch (_) { paused = true; } // Never resume when the preference cannot be saved.
+    return reconcile();
   }
   async function refreshRequestId() {
     if (!enabled) return;
@@ -775,8 +781,8 @@ window.GameAnalytics = (() => {
       if (result.appInstanceId) localStorage.setItem('ls_analytics_id', result.appInstanceId);
     } catch (_) {}
   }
-  applyChoice();
-  return { available, track, setChoice, reconcile: applyChoice, choice: () => choice, enabled: () => enabled,
+  reconcile(false);
+  return { available, track, setPaused, reconcile, paused: () => paused, enabled: () => enabled,
     refreshRequestId, requestId: () => read('ls_analytics_id') || '' };
 })();
 </script>
@@ -914,14 +920,16 @@ window.Ads = (function () {
   async function init() {
     if (!AdMob) return;
     try {
+      // Initialize Firebase and block collection before UMP may change consent.
+      await window.GameAnalytics.reconcile(false);
       await AdMob.initialize({ initializeForTesting: CONFIG.testing });
       try {
         let info = await AdMob.requestConsentInfo();
         if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
         privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+        await window.GameAnalytics.reconcile(info && ['OBTAINED', 'NOT_REQUIRED'].includes(info.status));
         document.dispatchEvent(new Event('ads:privacy'));
-      } catch (e) {}
-      await window.GameAnalytics.reconcile();
+      } catch (e) { await window.GameAnalytics.reconcile(false); }
       if (platform === 'ios') {
         try {
           const t = await AdMob.trackingAuthorizationStatus();
@@ -1033,8 +1041,14 @@ window.Ads = (function () {
   init();
   async function showPrivacyOptions() {
     if (!AdMob) return;
-    try { await AdMob.showPrivacyOptionsForm(); } catch (e) {}
-    await window.GameAnalytics.reconcile();
+    await window.GameAnalytics.reconcile(false);
+    try {
+      await AdMob.showPrivacyOptionsForm();
+      const info = await AdMob.requestConsentInfo();
+      privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      await window.GameAnalytics.reconcile(info && ['OBTAINED', 'NOT_REQUIRED'].includes(info.status));
+    } catch (e) { await window.GameAnalytics.reconcile(false); }
+    document.dispatchEvent(new Event('ads:privacy'));
   }
 
   return {
@@ -3198,8 +3212,8 @@ window.Board = (function () {
       '<button class="mode daily" type="button" data-act="daily"' + (dailyOpen() ? '' : ' disabled') + '><b><svg class=\"rbolt\" viewBox=\"0 0 24 24\"><path d=\"M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 10v9h14v-9z\"/></svg>Daily</b><span>' + (dailyOpen() ? (done ? 'Done · ' + streak() + ' day streak' : 'New level today') : 'Opens at 1-5') + '</span></button>' +
       '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b><svg class="rbolt" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
-      '<div class="row3 home-nav"><button class="btn alt nav-worlds" type="button" data-act="worlds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16"/></svg>Worlds</button><button class="btn alt nav-skins" type="button" data-act="skins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 14 9 5 9-5-2 6H5zM8 13V9h8v4M12 9V5M3 4v4M1 6h4M19 2v4M17 4h4"/></svg>Skins</button><button class="btn alt nav-trophies" type="button" data-act="trophies"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + IC.trophy + '"/></svg>Trophies</button></div>' + analyticsOffer(),
-      { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop, analytics: showAnalyticsSettings, noAnalytics: async () => { await window.GameAnalytics.setChoice(false); showHome(); } });
+      '<div class="row3 home-nav"><button class="btn alt nav-worlds" type="button" data-act="worlds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16"/></svg>Worlds</button><button class="btn alt nav-skins" type="button" data-act="skins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 14 9 5 9-5-2 6H5zM8 13V9h8v4M12 9V5M3 4v4M1 6h4M19 2v4M17 4h4"/></svg>Skins</button><button class="btn alt nav-trophies" type="button" data-act="trophies"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + IC.trophy + '"/></svg>Trophies</button></div>',
+      { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop, analytics: showAnalyticsSettings });
     showSkinUnlock();
   }
 
@@ -3410,27 +3424,25 @@ window.Board = (function () {
   function showSettings() {
     toMenu(); const sb = settingsButtons();
     panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
-      (window.GameAnalytics.available ? '<button class="btn alt" type="button" data-act="analytics">Gameplay analytics: ' + (window.GameAnalytics.choice() === 'granted' ? 'On' : 'Off') + '</button>' : '') +
+      (window.GameAnalytics.available ? '<button class="btn alt" type="button" data-act="analytics">Gameplay analytics: ' + (window.GameAnalytics.enabled() ? 'On' : 'Off') + '</button>' : '') +
       '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
-      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
+      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
       Object.assign({ back: showHome, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
   async function showAnalyticsSettings() {
-    const analytics = window.GameAnalytics, allowed = analytics.choice() === 'granted';
+    const analytics = window.GameAnalytics;
     await analytics.refreshRequestId();
     const id = analytics.requestId().replace(/[^a-zA-Z0-9_-]/g, '');
-    panel(BACK_X + '<h2>Gameplay analytics</h2><p>Help BENO74 improve Landscraper. If you allow it, Google Analytics receives level results, play time, ad interactions and completed purchases, plus an app installation ID and device information. We use these reports to improve the game.</p>' +
-      '<p>Optional. Your choice does not change gameplay or ad privacy choices. No names, email addresses, payment details or screen recordings are sent. You can turn this off at any time.</p>' +
+    panel(BACK_X + '<h2>Gameplay analytics</h2><p>Google Analytics helps BENO74 improve Landscraper using level results, play time, ad interactions and completed purchases, plus an app installation ID and device information.</p>' +
+      '<p>Your choice in the Google privacy message controls optional gameplay analytics. You can keep playing without allowing it, and you can also pause collection on this device below.</p>' +
+      '<p>Status: ' + (analytics.enabled() ? 'On' : analytics.paused() ? 'Paused on this device' : 'Off') + '</p>' +
       '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Read the privacy policy</a>' +
-      '<div class="btns"><button class="btn" type="button" data-act="toggle">' + (allowed ? 'Turn analytics off' : 'Allow analytics') + '</button><button class="btn alt" type="button" data-act="back">Back</button></div>' +
-      (id ? '<p>For an access or deletion request, email privacy@beno74.com with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p><p>Turning analytics off stops future collection; it does not delete previously collected reports.</p>' : ''),
-      { back: showSettings, toggle: async (b) => { b.disabled = true; await analytics.setChoice(!allowed); showAnalyticsSettings(); } });
-  }
-  function analyticsOffer() {
-    if (!window.GameAnalytics.available || window.GameAnalytics.choice()) return '';
-    return '<p>Help improve Landscraper with optional gameplay analytics.</p><div class="btns"><button class="btn alt" type="button" data-act="analytics">Review analytics choice</button><button class="linkbtn" type="button" data-act="noAnalytics">No thanks</button></div>';
+      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') +
+      '<div class="btns"><button class="btn alt" type="button" data-act="toggle">' + (analytics.paused() ? 'Use privacy message choice' : 'Pause analytics on this device') + '</button><button class="btn alt" type="button" data-act="back">Back</button></div>' +
+      (id ? '<p>For an access or deletion request, email privacy@beno74.com with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p><p>Stopping collection does not delete previously collected reports.</p>' : ''),
+      { back: showSettings, privacy: async () => { await window.Ads.showPrivacyOptions(); showAnalyticsSettings(); }, toggle: async (b) => { b.disabled = true; await analytics.setPaused(!analytics.paused()); showAnalyticsSettings(); } });
   }
   function showShop(packsOpen = false) {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();

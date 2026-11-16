@@ -6,38 +6,46 @@ const { test } = require('node:test');
 const html = fs.readFileSync(require('node:path').join(__dirname, '../src/game.html'), 'utf8');
 const source = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(x => x[1].includes('window.GameAnalytics ='))[1];
 
-function boot({ consent, native = true, storeBuild = true, storageFails = false, nativeFails = false } = {}) {
-  const calls = [], values = new Map(consent ? [['ls_analytics_consent_v1', consent]] : []);
+function boot({ modes = '', paused = false, native = true, storeBuild = true, storageFails = false, nativeFails = false, oldConsent } = {}) {
+  const calls = [], values = new Map([['ls_analytics_paused', paused ? '1' : '0'], ['ls_analytics_consent_v1', oldConsent]]);
+  const state = { modes };
   const plugin = Object.fromEntries(['setEnabled', 'setConsent', 'logEvent', 'getAppInstanceId'].map(method =>
     [method, async options => {
       calls.push({ method, options });
       if (nativeFails) throw Error('native unavailable');
       return { appInstanceId: 'installation-123' };
     }]));
+  const consentPlugin = { async getConsentModes() { if (nativeFails) throw Error('bridge'); return { values: state.modes }; } };
   const context = { Promise, Event, document: { dispatchEvent() {} },
     localStorage: { getItem: key => values.get(key) || null, setItem(key, value) { if (storageFails) throw Error('storage'); values.set(key, value); } },
-    Capacitor: { isNativePlatform: () => native }, capacitorExports: { registerPlugin: () => plugin } };
+    Capacitor: { isNativePlatform: () => native }, capacitorExports: { registerPlugin: name => name === 'AnalyticsConsent' ? consentPlugin : plugin } };
   context.window = context;
   vm.runInNewContext(storeBuild ? source.replace('const ANALYTICS_ALLOWED = false;', 'const ANALYTICS_ALLOWED = true;') : source, context);
-  return { analytics: context.GameAnalytics, calls, values };
+  return { analytics: context.GameAnalytics, calls, values, state };
 }
 const settle = () => new Promise(setImmediate);
 const events = s => s.calls.filter(x => x.method === 'logEvent');
 
-test('unknown or denied consent never grants storage or logs', async () => {
-  for (const consent of [undefined, 'denied']) {
-    const s = boot({ consent });
+test('missing, denied, not applicable, unconfigured and malformed signals fail closed', async () => {
+  for (const modes of ['', '2220', '1112', '1113', '1114', '1', '11111', 'xxx1']) {
+    const s = boot({ modes, oldConsent: 'granted' });
+    await s.analytics.reconcile(true);
+    s.analytics.track('level_start', { level_name: 'no-consent' });
     await settle();
-    s.analytics.track('level_start', { level_name: 'meadow-01' });
-    await settle();
-    assert.equal(events(s).length, 0);
-    assert.ok(!s.calls.some(x => x.options?.enabled === true || x.options?.status === 'GRANTED'));
+    assert.equal(events(s).length, 0, modes);
+    assert.ok(!s.calls.some(x => x.options?.enabled === true || x.options?.status === 'GRANTED'), modes);
   }
 });
-test('opt-in precedes collection; only approved event fields leave the app', async () => {
-  const s = boot();
-  s.analytics.track('level_start', { level_name: 'before-consent' });
-  await s.analytics.setChoice(true);
+test('a cached UMP grant does not enable collection before a successful current UMP update', async () => {
+  const s = boot({ modes: '2221' });
+  await settle();
+  assert.equal(s.analytics.enabled(), false);
+  await s.analytics.reconcile(false);
+  assert.equal(s.analytics.enabled(), false);
+});
+test('explicit analytics grant precedes collection without granting advertising; fields are allowlisted', async () => {
+  const s = boot({ modes: '1111' });
+  await s.analytics.reconcile(true);
   s.analytics.track('level_start', { level_name: 'meadow-01', mode: 'campaign', email: 'private@example.test', receipt: 'secret' });
   s.analytics.track('unknown_event', { secret: 'value' });
   await settle();
@@ -47,27 +55,46 @@ test('opt-in precedes collection; only approved event fields leave the app', asy
   assert.ok(!s.calls.some(x => x.options?.type?.startsWith('AD_') && x.options.status !== 'DENIED'));
   assert.equal(s.analytics.requestId(), 'installation-123');
 });
-test('withdrawal drops queued events and survives reconciliation/relaunch', async () => {
-  const s = boot({ consent: 'granted' });
-  await settle();
+test('privacy form entry blocks queued events; denial remains off and retains the request ID', async () => {
+  const s = boot({ modes: '2221' });
+  await s.analytics.reconcile(true);
   s.analytics.track('level_start', { level_name: 'queued' });
-  await s.analytics.setChoice(false);
-  s.analytics.track('level_start', { level_name: 'after-withdrawal' });
-  await s.analytics.reconcile();
+  await s.analytics.reconcile(false);
+  s.state.modes = '2222';
+  await s.analytics.reconcile(true);
   assert.equal(events(s).length, 0);
   assert.equal(s.analytics.enabled(), false);
-  assert.equal(s.analytics.requestId(), 'installation-123', 'retain request ID for historical deletion requests');
-  const restarted = boot({ consent: s.values.get('ls_analytics_consent_v1') });
-  await settle();
-  assert.equal(restarted.analytics.enabled(), false);
+  assert.equal(s.analytics.requestId(), 'installation-123');
 });
-test('preview, tester builds and unavailable consent storage fail closed', async () => {
+test('device pause survives reconciliation/relaunch and resume never substitutes for UMP consent', async () => {
+  const s = boot({ modes: '2221' });
+  await s.analytics.reconcile(true);
+  await s.analytics.setPaused(true);
+  await s.analytics.reconcile(true);
+  assert.equal(s.analytics.enabled(), false);
+  const restarted = boot({ modes: '2221', paused: s.values.get('ls_analytics_paused') === '1' });
+  await restarted.analytics.reconcile(true);
+  assert.equal(restarted.analytics.enabled(), false);
+  s.state.modes = '2222';
+  await s.analytics.setPaused(false);
+  assert.equal(s.analytics.enabled(), false);
+});
+test('preview, default tester builds, unavailable storage and native failures fail closed', async () => {
   for (const options of [{ native: false }, { storeBuild: false }, { storageFails: true }, { nativeFails: true }]) {
-    const s = boot(options);
-    await s.analytics.setChoice(true);
+    const s = boot({ modes: '2221', ...options });
+    await s.analytics.reconcile(true);
+    await s.analytics.setPaused(false);
     s.analytics.track('purchase_completed', { item_id: 'landscraper_no_ads' });
     await settle();
     assert.equal(events(s).length, 0);
     assert.equal(s.analytics.enabled(), false);
   }
+});
+test('an obsolete in-flight consent read cannot enable collection after suspension', async () => {
+  const s = boot({ modes: '2221' });
+  const grant = s.analytics.reconcile(true);
+  const suspend = s.analytics.reconcile(false);
+  await Promise.all([grant, suspend]);
+  assert.equal(s.analytics.enabled(), false);
+  assert.ok(!s.calls.some(x => x.options?.enabled === true));
 });

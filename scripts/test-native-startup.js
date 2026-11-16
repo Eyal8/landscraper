@@ -17,12 +17,12 @@ for (const [, attributes, code] of scripts) {
 
 const settle = () => new Promise(setImmediate);
 
-async function boot(platform, missingRuntime = false) {
+async function boot(platform, missingRuntime = false, consentOptions = {}) {
   const calls = [];
   const listeners = new Map();
   const storage = new Map([['ls_pack_sea', '1']]); // Old simulated ownership must be reconciled.
   const elements = { adSim: { hidden: true }, adCount: {}, adClose: { focus() {} } };
-  const state = { purchases: [], purchase: null, purchaseError: null, offline: false, reward: false, adFailure: false };
+  const state = { purchases: [], purchase: null, purchaseError: null, offline: false, reward: false, adFailure: false, modes: '2221', consentStatus: 'OBTAINED', consentFailure: false, ...consentOptions };
   let now = 100000;
   const record = (plugin, method, options) => calls.push({ plugin, method, options });
   const emit = (name) => { for (const callback of listeners.get(name) || []) callback({}); };
@@ -48,7 +48,14 @@ async function boot(platform, missingRuntime = false) {
     },
     AdMob: {
       async initialize(options) { record('AdMob', 'initialize', options); },
-      async requestConsentInfo() { return { status: 'NOT_REQUIRED' }; },
+      async requestConsentInfo() {
+        if (state.consentFailure) throw Error('UMP unavailable');
+        return { status: state.consentStatus, privacyOptionsRequirementStatus: 'REQUIRED' };
+      },
+      async showPrivacyOptionsForm() {
+        assert.equal(context.GameAnalytics.enabled(), false, 'collection stops before opening privacy choices');
+        state.modes = '2222';
+      },
       async trackingAuthorizationStatus() { return { status: 'authorized' }; },
       async prepareRewardVideoAd(options) {
         record('AdMob', 'prepareRewardVideoAd', options);
@@ -68,6 +75,7 @@ async function boot(platform, missingRuntime = false) {
         return Promise.resolve({ remove() { listeners.get(name).delete(callback); } });
       }
     },
+    AnalyticsConsent: { async getConsentModes() { return { values: state.modes }; } },
     FirebaseAnalytics: {
       async setEnabled(options) { record('FirebaseAnalytics', 'setEnabled', options); },
       async setConsent(options) { record('FirebaseAnalytics', 'setConsent', options); },
@@ -113,7 +121,10 @@ async function testNative(platform) {
     assert.ok(calls.some((x) => x.plugin === name && x.method === 'register'), `${platform}: ${name} must register at startup`);
   }
   assert.equal(c.Store.isNative, true);
-  if (c.GameAnalytics.available) await c.GameAnalytics.setChoice(true);
+  if (c.GameAnalytics.available) {
+    assert.equal(c.GameAnalytics.enabled(), true, 'startup consumes the current UMP grant');
+    assert.ok(calls.findIndex(x => x.plugin === 'FirebaseAnalytics' && x.method === 'setEnabled') < calls.findIndex(x => x.plugin === 'AdMob' && x.method === 'initialize'), 'Firebase initializes before UMP');
+  }
   const analyticsEvents = (name) => calls.filter(x => x.method === 'logEvent' && x.options.name === name);
   assert.equal(c.Store.owns('sea'), false, 'unpaid cached ownership must be cleared after store refresh');
   assert.equal(c.Store.price('sea'), '₪10.90', 'use the native store price');
@@ -173,6 +184,16 @@ async function testNative(platform) {
 (async () => {
   await testNative('android');
   await testNative('ios');
+  for (const platform of ['android', 'ios']) {
+    for (const consentOptions of [{ modes: '2222' }, { modes: '2223' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
+      const { context: c } = await boot(platform, false, consentOptions);
+      assert.equal(c.GameAnalytics.enabled(), false, 'denial, no regional signal or failed/incomplete UMP keeps collection off');
+    }
+    const { context: c } = await boot(platform);
+    await c.Ads.showPrivacyOptions();
+    assert.equal(c.GameAnalytics.enabled(), false, 'revocation in UMP is reflected in Analytics');
+  }
+  console.log('PASS Android/iOS: UMP startup, regional no-signal, errors, incomplete consent and privacy withdrawal');
   for (const platform of ['android', 'ios']) {
     const { context: c, elements, advance } = await boot(platform, true);
     assert.equal(await c.Store.buy('space'), 'error');
