@@ -63,7 +63,7 @@ these restrictions before enabling collection and after privacy changes.
 Firebase also measures lifecycle/session and purchase events automatically.
 Use custom purchase/ad events for behavior counts, not as an additional revenue
 total on top of automatic `in_app_purchase`/`ad_impression` events.
-Reports represent opted-in installations, not all players.
+Reports represent permitted measured installations (consented or not-required), not all players.
 
 ## Native CI validation — November 16, 2026 (earlier separate-consent revision)
 
@@ -92,7 +92,7 @@ Eyal authorized the CI pivot and website merge on November 16.
   returning from privacy choices; its packaged startup checks passed locally.
 - Website TypeScript, targeted ESLint, production build and legal-route checks
   passed. No website tracker was added. Policy/standard update is draft PR 23.
-- Account activation and physical-device/sandbox checks remain pending; successful
+- Account activation is owner-reported; physical-device/sandbox checks remain pending; successful
   builds are not proof that the live UMP message supplies an analytics grant.
 
 ## Before the first analytics release
@@ -115,20 +115,20 @@ Owner approved account-wide combined AdMob consent on November 16, 2026.
 Required account settings: Privacy & messaging → European regulations → Settings
 → enable Consent Mode for advertising purposes, then analytics purposes → Save.
 These settings affect all configured European messages, not just Landscraper.
-**Not activated/verified yet:** the embedded settings form stayed blank/loading
-on initial navigation and one reload; stopped after two focused attempts, with
-no account settings changed. Complete these two toggles manually and verify the
-saved state before device testing. Existing EU/US/IDFA message definitions and
-ad units were not replaced. Verify the new analytics purpose is presented to
-returning users too; never treat an old ads-only consent as analytics consent.
+**Activation reported by owner, November 16, 2026:** both advertising and
+analytics Consent Mode toggles were checked and saved. Earlier attempts by the
+agent had encountered a loading settings page; that is no longer an owner task.
+The saved settings and effective SDK/message values still require device proof.
+Existing EU/US/IDFA message definitions and ad units were not replaced. Verify
+analytics choices for returning users; an old ads-only consent is insufficient.
 
 Current wrapper 8.2.1 declares Android UMP 4.0.0 and iOS UMP 3.1.x, above Google's
 required versions. Shapescraper and other games must implement their own native
 initialization, consent read, collection gate and disclosure migration before
 shipping Analytics. Shared settings alone do not implement those safeguards.
-Website policy/standard wording for this migration is prepared in
-https://github.com/Eyal8/beno-studio-site/pull/23 ; the live policy still describes the earlier separate opt-in until
-that PR is approved and merged. No public app release is authorized.
+Website policy and standard v1.8 were merged with explicit owner approval:
+https://github.com/Eyal8/beno-studio-site/pull/23 (74e2c072). Verified the updated
+public policy includes not-required collection, the device pause and Firebase. No public app release is authorized.
 
 Linking AdMob to Firebase is optional for richer revenue reports, not required
 for the custom behavior events above. It has not been enabled. Google Ads links,
@@ -148,3 +148,29 @@ References: [collection controls](https://firebase.google.com/docs/analytics/con
 Official regional handling references: [UMP signal values and basic mode](https://developers.google.com/funding-choices/fc-sdks),
 [non-EU defaults](https://developers.google.com/admob/ios/privacy/consent-mode),
 [Analytics US service-provider terms](https://support.google.com/analytics/answer/6004245?hl=en).
+
+## Private UMP QA builds
+
+Explicit test builds use `ANALYTICS_TEST=true UMP_TEST=true npm run build`.
+The UMP QA module is removed from ordinary/store HTML and cannot be built with
+real ads. Settings → UMP test controls accepts native-log UMP device IDs and
+Actual/EEA/US/Other geography; reset stops collection before resetting UMP and
+fetching fresh consent. Diagnostics show UMP status, four mode values, collection
+and device pause. Changing QA settings does not fabricate a consent grant.
+
+Owner separately authorized internal TestFlight upload only. The workflow uses
+`testFlightInternalTestingOnly=true`, which prevents external TestFlight/App
+Store distribution, and skips certificate cleanup. No public app release or
+app main merge is authorized. See the device guide in the workspace artifacts.
+
+Private QA artifacts (November 16, 2026):
+- Android QA build succeeded, downloaded APK was inspected: analytics enabled,
+  UMP QA module present and test ads enabled. Run 43909869733:
+  https://github.com/Eyal8/landscraper/actions/runs/43909869733 .
+- iOS signed archive and internal-only TestFlight upload succeeded: version 1.0
+  build 196, run 43910265817. Export explicitly used
+  testFlightInternalTestingOnly=true and no certificate cleanup. Apple processing
+  and internal-group installation availability are verified separately.
+  https://github.com/Eyal8/landscraper/actions/runs/43910265817 .
+- Additional unsigned Simulator/device validation: run 43909876177.
+- No device behavior or sandbox purchase result is claimed from these builds.

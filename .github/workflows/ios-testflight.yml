@@ -87,7 +87,7 @@ jobs:
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
             <key>signingStyle</key><string>automatic</string>
-            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>manageAppVersionAndBuildNumber</key><${{ inputs.private_analytics && 'false' || 'true' }}/>
             <key>testFlightInternalTestingOnly</key><${{ inputs.private_analytics && 'true' || 'false' }}/>
           </dict></plist>
           PLIST
