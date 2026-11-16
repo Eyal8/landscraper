@@ -69,6 +69,23 @@ Eyal authorized the CI pivot and website merge on November 16.
 - iOS compiled with the AnalyticsWithoutAdIdSupport trait. The CI artifact resolved Firebase Apple SDK 12.19.3 and GoogleAppMeasurement 12.19.2; packaged project ID, disabled collection, denied advertising consent and disabled IDFV checks passed.
 - Local Capacitor sync had stalled twice; a fresh CI checkout resolved the integration successfully. No repeated local retries were needed.
 
+## Combined UMP migration validation — November 16, 2026
+
+- Seven consent-boundary tests passed, including stale grants, malformed/missing
+  signals, no regional consent, errors, device pause, revocation and queued events.
+- Native startup/monetization boundary tests passed for Android and iOS, including
+  successful UMP initialization, unresolved forms, UMP failures and withdrawal.
+- Android native sync/build/tests passed at commit 48d0506:
+  https://github.com/Eyal8/landscraper/actions/runs/43864150725 .
+- Unsigned iOS Simulator sync/build/tests and packaged Firebase privacy checks
+  passed at commit 48d0506: https://github.com/Eyal8/landscraper/actions/runs/43864150992 .
+- A subsequent menu-only callback refreshes the visible Analytics status after
+  returning from privacy choices; its packaged startup checks passed locally.
+- Website TypeScript, targeted ESLint, production build and legal-route checks
+  passed. No website tracker was added. Policy/standard update is draft PR 23.
+- Account activation and physical-device/sandbox checks remain pending; successful
+  builds are not proof that the live UMP message supplies an analytics grant.
+
 ## Before the first analytics release
 - On iOS and Android, verify DebugView: no collection before consent/after
   withdrawal; explicit UMP grant enables collection while denial, missing values,
@@ -100,8 +117,8 @@ Current wrapper 8.2.1 declares Android UMP 4.0.0 and iOS UMP 3.1.x, above Google
 required versions. Shapescraper and other games must implement their own native
 initialization, consent read, collection gate and disclosure migration before
 shipping Analytics. Shared settings alone do not implement those safeguards.
-Website policy/standard wording for this migration is prepared in a separate
-website PR; the live policy still describes the earlier separate opt-in until
+Website policy/standard wording for this migration is prepared in
+https://github.com/Eyal8/beno-studio-site/pull/23 ; the live policy still describes the earlier separate opt-in until
 that PR is approved and merged. No public app release is authorized.
 
 Linking AdMob to Firebase is optional for richer revenue reports, not required

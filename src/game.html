@@ -3427,7 +3427,7 @@ window.Board = (function () {
       (window.GameAnalytics.available ? '<button class="btn alt" type="button" data-act="analytics">Gameplay analytics: ' + (window.GameAnalytics.enabled() ? 'On' : 'Off') + '</button>' : '') +
       '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
       (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
+      Object.assign({ back: showHome, analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
