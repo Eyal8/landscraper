@@ -49,26 +49,27 @@ Use custom purchase/ad events for behavior counts, not as an additional revenue
 total on top of automatic `in_app_purchase`/`ad_impression` events.
 Reports represent opted-in installations, not all players.
 
-## Before the first analytics release
+## Native CI validation — November 16, 2026
 
-- Native sync stopped twice before producing output locally. Do not keep retrying
-  the same local command; use a fresh CI checkout or an owner-run sync as the next
-  approach. Generated native plugin lists/SPM package still need synchronization.
-- Verify native dependency resolution and final merged Android manifest/iOS
-  archive, including disabled collection defaults and no analytics ad identifiers.
+Eyal authorized the CI pivot and website merge on November 16.
+- Android sync, targeted tests and APK build passed: https://github.com/Eyal8/landscraper/actions/runs/43850587369 .
+- Unsigned iOS Simulator build, targeted tests and packaged configuration checks passed: https://github.com/Eyal8/landscraper/actions/runs/43850587807 . This job does not sign, upload to TestFlight or submit an app version.
+- Inspected the actual Android APK: FirebaseAnalyticsPlugin is packaged, default tester analytics is disabled, and all seven Analytics privacy defaults in the merged manifest are false.
+- iOS compiled with the AnalyticsWithoutAdIdSupport trait. The CI artifact resolved Firebase Apple SDK 12.19.3 and GoogleAppMeasurement 12.19.2; packaged project ID, disabled collection, denied advertising consent and disabled IDFV checks passed.
+- Local Capacitor sync had stalled twice; a fresh CI checkout resolved the integration successfully. No repeated local retries were needed.
+
+## Before the first analytics release
 - On iOS and Android, verify DebugView: no collection before consent/after
   withdrawal; opt-in persists; UMP choices never grant gameplay analytics or
   analytics advertising purposes implicitly. Exercise a level start, loss,
   completion, abandonment and real test ad reward. Check actual installation ID.
 - Sandbox purchase/restore checks remain required before release; mocked purchase
   boundary checks passed, but no store sandbox transaction was performed.
-- Publish the reviewed policy at `https://beno74.com/privacy/landscraper`.
-  Website draft: https://github.com/Eyal8/beno-studio-site/pull/21 .
-  Website repo requires Eyal's approval before merging to main.
+- Website PR 21 was merged with Eyal's explicit approval: https://github.com/Eyal8/beno-studio-site/pull/21 . Verified the analytics section, date and request-ID instructions in the public HTML at https://beno74.com/privacy/landscraper .
 - Review and submit App Store Connect App Privacy and Play Data safety using
   `store/LISTING.md`, reconciled with final native SDK behavior.
-  Live forms were not updated: the browser connection stopped responding.
-- No public app release or store submission is authorized by this implementation.
+  Apple App Privacy was published on November 16: added Purchase History for Analytics, linked to the installation, not used for tracking. Existing device, location and interaction Analytics disclosures were already present. The optional User Privacy Choices URL was left blank after automatic approval review rejected an unverified choice-mechanism link; the existing policy URL remains correct. Google Play: added optional, non-ephemeral Purchase history for Analytics (collected, not shared under the service-provider exception) and the verified deletion-request instructions URL. One Data safety-only change was saved and quick checks passed. Two confirmed send attempts did not persist: after reload, Publishing overview still shows "Changes not yet submitted for review" without an error. Stopped per the two-attempt policy; owner should complete "Submit 1 change for review" from Publishing overview. No binary changes are included.
+- Store privacy metadata updates were authorized; no app binary upload or public app release is authorized.
 
 ## AdMob and other settings
 
@@ -82,8 +83,7 @@ page; do not change unrelated apps' messages here.
 Linking AdMob to Firebase is optional for richer revenue reports, not required
 for the custom behavior events above. It has not been enabled. Google Ads links,
 Google Signals, BigQuery, Auth, Firestore, Remote Config and Crashlytics have not
-been enabled by this task. Review Google Analytics account sharing and consent
-settings before the first release; they were not changed here.
+been enabled by this task. Verified the Beno Studio Analytics account: Google products & services sharing is OFF; modeling contributions use aggregated/de-identified data, technical support and business recommendations are enabled; data processing terms were already accepted on September 24, 2026. These account-wide settings were not changed. Native consent behavior still needs on-device verification before release.
 
 The shared game terms already defer to each game's privacy notice and do not
 grant tracking consent; no terms-of-use change is needed for this integration.

@@ -90,23 +90,24 @@ Review screenshots:
 
 ### App Privacy (App Store Connect › App Privacy)
 
-**Candidate for the first Firebase Analytics build — verify and publish before releasing that build.** Existing AdMob declarations remain applicable. This file is not evidence that App Store Connect has been updated.
+**App Store Connect verified and updated November 16, 2026.** Purchase History was published for Analytics, linked to the installation, not used for tracking. Existing Analytics declarations for device IDs, interactions, advertising data and coarse location were already present and were preserved. No app version was submitted or released by this update.
 
 "Do you or your third-party partners collect data?" **Yes** (Google AdMob and optional Google Analytics for Firebase).
 
 | Data type | Collected for | Linked to user | Used for tracking |
 |---|---|---|---|
-| Identifiers › Device ID | Third-Party Advertising (AdMob), Analytics (including Firebase app-instance ID) | Yes for analytics installation-linked records | Yes for AdMob; No for gameplay analytics |
-| Usage Data › Advertising Data | Third-Party Advertising, Analytics | Yes where linked to analytics installation | Yes for AdMob; No for gameplay analytics |
-| Usage Data › Product Interaction | Analytics | Yes (app-instance ID) | No for gameplay analytics |
-| Location › Coarse Location | Third-Party Advertising (AdMob), Analytics (general location from masked IP) | Yes for installation-linked analytics | Yes for AdMob; No for gameplay analytics |
-| Diagnostics › Crash Data, Performance Data | Existing AdMob purposes; no Firebase Crashlytics added | Recheck existing AdMob configuration | Recheck existing AdMob configuration |
-| Purchases › Purchase History | App Functionality, Analytics (automatic store purchase events and confirmed product IDs) | Yes for analytics installation-linked records | No for gameplay analytics |
+| Identifiers › Device ID | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | Yes (existing AdMob disclosure) |
+| Usage Data › Advertising Data | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Usage Data › Product Interaction | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Location › Coarse Location | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Diagnostics › Crash Data | Analytics | No | No |
+| Diagnostics › Performance Data, Other Diagnostic Data | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | No | No |
+| Purchases › Purchase History | Analytics | Yes | No |
 
 - Apply the combined purposes/linkage/tracking of all SDKs for each type in the form. "No name/account" does not make an installation ID anonymous. Conservatively disclose Firebase events as linked to a device through the app-instance ID.
 - The ATT prompt alone does not determine whether data is used for tracking. Keep the existing AdMob tracking disclosures based on its actual behavior; Firebase does not add cross-app tracking in this configuration.
 - Firebase Analytics: collection off until explicit opt-in; advertising consent denied, IDFA/AD_ID collection disabled for analytics, iOS IDFV disabled, no account User-ID or Google Signals. App lifecycle, purchase and general-location collection must still be disclosed. AdMob can independently use advertising IDs according to its consent.
-- Privacy policy URL: https://beno74.com/privacy/landscraper ; privacy choices URL: https://beno74.com/privacy/landscraper#analytics . In the app: Settings → Gameplay analytics, and Ad privacy choices when UMP requires it.
+- Privacy policy URL is https://beno74.com/privacy/landscraper . The optional Apple User Privacy Choices URL remains blank: automatic approval review rejected using an unverified policy anchor as a choice mechanism. No workaround was used for that optional field. In-app controls: Settings → Gameplay analytics, and Ad privacy choices when UMP requires it.
 - Game Center information managed by Apple is separate from Firebase; do not add account credentials or leaderboard names to analytics.
 - Check the final archive's SDK privacy manifests and privacy report for all linked Firebase dependencies. No screen recording, Crashlytics, cloud saves, Auth or Firestore is added.
 
@@ -133,7 +134,7 @@ Official references: [Apple privacy details](https://developer.apple.com/app-sto
 
 ### Data safety
 
-**Candidate for the first Firebase Analytics build — verify and submit before rollout.** This file does not confirm changes in Play Console.
+**Play Console edited November 16, 2026; final submission blocked.** Added optional, non-ephemeral Purchase history collection for Analytics and the data-deletion request URL. Existing AdMob collection/sharing and Analytics purposes for location, device IDs and app interactions were verified and preserved. Saved as one Data safety change; quick checks passed. Two confirmed send attempts did not persist, and a reload still shows "Changes not yet submitted for review" without an error. Stopped per the two-attempt policy. Owner action: Publishing overview → Submit 1 change for review. The only pending change is Data safety, with no app binary included.
 
 | Question | Answer |
 |---|---|
@@ -149,7 +150,7 @@ Declare the union of all integrations:
 - **Location › Approximate location:** AdMob's existing collection plus Analytics general location from masked IP, adding Analytics as a purpose. No GPS permission is introduced.
 - **App info and performance:** retain and verify the existing AdMob diagnostic disclosures; no Crashlytics or new crash-reporting integration is included.
 - Firebase analytics records are **not processed ephemerally**. Do not mark stored events ephemeral merely because an IP address is masked or not stored.
-- Google Analytics processing on our behalf can qualify for Play's service-provider sharing exception if the actual terms/settings meet it. Do not call all Firebase collection "shared" automatically, and do not remove existing AdMob sharing declarations.
+- New purchase-history collection is not marked shared under the service-provider exception. Verified the Beno Studio Analytics account has Google products & services sharing OFF and existing data processing terms accepted; modeling uses aggregated/de-identified data, with technical support enabled. Existing AdMob sharing declarations remain unchanged.
 - Privacy policy: https://beno74.com/privacy/landscraper . The policy explains optional collection, automatic SDK data, consent withdrawal, retention and deletion requests.
 
 Official references: [Play Data safety requirements](https://support.google.com/googleplay/android-developer/answer/10787469), [Google Analytics Play disclosures](https://support.google.com/analytics/answer/11582702).
