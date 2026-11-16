@@ -185,15 +185,18 @@ async function testNative(platform) {
   await testNative('android');
   await testNative('ios');
   for (const platform of ['android', 'ios']) {
-    for (const consentOptions of [{ modes: '2222' }, { modes: '2223' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
+    for (const consentOptions of [{ modes: '2222' }, { modes: '2223' }, { modes: '3334', consentStatus: 'NOT_REQUIRED' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
       const { context: c } = await boot(platform, false, consentOptions);
       assert.equal(c.GameAnalytics.enabled(), false, 'denial, no regional signal or failed/incomplete UMP keeps collection off');
     }
+    const { context: noPrompt, calls: noPromptCalls } = await boot(platform, false, { modes: '3333', consentStatus: 'NOT_REQUIRED' });
+    if (noPrompt.GameAnalytics.available) assert.equal(noPrompt.GameAnalytics.enabled(), true, 'measure when UMP confirms no consent required');
+    assert.ok(!noPromptCalls.some(x => x.method === 'showConsentForm'), 'do not add a consent prompt');
     const { context: c } = await boot(platform);
     await c.Ads.showPrivacyOptions();
     assert.equal(c.GameAnalytics.enabled(), false, 'revocation in UMP is reflected in Analytics');
   }
-  console.log('PASS Android/iOS: UMP startup, regional no-signal, errors, incomplete consent and privacy withdrawal');
+  console.log('PASS Android/iOS: UMP startup, not-required measurement, missing signals, errors, incomplete consent and withdrawal');
   for (const platform of ['android', 'ios']) {
     const { context: c, elements, advance } = await boot(platform, true);
     assert.equal(await c.Store.buy('space'), 'error');

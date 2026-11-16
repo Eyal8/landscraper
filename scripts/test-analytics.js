@@ -26,10 +26,10 @@ function boot({ modes = '', paused = false, native = true, storeBuild = true, st
 const settle = () => new Promise(setImmediate);
 const events = s => s.calls.filter(x => x.method === 'logEvent');
 
-test('missing, denied, not applicable, unconfigured and malformed signals fail closed', async () => {
-  for (const modes of ['', '2220', '1112', '1113', '1114', '1', '11111', 'xxx1']) {
+test('missing, denied, unconfigured and malformed signals fail closed', async () => {
+  for (const modes of ['', '2220', '1112', '1114', '1', '11111', 'xxx1']) {
     const s = boot({ modes, oldConsent: 'granted' });
-    await s.analytics.reconcile(true);
+    await s.analytics.reconcile('OBTAINED');
     s.analytics.track('level_start', { level_name: 'no-consent' });
     await settle();
     assert.equal(events(s).length, 0, modes);
@@ -45,7 +45,7 @@ test('a cached UMP grant does not enable collection before a successful current 
 });
 test('explicit analytics grant precedes collection without granting advertising; fields are allowlisted', async () => {
   const s = boot({ modes: '1111' });
-  await s.analytics.reconcile(true);
+  await s.analytics.reconcile('OBTAINED');
   s.analytics.track('level_start', { level_name: 'meadow-01', mode: 'campaign', email: 'private@example.test', receipt: 'secret' });
   s.analytics.track('unknown_event', { secret: 'value' });
   await settle();
@@ -57,23 +57,23 @@ test('explicit analytics grant precedes collection without granting advertising;
 });
 test('privacy form entry blocks queued events; denial remains off and retains the request ID', async () => {
   const s = boot({ modes: '2221' });
-  await s.analytics.reconcile(true);
+  await s.analytics.reconcile('OBTAINED');
   s.analytics.track('level_start', { level_name: 'queued' });
   await s.analytics.reconcile(false);
   s.state.modes = '2222';
-  await s.analytics.reconcile(true);
+  await s.analytics.reconcile('OBTAINED');
   assert.equal(events(s).length, 0);
   assert.equal(s.analytics.enabled(), false);
   assert.equal(s.analytics.requestId(), 'installation-123');
 });
 test('device pause survives reconciliation/relaunch and resume never substitutes for UMP consent', async () => {
   const s = boot({ modes: '2221' });
-  await s.analytics.reconcile(true);
+  await s.analytics.reconcile('OBTAINED');
   await s.analytics.setPaused(true);
-  await s.analytics.reconcile(true);
+  await s.analytics.reconcile('OBTAINED');
   assert.equal(s.analytics.enabled(), false);
   const restarted = boot({ modes: '2221', paused: s.values.get('ls_analytics_paused') === '1' });
-  await restarted.analytics.reconcile(true);
+  await restarted.analytics.reconcile('OBTAINED');
   assert.equal(restarted.analytics.enabled(), false);
   s.state.modes = '2222';
   await s.analytics.setPaused(false);
@@ -82,7 +82,7 @@ test('device pause survives reconciliation/relaunch and resume never substitutes
 test('preview, default tester builds, unavailable storage and native failures fail closed', async () => {
   for (const options of [{ native: false }, { storeBuild: false }, { storageFails: true }, { nativeFails: true }]) {
     const s = boot({ modes: '2221', ...options });
-    await s.analytics.reconcile(true);
+    await s.analytics.reconcile('OBTAINED');
     await s.analytics.setPaused(false);
     s.analytics.track('purchase_completed', { item_id: 'landscraper_no_ads' });
     await settle();
@@ -92,9 +92,34 @@ test('preview, default tester builds, unavailable storage and native failures fa
 });
 test('an obsolete in-flight consent read cannot enable collection after suspension', async () => {
   const s = boot({ modes: '2221' });
-  const grant = s.analytics.reconcile(true);
+  const grant = s.analytics.reconcile('OBTAINED');
   const suspend = s.analytics.reconcile(false);
   await Promise.all([grant, suspend]);
   assert.equal(s.analytics.enabled(), false);
   assert.ok(!s.calls.some(x => x.options?.enabled === true));
+});
+
+test('not-required analytics works without a prompt only after UMP confirms NOT_REQUIRED', async () => {
+  const s = boot({ modes: '3333' });
+  await settle();
+  assert.equal(s.analytics.enabled(), false, 'cached values do not enable startup');
+  for (const status of ['OBTAINED', 'REQUIRED', 'UNKNOWN', false]) {
+    await s.analytics.reconcile(status);
+    assert.equal(s.analytics.enabled(), false, status);
+  }
+  await s.analytics.reconcile('NOT_REQUIRED');
+  s.analytics.track('level_start', { level_name: 'meadow-01' });
+  await settle();
+  assert.equal(events(s).length, 1);
+  assert.equal(s.analytics.enabled(), true);
+  await s.analytics.setPaused(true);
+  await s.analytics.reconcile('NOT_REQUIRED');
+  assert.equal(s.analytics.enabled(), false, 'device opt-out overrides not-required');
+});
+test('NOT_REQUIRED never overrides an explicit denial or missing/unconfigured analytics signal', async () => {
+  for (const modes of ['', '3330', '3332', '3334']) {
+    const s = boot({ modes });
+    await s.analytics.reconcile('NOT_REQUIRED');
+    assert.equal(s.analytics.enabled(), false, modes);
+  }
 });

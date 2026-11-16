@@ -720,7 +720,7 @@ window.GameAnalytics = (() => {
   const available = !!plugin && ANALYTICS_ALLOWED;
   const read = (key) => { try { return localStorage.getItem(key); } catch (_) { return null; } };
   const consent = native && window.capacitorExports ? window.capacitorExports.registerPlugin('AnalyticsConsent') : null;
-  let paused = read('ls_analytics_paused') === '1', enabled = false, revision = 0, consentReady = false;
+  let paused = read('ls_analytics_paused') === '1', enabled = false, revision = 0, consentStatus = false;
   let serial = Promise.resolve();
   const enqueue = (fn) => { serial = serial.then(fn).catch(() => {}); return serial; };
   const schema = {
@@ -742,20 +742,21 @@ window.GameAnalytics = (() => {
     }
     enqueue(async () => { if (enabled && version === revision) await plugin.logEvent({ name, params: safe }); });
   }
-  function reconcile(ready = consentReady) {
-    consentReady = ready;
+  function reconcile(status = consentStatus) {
+    consentStatus = status;
     enabled = false;
     const version = ++revision;
     return enqueue(async () => {
       if (!plugin) return;
       await plugin.setEnabled({ enabled: false });
       let modes = '';
-      if (consentReady && consent) {
+      if (['OBTAINED', 'NOT_REQUIRED'].includes(consentStatus) && consent) {
         try { modes = (await consent.getConsentModes()).values || ''; } catch (_) {}
       }
-      // Only an explicit UMP analytics grant permits collection. Unknown, denied,
-      // not applicable (3) and not configured (4) all fail closed.
-      const allow = available && !paused && /^[0-4]{4}$/.test(modes) && modes[3] === '1';
+      // A current grant or UMP-confirmed not-required result permits measurement.
+      // Missing, denied and unconfigured values never substitute for permission.
+      const analyticsPermitted = modes[3] === '1' || (modes[3] === '3' && consentStatus === 'NOT_REQUIRED');
+      const allow = available && !paused && /^[0-4]{4}$/.test(modes) && analyticsPermitted;
       // Gameplay measurement never grants advertising consent.
       for (const type of ['AD_STORAGE', 'AD_USER_DATA', 'AD_PERSONALIZATION']) {
         await plugin.setConsent({ type, status: 'DENIED' });
@@ -927,7 +928,7 @@ window.Ads = (function () {
         let info = await AdMob.requestConsentInfo();
         if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
         privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
-        await window.GameAnalytics.reconcile(info && ['OBTAINED', 'NOT_REQUIRED'].includes(info.status));
+        await window.GameAnalytics.reconcile(info && info.status);
         document.dispatchEvent(new Event('ads:privacy'));
       } catch (e) { await window.GameAnalytics.reconcile(false); }
       if (platform === 'ios') {
@@ -1046,7 +1047,7 @@ window.Ads = (function () {
       await AdMob.showPrivacyOptionsForm();
       const info = await AdMob.requestConsentInfo();
       privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
-      await window.GameAnalytics.reconcile(info && ['OBTAINED', 'NOT_REQUIRED'].includes(info.status));
+      await window.GameAnalytics.reconcile(info && info.status);
     } catch (e) { await window.GameAnalytics.reconcile(false); }
     document.dispatchEvent(new Event('ads:privacy'));
   }

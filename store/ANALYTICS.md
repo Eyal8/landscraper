@@ -21,17 +21,22 @@ Analytics consent is integrated with the existing Google UMP privacy message;
 there is no home-screen analytics offer or separate Allow analytics permission.
 Firebase initializes with collection off before UMP. After a successful current
 UMP update/form, the native AnalyticsConsent bridge reads `UMP_consentModeValues`
-from Android default shared preferences or iOS standard UserDefaults. Only a
-well-formed four-digit signal with fourth digit `1` permits Analytics storage.
-`0` (unknown), `2` (denied), `3` (not applicable), `4` (not configured), missing
-or malformed values, failed updates and unresolved REQUIRED forms stay off.
-This deliberately means no analytics in regions without an explicit UMP grant;
-US privacy messages and ATT are not substituted for that grant.
+from Android default shared preferences or iOS standard UserDefaults. A well-formed four-digit signal permits Analytics storage when its fourth digit
+is `1` (granted), or is `3` (not applicable) AND the successful current UMP result
+is NOT_REQUIRED. No additional consent request is shown for NOT_REQUIRED.
+`0` (unknown), `2` (denied), `4` (not configured), missing or malformed values,
+failed updates and unresolved REQUIRED forms stay off. Value `3` alone, or
+NOT_REQUIRED with a missing/unconfigured/denied analytics value, never enables.
+US ad-sale/sharing opt-outs and ATT remain distinct from service-provider
+gameplay measurement. Existing GA products/services sharing is off, applicable
+data processing terms are accepted and Analytics advertising consent is denied.
+Regional/minor requirements outside UMP coverage remain a pre-release check;
+NOT_REQUIRED is not a universal legal clearance.
 
 Settings → Privacy choices reopens UMP where required. Collection stops before
 opening the form and is reconciled afterwards. Settings → Gameplay analytics
 shows status and an installation ID for access/deletion requests, plus a device
-pause. Removing that pause never substitutes for a UMP grant. The old separate
+pause. Removing that pause never overrides the UMP result or an explicit denial. The old separate
 `ls_analytics_consent_v1` choice is ignored. Historical request IDs are retained;
 stopping collection does not delete previously uploaded records.
 
@@ -71,10 +76,14 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## Combined UMP migration validation — November 16, 2026
 
-- Seven consent-boundary tests passed, including stale grants, malformed/missing
-  signals, no regional consent, errors, device pause, revocation and queued events.
+- Nine consent-boundary tests passed, including explicit grants, NOT_REQUIRED
+  measurement without a prompt, stale grants, malformed/missing signals, errors,
+  device pause, revocation and queued events. NOT_REQUIRED never overrides denial
+  or an unconfigured purpose. The region-handling correction changes JS only;
+  native code remains at the already-validated 48d0506 revision.
 - Native startup/monetization boundary tests passed for Android and iOS, including
-  successful UMP initialization, unresolved forms, UMP failures and withdrawal.
+  successful UMP initialization, NOT_REQUIRED collection, unresolved forms, UMP
+  failures and withdrawal.
 - Android native sync/build/tests passed at commit 48d0506:
   https://github.com/Eyal8/landscraper/actions/runs/43864150725 .
 - Unsigned iOS Simulator sync/build/tests and packaged Firebase privacy checks
@@ -88,8 +97,8 @@ Eyal authorized the CI pivot and website merge on November 16.
 
 ## Before the first analytics release
 - On iOS and Android, verify DebugView: no collection before consent/after
-  withdrawal; explicit UMP grant enables collection while denial, missing values,
-  non-applicable regions and failed updates do not. Device pause persists.
+  withdrawal; a UMP grant or successful NOT_REQUIRED + analytics value 3 enables
+  collection, while denial, missing/unconfigured values and failed updates do not. Device pause persists.
   UMP/ATT never implicitly grant Analytics advertising purposes. Exercise a level start, loss,
   completion, abandonment and real test ad reward. Check actual installation ID.
 - Sandbox purchase/restore checks remain required before release; mocked purchase
@@ -135,3 +144,7 @@ References: [collection controls](https://firebase.google.com/docs/analytics/con
 [Apple disclosures](https://support.google.com/analytics/answer/10285841),
 [Play disclosures](https://support.google.com/analytics/answer/11582702),
 [UMP Consent Mode settings](https://support.google.com/admob/answer/16053245).
+
+Official regional handling references: [UMP signal values and basic mode](https://developers.google.com/funding-choices/fc-sdks),
+[non-EU defaults](https://developers.google.com/admob/ios/privacy/consent-mode),
+[Analytics US service-provider terms](https://support.google.com/analytics/answer/6004245?hl=en).
