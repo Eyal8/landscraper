@@ -188,3 +188,9 @@ this exact device observation on both platform startup paths. Also wrapped the
 UMP test-menu callback so the clicked button is not rendered as a message.
 Native SDK code and live privacy-page wording are unchanged. Studio standard
 v1.9 is proposed separately; no new website main merge is authorized.
+
+Replacement private artifacts: iOS 1.0 (197) signed and uploaded successfully to
+internal-only TestFlight in run 43965868560. Apple processing/phone installation
+must be checked separately; no on-device success is claimed yet. Matching
+Android QA build 43965875677 passed; downloaded APK was inspected for the new
+purpose-3 condition, fixed callback, analytics/UMP test flags and test ads.
