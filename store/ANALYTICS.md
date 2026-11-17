@@ -329,3 +329,18 @@ or entitlement-query errors no longer report cached ownership as a successful
 restore. Targeted Android/iOS purchase-boundary checks and an inline UI smoke
 check passed; all 10 Analytics tests passed. This UI correction is for the next
 build and is not present in installed build 197. No public release was made.
+
+### iPhone offline/recovery follow-up — November 17, 2026
+
+Owner confirmed on build 197: cold launch without connectivity loaded playable
+gameplay, with collection false / paused false. After restoring connectivity
+and cold-launching again, the owner reported the recovery check worked.
+This completes the owner offline/recovery smoke check on iPhone; exact online
+status/mode values were not separately supplied in the final confirmation.
+
+Remaining before public distribution: Android Play Billing Sandbox checks,
+confirmation of Landscraper's US-message assignments/opt-out flow, final
+Google Play Data Safety submission status, and final distribution builds
+containing the SKAdNetwork and restore-feedback changes. Existing targeted
+checks passed; installed TestFlight 197 does not contain those latest changes.
+No app main merge or public release has been performed.
