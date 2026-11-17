@@ -338,9 +338,34 @@ and cold-launching again, the owner reported the recovery check worked.
 This completes the owner offline/recovery smoke check on iPhone; exact online
 status/mode values were not separately supplied in the final confirmation.
 
-Remaining before public distribution: Android Play Billing Sandbox checks,
-confirmation of Landscraper's US-message assignments/opt-out flow, final
+Remaining before public distribution: confirmation of Landscraper's
+US-message assignments/opt-out flow, final
 Google Play Data Safety submission status, and final distribution builds
 containing the SKAdNetwork and restore-feedback changes. Existing targeted
 checks passed; installed TestFlight 197 does not contain those latest changes.
 No app main merge or public release has been performed.
+
+### Android Play Billing Sandbox — November 17, 2026
+
+On the existing isolated Landscraper_Analytics_API36_1 AVD, the owner signed
+into Google Play. The Remove Ads dialog showed "Test card, always approves"
+and explicitly stated the order would not be charged. No new APK was uploaded
+or installed, and no emulator/app data was cleared.
+
+- Cancellation returned USER_CANCELED, retained the price and allowed retry;
+  no custom purchase_completed was sent.
+- A successful test purchase showed Owned and sent exactly one custom
+  purchase_completed call with item_id landscraper_no_ads. The owner handled
+  Google's device purchase-authentication preference prompt personally.
+- Force-stop and cold launch re-queried entitlements and retained Owned.
+- Explicit Restore purchases called restorePurchases and then getPurchases,
+  returned without a native purchase error, and retained Owned. Neither
+  relaunch nor restore sent another custom purchase_completed call.
+
+Evidence: workspace artifacts/android-emulator-analytics/billing-results.json,
+billing-evidence.log and screenshots 56-65. This session verified the custom
+event at the native Firebase bridge; server DebugView purchase delivery was
+not separately checked. Firebase debug mode was disabled afterward and the
+game was stopped. The emulator's Google login and test ownership were retained.
+The installed APK predates the inline restore-feedback correction, which still
+needs the final build smoke check. No public app release or main merge occurred.
