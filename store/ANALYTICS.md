@@ -444,3 +444,14 @@ the hosted runner lacks the private key for its existing Apple Development
 certificate. No certificate was revoked. A second signing attempt uses an
 isolated local worktree and the owner's existing valid development identity.
 No public app release or app-main merge has been performed.
+
+Local follow-up: archive 200 succeeded with the existing Apple Development
+identity and automatic signing. Verified the archived bundle ID/version, Firebase
+project/default-off collection, 50 SKAdNetwork IDs, store UI flags and Game Center
+entitlement. The initial overly specific identity override was corrected to the
+Apple Development selector. Distribution export/upload then stopped with
+Failed to Use Accounts: App Store Connect access for C46AXBT6CZ is required.
+Owner reauthentication was requested; no IPA was uploaded. Archive and export
+options are retained under artifacts/production-privacy-menu-2026-11-17 so upload
+can resume without rebuilding. No certificate was revoked or private key exported.
+Website PR 30 still awaits explicit merge/publication approval.
