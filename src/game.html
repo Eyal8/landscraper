@@ -430,6 +430,8 @@ h2.shop { color: #ffd166; }
 .pcard.p-pack .ptx span { font-size: 9px; letter-spacing: 0; }
 .pcard.p-pack .pprice { font-size: 11px; padding: 7px 3px; border-radius: 10px; }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
+.linkbtn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.privacy-entry { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; }
 .rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
 .tbody.daily .sect { margin-top: 4px; }
 .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(300px, 100%); box-sizing: border-box; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
@@ -3267,7 +3269,7 @@ window.Board = (function () {
       '<button class="mode rush" type="button" data-act="rush"' + (rushOpen() ? '' : ' disabled') + '><b><svg class="rbolt" viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12.5h-5.6z"/></svg>Rush</b><span>' + (rushOpen() ? 'Best ' + prog.rush.toLocaleString('en-US') : 'Opens after world 1') + '</span></button>' +
       '</div>' +
       '<div class="row3 home-nav"><button class="btn alt nav-worlds" type="button" data-act="worlds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16"/></svg>Worlds</button><button class="btn alt nav-skins" type="button" data-act="skins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 14 9 5 9-5-2 6H5zM8 13V9h8v4M12 9V5M3 4v4M1 6h4M19 2v4M17 4h4"/></svg>Skins</button><button class="btn alt nav-trophies" type="button" data-act="trophies"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + IC.trophy + '"/></svg>Trophies</button></div>',
-      { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop, analytics: showAnalyticsSettings });
+      { play: () => startLevel(nx), daily: showDaily, rush: showRush, worlds: showWorlds, skins: showSkins, trophies: showTrophies, settings: showSettings, shop: showShop });
     showSkinUnlock();
   }
 
@@ -3478,11 +3480,10 @@ window.Board = (function () {
   function showSettings() {
     toMenu(); const sb = settingsButtons();
     panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
-      (window.GameAnalytics.available ? '<button class="btn alt" type="button" data-act="analytics">Gameplay analytics: ' + (window.GameAnalytics.enabled() ? 'On' : 'Off') + '</button>' : '') +
       (window.UMPTest ? '<button class="btn alt" type="button" data-act="umpTest">UMP test controls</button>' : '') +
-      '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
-      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), analytics: showAnalyticsSettings, devoff: () => { setDev(false); showSettings(); }, privacy: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
+      '<button class="linkbtn privacy-entry" type="button" data-act="privacy">Privacy</button>' +
+      (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
+      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), devoff: () => { setDev(false); showSettings(); }, privacy: showPrivacy }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
@@ -3506,18 +3507,16 @@ window.Board = (function () {
         } catch (error) { await showUMPTestSettings(String(error.message || error)); }
       } });
   }
-  async function showAnalyticsSettings() {
+  async function showPrivacy() {
+    toMenu();
     const analytics = window.GameAnalytics;
     await analytics.refreshRequestId();
     const id = analytics.requestId().replace(/[^a-zA-Z0-9_-]/g, '');
-    panel(BACK_X + '<h2>Gameplay analytics</h2><p>Google Analytics helps BENO74 improve Landscraper using level results, play time, ad interactions and completed purchases, plus an app installation ID and device information.</p>' +
-      '<p>Your choice in the Google privacy message controls optional gameplay analytics. You can keep playing without allowing it, and you can also pause collection on this device below.</p>' +
-      '<p>Status: ' + (analytics.enabled() ? 'On' : analytics.paused() ? 'Paused on this device' : 'Off') + '</p>' +
-      '<a class="linkbtn" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Read the privacy policy</a>' +
-      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Privacy choices</button>' : '') +
-      '<div class="btns"><button class="btn alt" type="button" data-act="toggle">' + (analytics.paused() ? 'Use privacy message choice' : 'Pause analytics on this device') + '</button><button class="btn alt" type="button" data-act="back">Back</button></div>' +
-      (id ? '<p>For an access or deletion request, email privacy@beno74.com with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p><p>Stopping collection does not delete previously collected reports.</p>' : ''),
-      { back: showSettings, privacy: async () => { await window.Ads.showPrivacyOptions(); showAnalyticsSettings(); }, toggle: async (b) => { b.disabled = true; await analytics.setPaused(!analytics.paused()); showAnalyticsSettings(); } });
+    panel(BACK_X + '<h2>Privacy</h2><div class="btns">' +
+      '<a class="linkbtn privacy-entry" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
+      (window.Ads.privacyRequired() ? '<button class="linkbtn privacy-entry" type="button" data-act="choices">Privacy choices</button>' : '') + '</div>' +
+      (id ? '<details><summary>Privacy requests</summary><p>For access or deletion requests, email <a href="mailto:privacy@beno74.com">privacy@beno74.com</a> with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p></details>' : ''),
+      { back: showSettings, choices: async () => { await window.Ads.showPrivacyOptions(); showPrivacy(); } });
   }
   function showShop(packsOpen = false) {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
