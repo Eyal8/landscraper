@@ -119,7 +119,9 @@ These settings affect all configured European messages, not just Landscraper.
 **Activation reported by owner, November 16, 2026:** both advertising and
 analytics Consent Mode toggles were checked and saved. Earlier attempts by the
 agent had encountered a loading settings page; that is no longer an owner task.
-The saved settings and effective SDK/message values still require device proof.
+The effective SDK/message values were subsequently verified on iPhone; see the
+November 17 device results below. Android emulator results are recorded below;
+Android physical-device verification remains pending.
 Existing EU/US/IDFA message definitions and ad units were not replaced. Verify
 analytics choices for returning users; an old ads-only consent is insufficient.
 
@@ -190,7 +192,116 @@ Native SDK code and live privacy-page wording are unchanged. Studio standard
 v1.9 is proposed separately; no new website main merge is authorized.
 
 Replacement private artifacts: iOS 1.0 (197) signed and uploaded successfully to
-internal-only TestFlight in run 43965868560. Apple processing/phone installation
-must be checked separately; no on-device success is claimed yet. Matching
+internal-only TestFlight in run 43965868560. Owner subsequently installed build
+197 and continued the consent/DebugView checks using a local Xcode development
+run of the corrected code. Matching
 Android QA build 43965875677 passed; downloaded APK was inspected for the new
 purpose-3 condition, fixed callback, analytics/UMP test flags and test ads.
+
+## iPhone manual consent/Analytics results — November 17, 2026
+
+Owner-reported device results and screenshots verified:
+- Actual-location update: NOT_REQUIRED, modes 3333, collection true, paused false.
+- Manual Pause: collection false, paused true.
+- Forced EEA on the registered UMP test device displayed the consent message.
+- Do not consent: OBTAINED, modes 2222, collection false, paused false.
+- Consent after test reset: OBTAINED, modes 1111, collection true, paused false.
+  Firebase DebugView received level_start, life_lost and level_end events.
+- A subsequent test reset and refusal followed by a complete played level
+  produced no new gameplay events in the observed DebugView interval. Earlier
+  accepted-session events remained visible.
+
+These observations complete this iPhone grant/refusal gameplay test, including
+server-side event visibility after grant. They do not establish every startup
+or withdrawal path: the refusal transition used the QA reset, not the ordinary
+privacy-options entry point. Android physical-device checks and sandbox
+purchase/restore checks remain pending. No public release was performed.
+
+## Android emulator attempt — November 17, 2026
+
+Installed the corrected private APK on the existing Pixel_8_Pro API 37.1 AVD.
+Native logs showed collection disabled at startup, a successful UMP update
+writing modes 3333 / gdprApplies 0, and subsequent Analytics uploads returning
+HTTP 204 for this Android Firebase app. This establishes transport in that
+resolved not-applicable case, not EEA consent or gameplay acceptance.
+
+The preview emulator rendered the gameplay area incorrectly and UI automation
+was unreliable. Pivoted to the existing Medium_Phone_API_36.1 Play Store AVD;
+installation failed because its data partition had only about 23 MB available.
+A single cache-only trim did not resolve the second install attempt. Stopped
+per the owner's two-attempt rule; no third installation retry or deletion of
+app data/accounts was performed. Both started emulators were shut down and the
+remaining emulator's Firebase debug property was disabled before shutdown.
+
+Recommended next step: a fresh, dedicated test AVD rather than changing or
+deleting existing emulator app data. EEA grant/refusal, Pause and gameplay event
+verification on Android are still pending. No store distribution occurred.
+
+## Dedicated Android emulator results — November 17, 2026
+
+Created Landscraper_Analytics_API36_1 using the already installed Google Play
+API 36.1 ARM64 system image, with a separate 8 GB data partition under workspace
+artifacts/android-avd. No existing AVD configuration, app data or accounts were
+modified. Installed the existing corrected private APK from run 43965875677;
+no new app build or store distribution was needed.
+
+Verified with the real UMP SDK, Firebase native preferences and Google Analytics
+DebugView (device sdk_gphone64_arm64):
+- Actual location: NOT_REQUIRED / 3333 / collection true / paused false.
+- Forced EEA before choosing: UMP values 0000 and native measurement disabled.
+- Consent: OBTAINED / 1111 / collection true / paused false. A subsequent
+  level_start at 01:27:02 reached DebugView, as did run_abandoned at 01:31:20.
+- Pause: native measurement disabled, and after force-stop/relaunch the UI
+  retained 1111 / collection false / paused true. Removing Pause restored On
+  according to the existing UMP grant.
+- Withdrawal through the ordinary Gameplay analytics → Privacy choices entry
+  point, without QA reset: Do not consent produced OBTAINED / 2222 / collection
+  false / paused false. Native measurement was disabled.
+- A new level attempt and force-stop/relaunch after refusal retained the
+  disabled state. No gameplay logEvent bridge calls occurred after the refusal
+  at 01:33:47, and DebugView observed through 01:35 still showed 01:31:20 as the
+  last gameplay event. This negative result follows positive event verification
+  on the same emulator.
+
+Evidence: workspace artifacts/android-emulator-analytics contains the consent,
+Pause and relaunch screenshots, targeted logs and results.json. The reusable
+start-emulator.command launches this isolated AVD. At completion the Firebase
+debug property was disabled and this emulator was shut down; its saved QA
+region is EEA with consent denied. No Firebase consent/storage preferences were
+edited to simulate a result. The emulator test ID was derived from the installed
+UMP SDK's emulator hash algorithm; emulators are also SDK test devices by default.
+
+The Android consent/collection smoke test is complete on this emulator. This
+does not claim physical-device coverage, a full completed-level gameplay test,
+US-specific messaging, offline startup or purchase/restore sandbox validation.
+No public release or app main merge was performed.
+
+## Production preparation — November 17, 2026
+
+- Updated iOS Info.plist from one to all 50 SKAdNetwork identifiers in Google's
+  current iOS AdMob quick-start example (49 added). Validated plist syntax,
+  uniqueness and exact agreement with the fetched official list. This configures
+  ad attribution; it does not change the IDFA explainer or ATT permission dialog.
+- Built store-mode web assets and ran the Android/iOS native-boundary suite
+  against them: Analytics enabled, developer mode disabled, UMP QA module absent.
+  Restored the existing local private-test HTML afterward. No real-ad build was
+  installed or run. Ten Analytics tests passed.
+- Android offline cold start after previously enabled collection: enabled
+  airplane mode on the isolated AVD, force-stopped and launched the game.
+  Bundled gameplay/fonts loaded, UMP returned a network error, and diagnostics
+  showed UNKNOWN / cached 3333 / collection false / paused false. Native
+  measurement remained disabled after the failed update; no custom gameplay
+  logEvent call appeared for that offline launch. This verifies the observed
+  startup/error path, not an exhaustive audit of every native automatic event.
+- US regulated-state debug update on the installed Android private build
+  returned NOT_REQUIRED / 3333 / collection true, with privacy options
+  NOT_REQUIRED and no GPP fields. AdMob overview showed two active US messages,
+  but the message-details iframe did not load. App assignments and the actual
+  US opt-out flow therefore still need confirmation; no US message was edited.
+  Consent Mode's European settings do not themselves wire US advertising
+  opt-out choices to the gameplay Analytics switch.
+
+Evidence is under workspace artifacts/android-emulator-analytics, including
+skadnetwork-google-2026-11-17.txt, store-build-check.txt, us-region.log and
+45-offline-diagnostics.png. iPhone offline and both stores' purchase/restore
+sandbox checks still need the owner session described in the device guide.
