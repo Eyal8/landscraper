@@ -282,6 +282,11 @@ No public release or app main merge was performed.
   current iOS AdMob quick-start example (49 added). Validated plist syntax,
   uniqueness and exact agreement with the fetched official list. This configures
   ad attribution; it does not change the IDFA explainer or ATT permission dialog.
+- CI run 44074021859 passed unsigned iOS Simulator and iPhone device builds.
+  The downloaded iPhone package contains all 50 unique identifiers, identical
+  to the validated source list, and preserves disabled Firebase collection,
+  Analytics storage, advertising-purpose and IDFV defaults. No signed archive
+  or new TestFlight upload was created for this configuration-only change.
 - Built store-mode web assets and ran the Android/iOS native-boundary suite
   against them: Analytics enabled, developer mode disabled, UMP QA module absent.
   Restored the existing local private-test HTML afterward. No real-ad build was
@@ -293,6 +298,9 @@ No public release or app main merge was performed.
   measurement remained disabled after the failed update; no custom gameplay
   logEvent call appeared for that offline launch. This verifies the observed
   startup/error path, not an exhaustive audit of every native automatic event.
+  Restoring connectivity and cold-launching again successfully updated UMP
+  and re-enabled permitted collection. Airplane mode and the Firebase debug
+  property were disabled afterward, and the isolated emulator was shut down.
 - US regulated-state debug update on the installed Android private build
   returned NOT_REQUIRED / 3333 / collection true, with privacy options
   NOT_REQUIRED and no GPP fields. AdMob overview showed two active US messages,
