@@ -455,3 +455,30 @@ Owner reauthentication was requested; no IPA was uploaded. Archive and export
 options are retained under artifacts/production-privacy-menu-2026-11-17 so upload
 can resume without rebuilding. No certificate was revoked or private key exported.
 Website PR 30 still awaits explicit merge/publication approval.
+
+
+### Cache cleanup and successful iOS 200 upload — November 17, 2026
+
+Owner authorized removal of reproducible build caches, preserving code, archives
+and emulator data. Removed only whitelisted Build, Index.noindex, ModuleCache,
+SDKStatCaches, CompilationCache and SymbolCache directories, leaving SourcePackages
+and all archives intact. Reclaimed about 9.7 GB; free space increased to about
+16.9 GB. Exact paths and measurements: workspace artifacts/production-privacy-menu-2026-11-17/cache-cleanup.json.
+
+Xcode stayed open at its Welcome screen. Window → Organizer listed Landscraper
+1.0 (200), bundle com.beno74.landscraper. Distribute App → App Store Connect
+completed upload using recommended store settings. Organizer explicitly shows
+Uploaded to Apple / build 200. No new review submission or public release was made.
+
+Upload warnings concern missing SDK dSYMs for FirebaseAnalytics, GoogleAppMeasurement,
+GoogleMobileAds and UserMessagingPlatform; they did not block upload. Normal
+App Store IPA saved locally as Landscraper-200-AppStore.ipa. Archive bundle/version,
+Firebase project/defaults, SKAdNetwork and privacy UI checks passed. The development
+archive's Game Center entitlement was verified earlier; local codesign inspection
+could not decode the exported distribution entitlements blob, so that final local
+check is not claimed passed. Apple processing/TestFlight availability is not yet
+verified. No more local entitlement-inspection retries were made.
+
+Proof: workspace artifacts/production-privacy-menu-2026-11-17/ios-200-upload-completed.jpg
+and status.json. Android 196 Play upload and website PR 30 approval remain separate
+pending items, unchanged by this iOS upload.
