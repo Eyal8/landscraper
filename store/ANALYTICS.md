@@ -313,3 +313,19 @@ Evidence is under workspace artifacts/android-emulator-analytics, including
 skadnetwork-google-2026-11-17.txt, store-build-check.txt, us-region.log and
 45-offline-diagnostics.png. iPhone offline and both stores' purchase/restore
 sandbox checks still need the owner session described in the device guide.
+
+### iPhone Sandbox follow-up — November 17, 2026
+
+Owner tested internal TestFlight build 197: cancelling retained the price and
+allowed a retry; a successful Remove Ads purchase changed the card to Owned
+and DebugView showed one purchase_completed event. Ownership persisted after
+relaunch, and Restore purchases completed without an error. Duplicate-event
+absence after restore has not yet been confirmed by the owner.
+
+The owner observed missing restore feedback and a shop flicker. Restore now
+shows inline progress and persistent restored/empty/error feedback, updates
+ownership cards in place, and blocks repeat taps while pending. Native restore
+or entitlement-query errors no longer report cached ownership as a successful
+restore. Targeted Android/iOS purchase-boundary checks and an inline UI smoke
+check passed; all 10 Analytics tests passed. This UI correction is for the next
+build and is not present in installed build 197. No public release was made.

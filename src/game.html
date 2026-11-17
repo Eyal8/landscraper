@@ -384,6 +384,7 @@ body {
 .shopbag svg { width: 26px; height: 26px; }
 h2.shop { color: #ffd166; }
 .shop-card > p { font-size: 12px; }
+.shop-card .restore-status { min-height: 2.8em; margin: 6px 0 0; }
 .pcards { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .shop-packs { width: 100%; }
 .shop-packs summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.07); font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
@@ -851,7 +852,7 @@ window.Store = (function () {
 
   // Ask the store what this account owns. Only a successful answer changes the cached state.
   async function refresh() {
-    if (!NP) return;
+    if (!NP) return false;
     try {
       const r = await NP.getPurchases({ productType: 'inapp', onlyCurrentEntitlements: true });
       const list = (r && r.purchases) || [];
@@ -866,7 +867,8 @@ window.Store = (function () {
         }
       }
       for (const k in PRODUCTS) set(k, !!found[k]);
-    } catch (e) { /* offline or store unavailable: keep the cached answers */ }
+      return true;
+    } catch (e) { return false; /* offline or store unavailable: keep the cached answers */ }
   }
 
   async function loadPrices() {
@@ -904,9 +906,13 @@ window.Store = (function () {
     }
   }
 
-  // Returns the list of owned product keys after restoring.
+  // Only a successful store response can report restored or absent purchases.
   async function restore() {
-    if (NP) { try { await NP.restorePurchases(); } catch (e) {} await refresh(); }
+    if (native && !NP) throw new Error('Store unavailable');
+    if (NP) {
+      await NP.restorePurchases();
+      if (!await refresh()) throw new Error('Could not verify purchases');
+    }
     return Object.keys(owns).filter((k) => owns[k]);
   }
 
@@ -3517,12 +3523,12 @@ window.Board = (function () {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
     const nSk = SKINS.filter((k) => k.pack).length;
     const thumbs = ['sub', 'ufo', 'swan', 'unicorn'].map((k) => th[k] ? '<img alt="" src="' + th[k] + '">' : '').join('');
-    const card = (act, cls, icon, title, sub, price, owned, extra) => '<button class="pcard ' + cls + (owned ? ' owned' : '') + '" type="button"' + (owned ? ' disabled' : ' data-act="' + act + '"') + '>' + (extra || '') +
+    const card = (act, cls, icon, title, sub, price, owned, extra) => '<button class="pcard ' + cls + (owned ? ' owned' : '') + '" type="button" data-act="' + act + '"' + (owned ? ' disabled' : '') + '>' + (extra || '') +
       '<div class="pic">' + icon + '</div><div class="ptx"><b>' + title + '</b><span>' + sub + '</span></div><div class="pprice">' + (owned ? 'Owned' : price) + '</div></button>';
     const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
     const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M8.8 6.6v10.8l9.6-5.4z" fill="currentColor" stroke="none"/><path d="M3 22 22 3" stroke="#ff4d6d" stroke-width="2.3"/></svg>';
     panel(BACK_X + '<div class="shop-heading"><div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2></div>' +
-      '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device') + '</p><div class="pcards">' +
+      '<p data-shop-intro>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device') + '</p><div class="pcards">' +
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
@@ -3531,10 +3537,35 @@ window.Board = (function () {
         const icons = skins.map((sk) => th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '').join('');
         return card('buy_' + pack, 'p-pack p-' + pack, '<div class="thumbs">' + icons + '</div>', PACKS[pack], skins.length + ' skins', st.price(pack), st.pack(pack));
       }).join('') +
-      '</div></details><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
+      '</div></details><button class="linkbtn" type="button" data-act="restore">Restore purchases</button><p class="restore-status" role="status" aria-live="polite" aria-atomic="true"></p>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
         ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, () => showShop(true))])),
-        restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
+        restore: async (b) => {
+          if (b.disabled) return;
+          const shop = $('card'), status = shop.querySelector('.restore-status');
+          b.disabled = true; b.textContent = 'Connecting…'; b.setAttribute('aria-busy', 'true');
+          status.textContent = 'Restoring purchases…';
+          try {
+            const got = await st.restore();
+            if (!b.isConnected) return; // Do not reopen the shop if the player left it.
+            const products = {
+              buy: [st.noAds(), st.price()], buySkins: [st.allSkins(), st.price('allSkins')],
+              buyAll: [st.noAds() && st.allSkins(), st.price('bundle')],
+              ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, [st.pack(pack), st.price(pack)]]))
+            };
+            shop.querySelectorAll('.pcard').forEach((card) => {
+              const [owned, price] = products[card.dataset.act];
+              card.disabled = owned; card.classList.toggle('owned', owned);
+              card.querySelector('.pprice').textContent = owned ? 'Owned' : price;
+            });
+            shop.querySelector('[data-shop-intro]').textContent = st.noAds() && st.allSkins() ? 'You own everything. Thank you!' : 'Pay once, yours on every device';
+            status.textContent = got.length ? 'Purchases restored.' : 'No purchases to restore.';
+          } catch (_) {
+            if (b.isConnected) status.textContent = 'Couldn’t restore purchases. Please try again.';
+          } finally {
+            b.disabled = false; b.textContent = 'Restore purchases'; b.removeAttribute('aria-busy');
+          }
+        } });
     $('card').classList.add('shop-card');
     const packs = $('card').querySelector('.shop-packs'), summary = packs.querySelector('summary');
     let expanded = packs.open, animation = null;

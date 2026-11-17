@@ -42,7 +42,10 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
         if (state.purchaseError) throw new Error(state.purchaseError);
         return state.purchase;
       },
-      async restorePurchases() { record('NativePurchases', 'restorePurchases'); },
+      async restorePurchases() {
+        record('NativePurchases', 'restorePurchases');
+        if (state.restoreError) throw new Error(state.restoreError);
+      },
       async acknowledgePurchase(options) { record('NativePurchases', 'acknowledgePurchase', options); },
       addListener() { return Promise.resolve({ remove() {} }); }
     },
@@ -165,9 +168,15 @@ async function testNative(platform) {
   state.offline = true;
   await c.Store.refresh();
   assert.equal(c.Store.owns('pool'), true, 'offline refresh preserves verified ownership');
+  await assert.rejects(c.Store.restore(), /verify purchases/, 'failed entitlement lookup must not report cached purchases as restored');
+  assert.equal(c.Store.owns('pool'), true, 'failed restore preserves verified ownership');
   state.offline = false;
+  state.restoreError = 'store unavailable';
+  await assert.rejects(c.Store.restore(), /store unavailable/, 'native restore failure must reach the UI');
+  assert.equal(c.Store.owns('pool'), true, 'native restore failure preserves verified ownership');
+  state.restoreError = null;
   state.purchases[0].revocationDate = '2026-11-15';
-  await c.Store.refresh();
+  assert.equal((await c.Store.restore()).length, 0, 'successful restore without valid purchases reports an empty result');
   assert.equal(c.Store.owns('pool'), false, 'revoked purchase must not stay unlocked');
   await settle();
   if (c.GameAnalytics.available) assert.equal(analyticsEvents('purchase_completed').length, 1, 'cancelled, failed, pending and restored purchases must not count as new purchases');
@@ -221,6 +230,7 @@ async function testNative(platform) {
   for (const platform of ['android', 'ios']) {
     const { context: c, elements, advance } = await boot(platform, true);
     assert.equal(await c.Store.buy('space'), 'error');
+    await assert.rejects(c.Store.restore(), /Store unavailable/);
     assert.equal(c.Store.owns('space'), false);
     assert.equal(await c.Ads.showRewarded('continue'), false);
     advance();
