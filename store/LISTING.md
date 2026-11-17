@@ -1,7 +1,7 @@
 # Landscraper: store listing and submission kit
 
 Developer: BENO74 Studios
-- Privacy policy: https://beno74.com/privacy (the Landscraper page)
+- Privacy policy: https://beno74.com/privacy/landscraper
 - Support: https://beno74.com
 
 ## Graphics (all in `store/`)
@@ -89,19 +89,29 @@ Review screenshots:
 - Each pack uses its own `iap/pack-*.png`.
 
 ### App Privacy (App Store Connect › App Privacy)
-"Do you or your third-party partners collect data?" **Yes.** The collection comes from Google AdMob (with UMP consent) and, on Apple's side, Game Center.
+
+**App Store Connect verified and updated November 16, 2026.** Purchase History was published for Analytics, linked to the installation, not used for tracking. Existing Analytics declarations for device IDs, interactions, advertising data and coarse location were already present and were preserved. No app version was submitted or released by this update.
+
+"Do you or your third-party partners collect data?" **Yes** (Google AdMob and optional Google Analytics for Firebase).
 
 | Data type | Collected for | Linked to user | Used for tracking |
 |---|---|---|---|
-| Identifiers › Device ID | Third-Party Advertising, Analytics | No | Yes |
-| Usage Data › Advertising Data | Third-Party Advertising, Analytics | No | Yes |
-| Usage Data › Product Interaction | Analytics | No | No |
-| Location › Coarse Location | Third-Party Advertising | No | Yes |
-| Diagnostics › Crash Data, Performance Data | App Functionality, Analytics | No | No |
-| Purchases › Purchase History | App Functionality | No | No |
+| Identifiers › Device ID | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | Yes (existing AdMob disclosure) |
+| Usage Data › Advertising Data | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Usage Data › Product Interaction | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Location › Coarse Location | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | Yes | No |
+| Diagnostics › Crash Data | Analytics | No | No |
+| Diagnostics › Performance Data, Other Diagnostic Data | Analytics, Developer’s Advertising or Marketing, Third-Party Advertising | No | No |
+| Purchases › Purchase History | Analytics | Yes | No |
 
-- "Used for tracking = Yes" fits because the app shows the App Tracking Transparency prompt (NSUserTrackingUsageDescription).
-- Game Center data is collected by Apple, not by you, so it isn't declared.
+- Apply the combined purposes/linkage/tracking of all SDKs for each type in the form. "No name/account" does not make an installation ID anonymous. Conservatively disclose Firebase events as linked to a device through the app-instance ID.
+- The ATT prompt alone does not determine whether data is used for tracking. Keep the existing AdMob tracking disclosures based on its actual behavior; Firebase does not add cross-app tracking in this configuration.
+- Firebase Analytics: collection off until a successful UMP update supplies an analytics grant, or supplies analytics value 3 (not applicable) with a resolved OBTAINED/NOT_REQUIRED status; missing, denied, not configured or unresolved signals stay off; advertising consent denied, IDFA/AD_ID collection disabled for analytics, iOS IDFV disabled, no account User-ID or Google Signals. App lifecycle, purchase and general-location collection must still be disclosed. AdMob can independently use advertising IDs according to its consent.
+- Privacy policy URL is https://beno74.com/privacy/landscraper . The optional Apple User Privacy Choices URL remains blank: automatic approval review rejected using an unverified policy anchor as a choice mechanism. No workaround was used for that optional field. In-app controls: Settings → Gameplay analytics, and Privacy choices when UMP requires it. The Gameplay analytics control is a device pause/status screen, not a separate consent request. Account-wide AdMob Consent Mode activation and revised website policy remain pending verification/merge; existing store data categories and purposes are unchanged by this consent UI migration.
+- Game Center information managed by Apple is separate from Firebase; do not add account credentials or leaderboard names to analytics.
+- Check the final archive's SDK privacy manifests and privacy report for all linked Firebase dependencies. No screen recording, Crashlytics, cloud saves, Auth or Firestore is added.
+
+Official references: [Apple privacy details](https://developer.apple.com/app-store/app-privacy-details/), [Google Analytics Apple disclosures](https://support.google.com/analytics/answer/10285841), [Firebase dependency disclosures](https://firebase.google.com/docs/ios/app-store-data-collection).
 
 ### Age rating
 - Cartoon or fantasy violence: **None**. Monsters are trapped, nothing is shown being hurt.
@@ -123,18 +133,27 @@ Review screenshots:
 **Category:** Arcade. **Tags:** Arcade, Casual, Puzzle, Offline.
 
 ### Data safety
+
+**Play Console edited November 16, 2026; final submission blocked.** Added optional, non-ephemeral Purchase history collection for Analytics and the data-deletion request URL. Existing AdMob collection/sharing and Analytics purposes for location, device IDs and app interactions were verified and preserved. Saved as one Data safety change; quick checks passed. Two confirmed send attempts did not persist, and a reload still shows "Changes not yet submitted for review" without an error. Stopped per the two-attempt policy. Owner action: Publishing overview → Submit 1 change for review. The only pending change is Data safety, with no app binary included.
+
 | Question | Answer |
 |---|---|
-| Collects or shares data | Yes (AdMob) |
+| Collects or shares data | Yes: existing AdMob plus optional Firebase Analytics collection |
 | Encrypted in transit | Yes |
-| Users can request deletion | No account; data isn't linked to a user |
+| Users can request deletion | Yes: https://beno74.com/privacy/landscraper#analytics ; email privacy@beno74.com with the Analytics ID shown in app settings |
+| Account creation / account deletion | No BENO74 account creation; the account-deletion requirement is separate from analytics deletion requests |
 
-Declare:
-- Device or other IDs (Advertising ID): collected and shared, for Advertising and Analytics.
-- App info and performance (crash logs, diagnostics): collected, for Analytics.
-- App activity (app interactions): collected, for Analytics and Advertising.
-- Approximate location: collected and shared, for Advertising.
-- All of it is processed ephemerally where AdMob says so. None of it is required for the app to work, except as part of ads.
+Declare the union of all integrations:
+- **Device or other IDs:** existing AdMob advertising/device identifiers plus Firebase app-instance ID, for Analytics. Gameplay analytics is optional and installation-linked.
+- **App activity › App interactions:** sessions, level starts/results, lives lost, run abandonment and ad interactions, for Analytics; retain Advertising purposes for AdMob where applicable.
+- **Financial info › Purchase history:** product IDs, names and purchase values/events measured by Analytics; Analytics purpose, optional analytics collection. No card/bank details collected by BENO74.
+- **Location › Approximate location:** AdMob's existing collection plus Analytics general location from masked IP, adding Analytics as a purpose. No GPS permission is introduced.
+- **App info and performance:** retain and verify the existing AdMob diagnostic disclosures; no Crashlytics or new crash-reporting integration is included.
+- Firebase analytics records are **not processed ephemerally**. Do not mark stored events ephemeral merely because an IP address is masked or not stored.
+- New purchase-history collection is not marked shared under the service-provider exception. Verified the Beno Studio Analytics account has Google products & services sharing OFF and existing data processing terms accepted; modeling uses aggregated/de-identified data, with technical support enabled. Existing AdMob sharing declarations remain unchanged.
+- Privacy policy: https://beno74.com/privacy/landscraper . The policy explains optional collection, automatic SDK data, consent withdrawal, retention and deletion requests.
+
+Official references: [Play Data safety requirements](https://support.google.com/googleplay/android-developer/answer/10787469), [Google Analytics Play disclosures](https://support.google.com/analytics/answer/11582702).
 
 ### Content rating (IARC questionnaire)
 Category: Game. No violence beyond cartoon creatures being trapped (answer "No" to violence), no sexual content, no gambling, no user interaction. The game has ads and in-app purchases. Expected result: Everyone / PEGI 3.

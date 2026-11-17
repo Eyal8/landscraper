@@ -6,6 +6,8 @@
   "scripts": {
     "build": "node scripts/build-web.js",
     "test:native": "node scripts/test-native-startup.js",
+    "test:ump-build": "node scripts/test-ump-build.js",
+    "test:analytics": "node --test scripts/test-analytics.js",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",
     "ios": "npm run sync && npx cap open ios"
@@ -16,6 +18,7 @@
   "dependencies": {
     "@capacitor-community/admob": "^8.2.1",
     "@capacitor-community/in-app-review": "8.0.0",
+    "@capacitor-firebase/analytics": "8.6.0",
     "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.2",
     "@capacitor/cli": "^8.5.3",
@@ -25,6 +28,7 @@
     "@capgo/native-purchases": "8.8.1",
     "@fontsource/dm-mono": "^5.3.0",
     "@fontsource/unbounded": "^5.3.0",
+    "firebase": "12.19.0",
     "three": "^0.128.0"
   },
   "private": true

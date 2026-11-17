@@ -17,12 +17,12 @@ for (const [, attributes, code] of scripts) {
 
 const settle = () => new Promise(setImmediate);
 
-async function boot(platform, missingRuntime = false) {
+async function boot(platform, missingRuntime = false, consentOptions = {}) {
   const calls = [];
   const listeners = new Map();
   const storage = new Map([['ls_pack_sea', '1']]); // Old simulated ownership must be reconciled.
   const elements = { adSim: { hidden: true }, adCount: {}, adClose: { focus() {} } };
-  const state = { purchases: [], purchase: null, purchaseError: null, offline: false, reward: false, adFailure: false };
+  const state = { purchases: [], purchase: null, purchaseError: null, offline: false, reward: false, adFailure: false, modes: '2221', consentStatus: 'OBTAINED', consentFailure: false, ...consentOptions };
   let now = 100000;
   const record = (plugin, method, options) => calls.push({ plugin, method, options });
   const emit = (name) => { for (const callback of listeners.get(name) || []) callback({}); };
@@ -42,13 +42,28 @@ async function boot(platform, missingRuntime = false) {
         if (state.purchaseError) throw new Error(state.purchaseError);
         return state.purchase;
       },
-      async restorePurchases() { record('NativePurchases', 'restorePurchases'); },
+      async restorePurchases() {
+        record('NativePurchases', 'restorePurchases');
+        if (state.restoreError) throw new Error(state.restoreError);
+      },
       async acknowledgePurchase(options) { record('NativePurchases', 'acknowledgePurchase', options); },
       addListener() { return Promise.resolve({ remove() {} }); }
     },
     AdMob: {
       async initialize(options) { record('AdMob', 'initialize', options); },
-      async requestConsentInfo() { return { status: 'NOT_REQUIRED' }; },
+      async resetConsentInfo() {
+        assert.equal(context.GameAnalytics.enabled(), false, 'test reset must stop collection first');
+        record('AdMob', 'resetConsentInfo');
+      },
+      async requestConsentInfo(options) {
+        record('AdMob', 'requestConsentInfo', options);
+        if (state.consentFailure) throw Error('UMP unavailable');
+        return { status: state.consentStatus, privacyOptionsRequirementStatus: 'REQUIRED' };
+      },
+      async showPrivacyOptionsForm() {
+        assert.equal(context.GameAnalytics.enabled(), false, 'collection stops before opening privacy choices');
+        state.modes = '2222';
+      },
       async trackingAuthorizationStatus() { return { status: 'authorized' }; },
       async prepareRewardVideoAd(options) {
         record('AdMob', 'prepareRewardVideoAd', options);
@@ -67,6 +82,13 @@ async function boot(platform, missingRuntime = false) {
         listeners.get(name).add(callback);
         return Promise.resolve({ remove() { listeners.get(name).delete(callback); } });
       }
+    },
+    AnalyticsConsent: { async getConsentModes() { return { values: state.modes }; } },
+    FirebaseAnalytics: {
+      async setEnabled(options) { record('FirebaseAnalytics', 'setEnabled', options); },
+      async setConsent(options) { record('FirebaseAnalytics', 'setConsent', options); },
+      async getAppInstanceId() { return { appInstanceId: 'test-installation' }; },
+      async logEvent(options) { record('FirebaseAnalytics', 'logEvent', options); }
     },
     Games: {}
   };
@@ -93,7 +115,7 @@ async function boot(platform, missingRuntime = false) {
           return plugins[name];
         };
       }
-    } else if (code.includes('window.Store =') || code.includes('window.Ads =')) {
+    } else if (code.includes('window.UMPTest =') || code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
       vm.runInContext(code, context);
     }
   }
@@ -107,6 +129,11 @@ async function testNative(platform) {
     assert.ok(calls.some((x) => x.plugin === name && x.method === 'register'), `${platform}: ${name} must register at startup`);
   }
   assert.equal(c.Store.isNative, true);
+  if (c.GameAnalytics.available) {
+    assert.equal(c.GameAnalytics.enabled(), true, 'startup consumes the current UMP grant');
+    assert.ok(calls.findIndex(x => x.plugin === 'FirebaseAnalytics' && x.method === 'setEnabled') < calls.findIndex(x => x.plugin === 'AdMob' && x.method === 'initialize'), 'Firebase initializes before UMP');
+  }
+  const analyticsEvents = (name) => calls.filter(x => x.method === 'logEvent' && x.options.name === name);
   assert.equal(c.Store.owns('sea'), false, 'unpaid cached ownership must be cleared after store refresh');
   assert.equal(c.Store.price('sea'), '₪10.90', 'use the native store price');
   assert.equal(calls.find((x) => x.method === 'initialize').options.initializeForTesting, testing);
@@ -119,6 +146,8 @@ async function testNative(platform) {
   assert.equal(await c.Store.buy('sea'), 'bought');
   assert.ok(calls.some((x) => x.method === 'purchaseProduct' && x.options.autoAcknowledgePurchases));
   assert.equal(c.Store.owns('sea'), true);
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('purchase_completed').length, 1);
   state.purchaseError = 'user cancelled';
   assert.equal(await c.Store.buy('space'), 'cancelled');
   assert.equal(c.Store.owns('space'), false);
@@ -139,10 +168,18 @@ async function testNative(platform) {
   state.offline = true;
   await c.Store.refresh();
   assert.equal(c.Store.owns('pool'), true, 'offline refresh preserves verified ownership');
+  await assert.rejects(c.Store.restore(), /verify purchases/, 'failed entitlement lookup must not report cached purchases as restored');
+  assert.equal(c.Store.owns('pool'), true, 'failed restore preserves verified ownership');
   state.offline = false;
+  state.restoreError = 'store unavailable';
+  await assert.rejects(c.Store.restore(), /store unavailable/, 'native restore failure must reach the UI');
+  assert.equal(c.Store.owns('pool'), true, 'native restore failure preserves verified ownership');
+  state.restoreError = null;
   state.purchases[0].revocationDate = '2026-11-15';
-  await c.Store.refresh();
+  assert.equal((await c.Store.restore()).length, 0, 'successful restore without valid purchases reports an empty result');
   assert.equal(c.Store.owns('pool'), false, 'revoked purchase must not stay unlocked');
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('purchase_completed').length, 1, 'cancelled, failed, pending and restored purchases must not count as new purchases');
 
   assert.equal(await c.Ads.showRewarded('continue'), false, 'closing an ad without reward gives no reward');
   state.reward = true;
@@ -153,6 +190,8 @@ async function testNative(platform) {
   state.adFailure = true;
   assert.equal(await c.Ads.showRewarded('rushTime'), false, 'no fill gives no reward');
   assert.equal(elements.adSim.hidden, true, 'native ads must never open the browser simulator');
+  await settle();
+  if (c.GameAnalytics.available) assert.equal(analyticsEvents('rewarded_ad_completed').length, 1, 'only earned real ad rewards count as completed videos');
   console.log(`PASS ${platform}: startup, prices, purchases, cancellation/failure, restore/revocation, rewarded/interstitial ads`);
 }
 
@@ -160,8 +199,38 @@ async function testNative(platform) {
   await testNative('android');
   await testNative('ios');
   for (const platform of ['android', 'ios']) {
+    for (const consentOptions of [{ modes: '2222' }, { modes: '3334', consentStatus: 'NOT_REQUIRED' }, { consentFailure: true }, { consentStatus: 'REQUIRED' }]) {
+      const { context: c } = await boot(platform, false, consentOptions);
+      assert.equal(c.GameAnalytics.enabled(), false, 'denial, no regional signal or failed/incomplete UMP keeps collection off');
+    }
+    for (const consentStatus of ['OBTAINED', 'NOT_REQUIRED']) {
+      const { context: noPrompt, calls: noPromptCalls } = await boot(platform, false, { modes: '3333', consentStatus });
+      if (noPrompt.GameAnalytics.available) assert.equal(noPrompt.GameAnalytics.enabled(), true, 'purpose-specific not-applicable signal permits measurement');
+      assert.ok(!noPromptCalls.some(x => x.method === 'showConsentForm'), 'do not add a consent prompt');
+    }
+    const { context: c, calls: privacyCalls } = await boot(platform);
+    await c.Ads.showPrivacyOptions();
+    assert.equal(c.GameAnalytics.enabled(), false, 'revocation in UMP is reflected in Analytics');
+    if (c.UMPTest) {
+      assert.throws(() => c.UMPTest.save(1, ''), /test device ID/);
+      const device = 'A'.repeat(32);
+      c.UMPTest.save(1, device);
+      await c.Ads.resetConsentForTest();
+      const options = (await boot(platform)).calls; // startup remains independent of another device's config
+      assert.ok(options.filter(x => x.method === 'requestConsentInfo').every(x => !x.options.debugGeography));
+      assert.equal(c.UMPTest.options().debugGeography, 1);
+      assert.ok(privacyCalls.some(x => x.method === 'resetConsentInfo'));
+      const request = privacyCalls.filter(x => x.method === 'requestConsentInfo').at(-1);
+      assert.equal(request.options.debugGeography, 1);
+      assert.equal(request.options.testDeviceIdentifiers[0], device);
+      assert.equal(c.GameAnalytics.enabled(), false, 'a test reset does not manufacture analytics consent');
+    }
+  }
+  console.log('PASS Android/iOS: UMP startup, not-required measurement, missing signals, errors, incomplete consent and withdrawal');
+  for (const platform of ['android', 'ios']) {
     const { context: c, elements, advance } = await boot(platform, true);
     assert.equal(await c.Store.buy('space'), 'error');
+    await assert.rejects(c.Store.restore(), /Store unavailable/);
     assert.equal(c.Store.owns('space'), false);
     assert.equal(await c.Ads.showRewarded('continue'), false);
     advance();

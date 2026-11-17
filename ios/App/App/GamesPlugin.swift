@@ -6,6 +6,7 @@ import UIKit
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(GamesPlugin())
+        bridge?.registerPluginInstance(AnalyticsConsentPlugin())
         // A screenshot does not pause the app by itself: tell the game, so it pauses
         NotificationCenter.default.addObserver(forName: UIApplication.userDidTakeScreenshotNotification, object: nil, queue: .main) { [weak self] _ in
             self?.bridge?.webView?.evaluateJavaScript("window.__shot && window.__shot()", completionHandler: nil)
@@ -63,5 +64,19 @@ public class GamesPlugin: CAPPlugin, CAPBridgedPlugin, GKGameCenterControllerDel
 
     public func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true)
+    }
+}
+
+// UMP uses the app's standard preferences on iOS. Missing signals remain empty.
+@objc(AnalyticsConsentPlugin)
+public class AnalyticsConsentPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AnalyticsConsentPlugin"
+    public let jsName = "AnalyticsConsent"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "getConsentModes", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func getConsentModes(_ call: CAPPluginCall) {
+        call.resolve(["values": UserDefaults.standard.string(forKey: "UMP_consentModeValues") ?? ""])
     }
 }

@@ -384,6 +384,7 @@ body {
 .shopbag svg { width: 26px; height: 26px; }
 h2.shop { color: #ffd166; }
 .shop-card > p { font-size: 12px; }
+.shop-card .restore-status { min-height: 2.8em; margin: 6px 0 0; }
 .pcards { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .shop-packs { width: 100%; }
 .shop-packs summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.07); font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
@@ -429,6 +430,8 @@ h2.shop { color: #ffd166; }
 .pcard.p-pack .ptx span { font-size: 9px; letter-spacing: 0; }
 .pcard.p-pack .pprice { font-size: 11px; padding: 7px 3px; border-radius: 10px; }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
+.linkbtn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.privacy-entry { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; }
 .rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
 .tbody.daily .sect { margin-top: 4px; }
 .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(300px, 100%); box-sizing: border-box; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
@@ -712,6 +715,112 @@ h2.shop { color: #ffd166; }
 </main>
 
 <script>
+// ---------- Optional gameplay analytics (native Firebase only) ----------
+window.GameAnalytics = (() => {
+  const ANALYTICS_ALLOWED = false; // Store builds, or an explicit analytics test build.
+  const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const plugin = native && window.capacitorExports ? window.capacitorExports.registerPlugin('FirebaseAnalytics') : null;
+  const available = !!plugin && ANALYTICS_ALLOWED;
+  const read = (key) => { try { return localStorage.getItem(key); } catch (_) { return null; } };
+  const consent = native && window.capacitorExports ? window.capacitorExports.registerPlugin('AnalyticsConsent') : null;
+  let paused = read('ls_analytics_paused') === '1', enabled = false, revision = 0, consentStatus = false;
+  let serial = Promise.resolve();
+  const enqueue = (fn) => { serial = serial.then(fn).catch(() => {}); return serial; };
+  const schema = {
+    level_start: ['mode', 'level_name'],
+    level_end: ['mode', 'level_name', 'success', 'score', 'elapsed_seconds'],
+    life_lost: ['mode', 'level_name', 'reason'],
+    run_abandoned: ['mode', 'level_name', 'elapsed_seconds'],
+    rewarded_ad_completed: ['placement'],
+    interstitial_ad_shown: ['ad_format'],
+    purchase_completed: ['item_id']
+  };
+  function track(name, params = {}) {
+    if (!enabled || !schema[name]) return;
+    const version = revision, safe = {};
+    for (const key of schema[name]) {
+      const value = params[key];
+      if (typeof value === 'number' && Number.isFinite(value)) safe[key] = value;
+      else if (typeof value === 'string') safe[key] = value.slice(0, 80);
+    }
+    enqueue(async () => { if (enabled && version === revision) await plugin.logEvent({ name, params: safe }); });
+  }
+  function reconcile(status = consentStatus) {
+    consentStatus = status;
+    enabled = false;
+    const version = ++revision;
+    return enqueue(async () => {
+      if (!plugin) return;
+      await plugin.setEnabled({ enabled: false });
+      let modes = '';
+      if (['OBTAINED', 'NOT_REQUIRED'].includes(consentStatus) && consent) {
+        try { modes = (await consent.getConsentModes()).values || ''; } catch (_) {}
+      }
+      // A current analytics grant or purpose-specific not-applicable signal permits measurement.
+      // Missing, denied and unconfigured values never substitute for permission.
+      const analyticsPermitted = modes[3] === '1' || modes[3] === '3';
+      const allow = available && !paused && /^[0-4]{4}$/.test(modes) && analyticsPermitted;
+      // Gameplay measurement never grants advertising consent.
+      for (const type of ['AD_STORAGE', 'AD_USER_DATA', 'AD_PERSONALIZATION']) {
+        await plugin.setConsent({ type, status: 'DENIED' });
+      }
+      await plugin.setConsent({ type: 'ANALYTICS_STORAGE', status: allow ? 'GRANTED' : 'DENIED' });
+      if (version !== revision || !allow) return;
+      await plugin.setEnabled({ enabled: true });
+      enabled = true;
+      document.dispatchEvent(new Event('analytics:enabled'));
+      refreshRequestId();
+    });
+  }
+  function setPaused(value) {
+    paused = !!value;
+    try { localStorage.setItem('ls_analytics_paused', paused ? '1' : '0'); }
+    catch (_) { paused = true; } // Never resume when the preference cannot be saved.
+    return reconcile();
+  }
+  async function refreshRequestId() {
+    if (!enabled) return;
+    try {
+      const result = await plugin.getAppInstanceId();
+      if (result.appInstanceId) localStorage.setItem('ls_analytics_id', result.appInstanceId);
+    } catch (_) {}
+  }
+  async function diagnostics() {
+    let modes = '';
+    try { modes = consent ? (await consent.getConsentModes()).values || '' : ''; } catch (_) {}
+    return { status: consentStatus || 'UNKNOWN', modes: modes || 'missing', collection: enabled, paused };
+  }
+  reconcile(false);
+  return { diagnostics, available, track, setPaused, reconcile, paused: () => paused, enabled: () => enabled,
+    refreshRequestId, requestId: () => read('ls_analytics_id') || '' };
+})();
+</script>
+<!-- UMP test controls start -->
+<script>
+// Included only in explicit UMP_TEST builds; removed from every ordinary/store build.
+window.UMPTest = (() => {
+  const key = 'ls_ump_test_config';
+  const normalize = (value = {}) => ({
+    geography: [0, 1, 3, 4].includes(Number(value.geography)) ? Number(value.geography) : 0,
+    testDeviceIdentifiers: Array.isArray(value.testDeviceIdentifiers) ? value.testDeviceIdentifiers.filter(x => typeof x === 'string' && /^[a-zA-Z0-9-]{8,128}$/.test(x)).slice(0, 10) : []
+  });
+  function config() { try { return normalize(JSON.parse(localStorage.getItem(key) || '{}')); } catch (_) { return normalize(); } }
+  function save(geography, ids) {
+    const value = normalize({ geography: Number(geography), testDeviceIdentifiers: ids.split(/[\s,]+/).filter(Boolean) });
+    if (value.geography && !value.testDeviceIdentifiers.length) throw Error('Enter the UMP test device ID from the native device log before forcing a region.');
+    localStorage.setItem(key, JSON.stringify(value));
+    return value;
+  }
+  function options() {
+    const value = config();
+    if (!value.testDeviceIdentifiers.length) return {};
+    return { debugGeography: value.geography, testDeviceIdentifiers: value.testDeviceIdentifiers };
+  }
+  return { config, save, options };
+})();
+</script>
+<!-- UMP test controls end -->
+<script>
 // ---------- In-app purchase: Remove Ads, one-time (non-consumable) ----------
 // Apple and Google keep the ownership record, tied to the player's Apple ID / Google account.
 // The app re-reads it from the store on every launch (this also catches refunds) and on "Restore purchases".
@@ -745,7 +854,7 @@ window.Store = (function () {
 
   // Ask the store what this account owns. Only a successful answer changes the cached state.
   async function refresh() {
-    if (!NP) return;
+    if (!NP) return false;
     try {
       const r = await NP.getPurchases({ productType: 'inapp', onlyCurrentEntitlements: true });
       const list = (r && r.purchases) || [];
@@ -760,7 +869,8 @@ window.Store = (function () {
         }
       }
       for (const k in PRODUCTS) set(k, !!found[k]);
-    } catch (e) { /* offline or store unavailable: keep the cached answers */ }
+      return true;
+    } catch (e) { return false; /* offline or store unavailable: keep the cached answers */ }
   }
 
   async function loadPrices() {
@@ -783,7 +893,11 @@ window.Store = (function () {
     }
     try {
       const t = await NP.purchaseProduct({ productIdentifier: PRODUCTS[k].id, productType: 'inapp', isConsumable: false, autoAcknowledgePurchases: true });
-      if (t && keyFor(t.productIdentifier) === k && valid(t)) { set(k, true); return 'bought'; }
+      if (t && keyFor(t.productIdentifier) === k && valid(t)) {
+        set(k, true);
+        window.GameAnalytics.track('purchase_completed', { item_id: PRODUCTS[k].id });
+        return 'bought';
+      }
       await refresh();
       return owns[k] ? 'bought' : 'error';
     } catch (e) {
@@ -794,9 +908,13 @@ window.Store = (function () {
     }
   }
 
-  // Returns the list of owned product keys after restoring.
+  // Only a successful store response can report restored or absent purchases.
   async function restore() {
-    if (NP) { try { await NP.restorePurchases(); } catch (e) {} await refresh(); }
+    if (native && !NP) throw new Error('Store unavailable');
+    if (NP) {
+      await NP.restorePurchases();
+      if (!await refresh()) throw new Error('Could not verify purchases');
+    }
     return Object.keys(owns).filter((k) => owns[k]);
   }
 
@@ -838,16 +956,29 @@ window.Ads = (function () {
   let lastRewarded = 0; // a player who just watched a rewarded ad doesn't get a forced one next
   let privacyRequired = false; // UMP says players must be able to reopen ad privacy choices
 
+  let lastConsentError = '';
+  const consentOptions = () => window.UMPTest ? window.UMPTest.options() : {};
+  async function updateConsent() {
+    await window.GameAnalytics.reconcile(false);
+    lastConsentError = '';
+    try {
+      let info = await AdMob.requestConsentInfo(consentOptions());
+      if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
+      privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      await window.GameAnalytics.reconcile(info && info.status);
+    } catch (e) {
+      lastConsentError = String(e.message || e).slice(0, 300);
+      await window.GameAnalytics.reconcile(false);
+    }
+    document.dispatchEvent(new Event('ads:privacy'));
+  }
   async function init() {
     if (!AdMob) return;
     try {
+      // Initialize Firebase and block collection before UMP may change consent.
+      await window.GameAnalytics.reconcile(false);
       await AdMob.initialize({ initializeForTesting: CONFIG.testing });
-      try {
-        let info = await AdMob.requestConsentInfo();
-        if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
-        privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
-        document.dispatchEvent(new Event('ads:privacy'));
-      } catch (e) {}
+      await updateConsent();
       if (platform === 'ios') {
         try {
           const t = await AdMob.trackingAuthorizationStatus();
@@ -932,7 +1063,10 @@ window.Ads = (function () {
     AdMob.showRewardVideoAd().then((r) => { if (r && r.amount) earned = true; }).catch(() => {});
     await done;
     preload('rewarded');
-    if (earned) lastRewarded = Date.now();
+    if (earned) {
+      lastRewarded = Date.now();
+      window.GameAnalytics.track('rewarded_ad_completed', { placement: rewardedUnit });
+    }
     return earned;
   }
 
@@ -946,7 +1080,8 @@ window.Ads = (function () {
     if (!AdMob) { if (!native) await simulate(3); return; }
     if (!ready.interstitial) { preload('interstitial'); return; }
     ready.interstitial = false;
-    const done = waitFor({ interstitialAdDismissed: true, interstitialAdFailedToShow: true }, null, 120000);
+    const done = waitFor({ interstitialAdShowed: false, interstitialAdDismissed: true, interstitialAdFailedToShow: true },
+      (name) => { if (name === 'interstitialAdShowed') window.GameAnalytics.track('interstitial_ad_shown', { ad_format: 'interstitial' }); }, 120000);
     AdMob.showInterstitial().catch(() => {});
     await done;
     preload('interstitial');
@@ -955,10 +1090,24 @@ window.Ads = (function () {
   init();
   async function showPrivacyOptions() {
     if (!AdMob) return;
-    try { await AdMob.showPrivacyOptionsForm(); } catch (e) {}
+    await window.GameAnalytics.reconcile(false);
+    try {
+      await AdMob.showPrivacyOptionsForm();
+      const info = await AdMob.requestConsentInfo(consentOptions());
+      privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      await window.GameAnalytics.reconcile(info && info.status);
+    } catch (e) { await window.GameAnalytics.reconcile(false); }
+    document.dispatchEvent(new Event('ads:privacy'));
   }
 
+  async function resetConsentForTest() {
+    if (!window.UMPTest || !AdMob) throw Error('UMP testing is unavailable in this build.');
+    await window.GameAnalytics.reconcile(false);
+    await AdMob.resetConsentInfo();
+    await updateConsent();
+  }
   return {
+    resetConsentForTest, consentError: () => lastConsentError,
     showRewarded, maybeInterstitial, showPrivacyOptions,
     privacyRequired: () => privacyRequired,
     isOpen: () => !document.getElementById('adSim').hidden
@@ -1010,6 +1159,26 @@ window.Board = (function () {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
   const rand = (a, b) => a + Math.random() * (b - a);
+  let analyticsRun = null;
+  function analyticsStart() {
+    analyticsFinish('abandoned');
+    analyticsRun = { mode, level_name: mode === 'rush' ? 'rush' : mode === 'daily' ? 'daily' : L.id, elapsed_seconds: 0 };
+    analyticsRun.started = window.GameAnalytics.enabled();
+    window.GameAnalytics.track('level_start', analyticsRun);
+  }
+  function analyticsFinish(result) {
+    if (!analyticsRun) return;
+    window.GameAnalytics.track(result === 'abandoned' ? 'run_abandoned' : 'level_end',
+      { ...analyticsRun, elapsed_seconds: Math.round(analyticsRun.elapsed_seconds), success: result === 'success' ? 'true' : 'false', score });
+    analyticsRun = null;
+  }
+  document.addEventListener('analytics:enabled', () => {
+    if (analyticsRun && !analyticsRun.started) {
+      analyticsRun.started = true;
+      analyticsRun.elapsed_seconds = 0;
+      window.GameAnalytics.track('level_start', analyticsRun);
+    }
+  });
   let rng = Math.random; // monster and booster placement; seeded for the Daily
   const seeded = (n) => () => { n |= 0; n = (n + 0x6D2B79F5) | 0; let t = Math.imul(n ^ (n >>> 15), 1 | n); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2848,6 +3017,7 @@ window.Board = (function () {
   const adBreak = (fn) => async () => { if (Object.keys(prog.done).length >= 5) await window.Ads.maybeInterstitial(levelEnds); fn(); };
   function levelClear() {
     if (state !== 'play' || mode === 'rush') return;
+    analyticsFinish('success');
     levelEnds++; const had = earned(), starsBefore = totalStars(), clearedLevel = cur, clearedMode = mode;
     state = 'clear'; clearT = 0; $('hint').textContent = ''; tutorialEnd(); slowT = frozenT = ironT = boostT = 0; shieldOn = false; powerHud();
     const stars = L.boss ? Math.max(1, 3 - Math.max(0, startLives - lives)) : 1 + (pct >= STAR_THRESHOLDS[1] ? 1 : 0) + (pct >= STAR_THRESHOLDS[2] ? 1 : 0);
@@ -2940,7 +3110,11 @@ window.Board = (function () {
     }
     if (timeout && shieldOn) { shieldOn = false; bubbleK = 0; }
     if (mode === 'rush') { rushHit(why); return; }
-    if (!tutorialSafe()) lives--; if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 1.5 + rng() * 1.5); ouch(); buzz('hit'); shake = 0.35;
+    if (!tutorialSafe()) {
+      lives--;
+      window.GameAnalytics.track('life_lost', { mode, level_name: mode === 'daily' ? 'daily' : L.id, reason: why });
+    }
+    if (lives > 0 && (lives <= 1 || (L.boss && lives <= 2))) powerTimer = Math.min(powerTimer, 1.5 + rng() * 1.5); ouch(); buzz('hit'); shake = 0.35;
     const [wx, wz] = W2(px + (tx - px) * stepP, py + (ty - py) * stepP);
     burst(wx, 0.8, wz, 0xff5a7a, 40, 5, 6); burst(wx, 0.8, wz, 0xffffff, 20, 4, 6);
     // No damage wash during the protected tutorial; real hits fade without a cleanup timer.
@@ -2955,6 +3129,7 @@ window.Board = (function () {
     if (lives <= 0) { state = 'over'; setTimeout(outOfLives, 1300); }
   }
   function outOfLives() {
+    analyticsFinish('failed');
     levelEnds++;
     $('hud').hidden = true;
     const canGo = !continued;
@@ -2990,6 +3165,7 @@ window.Board = (function () {
     if (!ok) { flash('No ad right now', 'try again in a moment', 1200, true); return; }
     trialContinueOffer = false;
     continued = true; levelEnds--; lives = 1; if (mode === 'campaign') { prog.lives = lives; saveProg(); } hidePanel(); $('hud').hidden = false; state = 'play'; paused = false;
+    analyticsStart();
     if (mode === 'campaign' && L.time) clockT = Math.max(clockT, 15);
     enter(0.3, true); drawHud();
   }
@@ -2998,6 +3174,7 @@ window.Board = (function () {
     begin(typeof i === 'number' ? i : levelIndex(i));
   }
   function begin(lv) {
+    analyticsFinish('abandoned');
     tutorialEnd();
     bestCapture = bestCaptureBonus = 0;
     pauseExitPending = pauseLevelsOpen = false;
@@ -3007,6 +3184,7 @@ window.Board = (function () {
     if (trial) { trialActive = trial.id; wearSkin(trial.id); flash('Trying ' + trial.name, 'for this game', 1400); }
     else wearSkin(prog.skin);
     hidePanel(); build(lv); state = 'play'; paused = false; $('hud').classList.remove('hud-paused'); $('hud').hidden = false;
+    analyticsStart();
     const introducePower = () => {
       // Existing players who passed the moved Shield introduction still learn it before any offer.
       const k = L.newPower && !prog.seen.includes('p-' + L.newPower) ? L.newPower :
@@ -3072,7 +3250,7 @@ window.Board = (function () {
 
   // ---------- menus ----------
   const dailyOpen = () => dev || !!prog.done['meadow-05'], rushOpen = () => dev || !!prog.done['meadow-20'];
-  function toMenu() { hideT = enterT = 0; resetLanding(); pauseExitPending = pauseLevelsOpen = false; closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
+  function toMenu() { analyticsFinish('abandoned'); hideT = enterT = 0; resetLanding(); pauseExitPending = pauseLevelsOpen = false; closeSkinUnlock(); if (badgeClose) badgeClose(); if (flashLeft > 0) { clearTimeout(flashT); flashOut(); } if (trialContinueOffer) finishSkinTrial(); trialActive = null; trialContinueOffer = false; wearSkin(prog.skin); onHome = false; state = 'menu'; mode = 'campaign'; $('hud').hidden = true; $('hint').textContent = ''; tutorialEnd(); }
   if (AppPlugin) try { AppPlugin.addListener('backButton', () => {
     if ($('skinUnlock')) return;
     if (badgeClose) { badgeClose(); return; }
@@ -3302,21 +3480,54 @@ window.Board = (function () {
   function showSettings() {
     toMenu(); const sb = settingsButtons();
     panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
-      (window.Ads.privacyRequired() ? '<button class="btn alt" type="button" data-act="privacy">Ad privacy choices</button>' : '') + (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, devoff: () => { setDev(false); showSettings(); }, privacy: () => window.Ads.showPrivacyOptions() }, sb.acts));
+      (window.UMPTest ? '<button class="btn alt" type="button" data-act="umpTest">UMP test controls</button>' : '') +
+      '<button class="linkbtn privacy-entry" type="button" data-act="privacy">Privacy</button>' +
+      (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
+      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), devoff: () => { setDev(false); showSettings(); }, privacy: showPrivacy }, sb.acts));
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
+  }
+  async function showUMPTestSettings(message = '') {
+    if (!window.UMPTest) return;
+    toMenu();
+    const config = window.UMPTest.config(), state = await window.GameAnalytics.diagnostics();
+    const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    panel(BACK_X + '<h2>UMP test controls</h2><p>Private test build · test ads only. These controls are absent from store builds.</p>' +
+      '<label for="umpRegion">Test region</label><select id="umpRegion">' + [[0, 'Actual location'], [1, 'EEA'], [3, 'US regulated state'], [4, 'Other']].map(([value, name]) => '<option value="' + value + '"' + (config.geography === value ? ' selected' : '') + '>' + name + '</option>').join('') + '</select>' +
+      '<label for="umpDevices">UMP test device IDs</label><input id="umpDevices" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + escape(config.testDeviceIdentifiers.join(', ')) + '"><p>Copy the UMP test device ID printed in Android Logcat or the iPhone device console. AdMob ad-test IDs and the Analytics ID are different. Forced regions require a registered test device.</p>' +
+      '<p role="status">' + escape(message || window.Ads.consentError()) + '</p><pre style="white-space:pre-wrap;text-align:left;user-select:text">' + escape(JSON.stringify(state, null, 2)) + '</pre>' +
+      '<p>Mode digits: ad storage, ad user data, ad personalization, analytics. Values: 0 unknown · 1 granted · 2 denied · 3 not applicable · 4 unconfigured. This view reads the signal; it never grants consent.</p>' +
+      '<div class="btns"><button class="btn alt" type="button" data-act="apply">Apply and reset UMP consent</button><button class="btn alt" type="button" data-act="refresh">Refresh status</button><button class="btn alt" type="button" data-act="back">Back</button></div><p>Reset affects UMP consent only. It does not delete progress, purchases or previously collected Analytics data.</p>',
+      { back: showSettings, refresh: () => showUMPTestSettings(), apply: async (button) => {
+        button.disabled = true;
+        try {
+          window.UMPTest.save($('umpRegion').value, $('umpDevices').value);
+          await window.Ads.resetConsentForTest();
+          await showUMPTestSettings(window.Ads.consentError() || 'UMP update completed. Check the effective status above.');
+        } catch (error) { await showUMPTestSettings(String(error.message || error)); }
+      } });
+  }
+  async function showPrivacy() {
+    toMenu();
+    const analytics = window.GameAnalytics;
+    await analytics.refreshRequestId();
+    const id = analytics.requestId().replace(/[^a-zA-Z0-9_-]/g, '');
+    panel(BACK_X + '<h2>Privacy</h2><div class="btns">' +
+      '<a class="linkbtn privacy-entry" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
+      (window.Ads.privacyRequired() ? '<button class="linkbtn privacy-entry" type="button" data-act="choices">Privacy choices</button>' : '') + '</div>' +
+      (id ? '<details><summary>Privacy requests</summary><p>For access or deletion requests, email <a href="mailto:privacy@beno74.com">privacy@beno74.com</a> with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p></details>' : ''),
+      { back: showSettings, choices: async () => { await window.Ads.showPrivacyOptions(); showPrivacy(); } });
   }
   function showShop(packsOpen = false) {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
     const nSk = SKINS.filter((k) => k.pack).length;
     const thumbs = ['sub', 'ufo', 'swan', 'unicorn'].map((k) => th[k] ? '<img alt="" src="' + th[k] + '">' : '').join('');
-    const card = (act, cls, icon, title, sub, price, owned, extra) => '<button class="pcard ' + cls + (owned ? ' owned' : '') + '" type="button"' + (owned ? ' disabled' : ' data-act="' + act + '"') + '>' + (extra || '') +
+    const card = (act, cls, icon, title, sub, price, owned, extra) => '<button class="pcard ' + cls + (owned ? ' owned' : '') + '" type="button" data-act="' + act + '"' + (owned ? ' disabled' : '') + '>' + (extra || '') +
       '<div class="pic">' + icon + '</div><div class="ptx"><b>' + title + '</b><span>' + sub + '</span></div><div class="pprice">' + (owned ? 'Owned' : price) + '</div></button>';
     const CROWN = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.8 11H4.8z"/></svg>';
     const NOADS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M8.8 6.6v10.8l9.6-5.4z" fill="currentColor" stroke="none"/><path d="M3 22 22 3" stroke="#ff4d6d" stroke-width="2.3"/></svg>';
     panel(BACK_X + '<div class="shop-heading"><div class="shopbag"><svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.2 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.5-1.2L20.6 8H6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.6" r="1.7" fill="currentColor"/><circle cx="17" cy="19.6" r="1.7" fill="currentColor"/></svg></div><h2 class="shop">Shop</h2></div>' +
-      '<p>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device') + '</p><div class="pcards">' +
+      '<p data-shop-intro>' + (noAds && skinsOwned ? 'You own everything. Thank you!' : 'Pay once, yours on every device') + '</p><div class="pcards">' +
       card('buyAll', 'p-all', CROWN, 'Everything', 'No ads + all ' + nSk + ' pack skins', st.price('bundle'), noAds && skinsOwned, '<i class="ribbon">Best value</i>') +
       card('buySkins', 'p-skins', '<div class="thumbs">' + thumbs + '</div>', 'All Skin Packs', nSk + ' pack skins + future packs', st.price('allSkins'), skinsOwned) +
       card('buy', 'p-ads', NOADS, 'Remove Ads', 'No ads, free continues', st.price(), noAds) +
@@ -3325,10 +3536,35 @@ window.Board = (function () {
         const icons = skins.map((sk) => th[sk.id] ? '<img alt="" src="' + th[sk.id] + '">' : '').join('');
         return card('buy_' + pack, 'p-pack p-' + pack, '<div class="thumbs">' + icons + '</div>', PACKS[pack], skins.length + ' skins', st.price(pack), st.pack(pack));
       }).join('') +
-      '</div></details><button class="linkbtn" type="button" data-act="restore">Restore purchases</button>',
+      '</div></details><button class="linkbtn" type="button" data-act="restore">Restore purchases</button><p class="restore-status" role="status" aria-live="polite" aria-atomic="true"></p>',
       { back: showHome, buy: () => buyIt('noAds', showShop), buySkins: () => buyIt('allSkins', showShop), buyAll: () => buyIt('bundle', showShop),
         ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, () => buyIt(pack, () => showShop(true))])),
-        restore: async () => { const got = await window.Store.restore(); flash(got.length ? 'Restored' : 'Nothing to restore', null, 1200); showShop(); } });
+        restore: async (b) => {
+          if (b.disabled) return;
+          const shop = $('card'), status = shop.querySelector('.restore-status');
+          b.disabled = true; b.textContent = 'Connecting…'; b.setAttribute('aria-busy', 'true');
+          status.textContent = 'Restoring purchases…';
+          try {
+            const got = await st.restore();
+            if (!b.isConnected) return; // Do not reopen the shop if the player left it.
+            const products = {
+              buy: [st.noAds(), st.price()], buySkins: [st.allSkins(), st.price('allSkins')],
+              buyAll: [st.noAds() && st.allSkins(), st.price('bundle')],
+              ...Object.fromEntries(Object.keys(PACKS).map((pack) => ['buy_' + pack, [st.pack(pack), st.price(pack)]]))
+            };
+            shop.querySelectorAll('.pcard').forEach((card) => {
+              const [owned, price] = products[card.dataset.act];
+              card.disabled = owned; card.classList.toggle('owned', owned);
+              card.querySelector('.pprice').textContent = owned ? 'Owned' : price;
+            });
+            shop.querySelector('[data-shop-intro]').textContent = st.noAds() && st.allSkins() ? 'You own everything. Thank you!' : 'Pay once, yours on every device';
+            status.textContent = got.length ? 'Purchases restored.' : 'No purchases to restore.';
+          } catch (_) {
+            if (b.isConnected) status.textContent = 'Couldn’t restore purchases. Please try again.';
+          } finally {
+            b.disabled = false; b.textContent = 'Restore purchases'; b.removeAttribute('aria-busy');
+          }
+        } });
     $('card').classList.add('shop-card');
     const packs = $('card').querySelector('.shop-packs'), summary = packs.querySelector('summary');
     let expanded = packs.open, animation = null;
@@ -3457,6 +3693,7 @@ window.Board = (function () {
     drawHud();
   }
   function rushHit(why) {
+    window.GameAnalytics.track('life_lost', { mode: 'rush', level_name: 'rush', reason: why });
     rushTime = Math.max(0, rushTime - 5); tone(220, 0.4, 'sawtooth', 0.08, 90); buzz('hit'); shake = 0.3;
     flash('-5s', why, 900, true);
     trail.forEach((i) => { cells[i] = SEA; trailIdx[i] = -1; }); trail = []; drawing = false; fuse = null; dashes.count = 0; burnt.count = 0; spark.visible = false; clearTrapHint();
@@ -3480,6 +3717,7 @@ window.Board = (function () {
     }, 1200);
   }
   function rushFinal() {
+    analyticsFinish('success');
     const trialReward = finishSkinTrial();
     levelEnds++; const best = rushTotal > prog.rush, bestB = rushBoard > (prog.rushBoards || 0); if (best) prog.rush = rushTotal; if (bestB) prog.rushBoards = rushBoard; if (best || bestB) saveProg();
     window.Board.submit('rush', rushTotal);
@@ -4417,6 +4655,7 @@ window.Board = (function () {
   let last = performance.now(), simT = 0, camFix = null, gameT = 0;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (analyticsRun && analyticsRun.started && window.GameAnalytics.enabled() && state === 'play' && !paused) analyticsRun.elapsed_seconds += dt;
     if (!paused) gameT += dt;
     if (!window.__halt) update(paused ? 0 : dt, gameT); dpadVisible();
     renderer.render(scene, camera);

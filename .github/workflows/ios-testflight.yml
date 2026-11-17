@@ -5,14 +5,23 @@ name: iOS release (TestFlight)
 on:
   workflow_dispatch:
     inputs:
+      private_analytics:
+        description: 'Internal-only Analytics + UMP QA build; cannot distribute publicly'
+        type: boolean
+        default: false
       real_ads:
         description: 'Show real ads (only for the public store release; test builds use Google test ads)'
+        type: boolean
+        default: false
+      cleanup_dev_certificates:
+        description: 'Revoke stale shared cloud development certificates (explicit maintenance only)'
         type: boolean
         default: false
 
 jobs:
   testflight:
-    runs-on: macos-latest
+    # The hosted ARM pool failed to allocate a runner; use standard Intel capacity.
+    runs-on: macos-26-intel
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -26,7 +35,27 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - name: Guard private test configuration
+        if: inputs.private_analytics && inputs.real_ads
+        run: echo 'Private Analytics QA requires test ads' && exit 1
       - run: ADS_TEST=${{ inputs.real_ads && 'false' || 'true' }} npm run build && npx cap sync ios
+        env:
+          ANALYTICS_TEST: ${{ inputs.private_analytics && 'true' || 'false' }}
+          UMP_TEST: ${{ inputs.private_analytics && 'true' || 'false' }}
+      - name: Verify private test build
+        if: inputs.private_analytics
+        run: |
+          npm run test:analytics && npm run test:native && npm run test:ump-build
+          grep -q 'window.UMPTest =' www/index.html
+          grep -q 'const ANALYTICS_ALLOWED = true;' www/index.html
+          grep -q 'testing: true,' www/index.html
+      - name: Verify store build
+        if: inputs.real_ads
+        run: |
+          ADS_TEST=false npm run test:native
+          npm run test:analytics
+          ! grep -q 'window.UMPTest =' www/index.html
+          grep -q 'const DEV_ALLOWED = false;' www/index.html
       - name: Install API key
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
@@ -34,6 +63,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keys"
           printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey.p8"
       - name: Remove stale cloud-build signing certificates
+        if: ${{ !inputs.private_analytics && inputs.cleanup_dev_certificates }}
         env:
           ASC_KEY_PATH: ${{ runner.temp }}/keys/AuthKey.p8
         run: |
@@ -69,6 +99,8 @@ jobs:
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
             <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><${{ inputs.private_analytics && 'false' || 'true' }}/>
+            <key>testFlightInternalTestingOnly</key><${{ inputs.private_analytics && 'true' || 'false' }}/>
           </dict></plist>
           PLIST
           xcodebuild -exportArchive \
