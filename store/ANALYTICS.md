@@ -102,13 +102,14 @@ Eyal authorized the CI pivot and website merge on November 16.
   collection, while denial, missing/unconfigured values and failed updates do not. Device pause persists.
   UMP/ATT never implicitly grant Analytics advertising purposes. Exercise a level start, loss,
   completion, abandonment and real test ad reward. Check actual installation ID.
-- Sandbox purchase/restore checks remain required before release; mocked purchase
-  boundary checks passed, but no store sandbox transaction was performed.
+- Sandbox cancellation, purchase, relaunch and restore smoke checks passed on
+  iPhone TestFlight 197 and the dedicated Android AVD; see the device records below.
 - Website PR 21 was merged with Eyal's explicit approval: https://github.com/Eyal8/beno-studio-site/pull/21 . Verified the analytics section, date and request-ID instructions in the public HTML at https://beno74.com/privacy/landscraper .
 - Review and submit App Store Connect App Privacy and Play Data safety using
   `store/LISTING.md`, reconciled with final native SDK behavior.
-  Apple App Privacy was published on November 16: added Purchase History for Analytics, linked to the installation, not used for tracking. Existing device, location and interaction Analytics disclosures were already present. The optional User Privacy Choices URL was left blank after automatic approval review rejected an unverified choice-mechanism link; the existing policy URL remains correct. Google Play: added optional, non-ephemeral Purchase history for Analytics (collected, not shared under the service-provider exception) and the verified deletion-request instructions URL. One Data safety-only change was saved and quick checks passed. Two confirmed send attempts did not persist: after reload, Publishing overview still shows "Changes not yet submitted for review" without an error. Stopped per the two-attempt policy; owner should complete "Submit 1 change for review" from Publishing overview. No binary changes are included.
-- Store privacy metadata updates were authorized; no app binary upload or public app release is authorized.
+  Apple App Privacy was published on November 16: added Purchase History for Analytics, linked to the installation, not used for tracking. Existing device, location and interaction Analytics disclosures were already present. The optional User Privacy Choices URL was left blank after automatic approval review rejected an unverified choice-mechanism link; the existing policy URL remains correct. Google Play: added optional, non-ephemeral Purchase history for Analytics (collected, not shared under the service-provider exception) and the verified deletion-request instructions URL. On November 17, the live Play Console confirmed Submission 17 (Data safety only) was Published on November 16 and no changes remained unsubmitted. No binary release was part of that submission.
+- Store privacy metadata updates and internal-only TestFlight uploads were authorized;
+  no public app release or app main merge has been authorized or performed.
 
 ## AdMob and other settings
 
@@ -338,11 +339,12 @@ and cold-launching again, the owner reported the recovery check worked.
 This completes the owner offline/recovery smoke check on iPhone; exact online
 status/mode values were not separately supplied in the final confirmation.
 
-Remaining before public distribution: confirmation of Landscraper's
+At that checkpoint, remaining before public distribution were confirmation of Landscraper's
 US-message assignments/opt-out flow, final
 Google Play Data Safety submission status, and final distribution builds
 containing the SKAdNetwork and restore-feedback changes. Existing targeted
 checks passed; installed TestFlight 197 does not contain those latest changes.
+See the final preparation section below for the subsequent results.
 No app main merge or public release has been performed.
 
 ### Android Play Billing Sandbox — November 17, 2026
@@ -369,3 +371,46 @@ not separately checked. Firebase debug mode was disabled afterward and the
 game was stopped. The emulator's Google login and test ownership were retained.
 The installed APK predates the inline restore-feedback correction, which still
 needs the final build smoke check. No public app release or main merge occurred.
+
+### Final production preparation — November 17, 2026
+
+- Google Play Publishing overview has no unpublished changes. Submission 17
+  contains exactly one Data safety questionnaire change and is Published
+  (November 16). Verified in the live submission details, without resubmitting
+  anything or touching a binary release.
+- Live https://beno74.com/privacy/landscraper returned HTTP 200 and includes
+  Firebase, UMP, device Pause and Analytics-ID deletion-request instructions.
+- The owner added Landscraper Android and iOS to published US messages. After
+  that change, the existing Android US-regulated-state QA configuration exposed
+  the ordinary Privacy choices entry and the Google US form. Selecting Don't
+  sell or share my data changed native GPP from DBABL~BAAAAAAAAg to
+  DBABL~BVQVAAAAAg (section 7), and reopening the form retained the opt-out.
+  Analytics returned to On after reconciliation with modes 3333, as designed;
+  its advertising-purpose consents stayed denied. This verifies the Android
+  form/signals; iPhone US UI and downstream ad requests were not separately
+  exercised (Remove Ads is owned on the emulator). Debug was disabled and
+  Landscraper was stopped afterward; login, purchase and consent data retained.
+- Signed Android AAB versionCode 195 built successfully in run 44106718008.
+  Its actual packaged web assets passed the native-boundary suite and checks
+  for Analytics enabled, developer mode disabled, UMP QA module absent and
+  inline restore feedback present. The JAR signature verified. The AAB was
+  downloaded to workspace artifacts/production-prep-2026-11-17/android-195;
+  it was not uploaded to Google Play or run with real ads on a device.
+- iOS attempt 198 (44106718661) never received a hosted ARM runner and was
+  cancelled by GitHub for capacity constraints. The TestFlight workflow now
+  uses standard macos-26-intel capacity. Build 199, run 44110532426, passed
+  private-build checks, archive/signing and upload to App Store Connect.
+  The log confirms testFlightInternalTestingOnly=true, Upload succeeded and
+  EXPORT SUCCEEDED. It includes the 50 SKAdNetwork IDs and restore-feedback
+  correction. Apple processing/group availability was not re-verified because
+  the TestFlight UI timed out; do not claim it is already installable.
+  This is a private test-ad/UMP-QA build, not a public-store candidate.
+- The existing App Store submission still selects build 195, is Waiting for
+  Review and has Manually release this version selected. These settings were
+  only read, not changed. A future public iOS release needs a separately
+  approved normal store build; internal-only build 199 cannot be used for it.
+
+Evidence: workspace artifacts/production-prep-2026-11-17/status.json and
+artifacts/android-emulator-analytics/us-final-result.json, native GPP snapshots
+and screenshots 69, 72 and 74. App Store Connect app ID is 6828032990;
+Google Play app ID is 4973120307842578235. The app PR remains unmerged.
