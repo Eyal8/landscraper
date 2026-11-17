@@ -34,12 +34,14 @@ data processing terms are accepted and Analytics advertising consent is denied.
 Regional/minor requirements outside UMP coverage remain a pre-release check;
 NOT_REQUIRED is not a universal legal clearance.
 
-Settings → Privacy choices reopens UMP where required. Collection stops before
-opening the form and is reconciled afterwards. Settings → Gameplay analytics
-shows status and an installation ID for access/deletion requests, plus a device
-pause. Removing that pause never overrides the UMP result or an explicit denial. The old separate
-`ls_analytics_consent_v1` choice is ignored. Historical request IDs are retained;
-stopping collection does not delete previously uploaded records.
+Settings → Privacy is the single privacy entry. It links to the policy and
+shows Privacy choices only when UMP requires that form. Collection stops before
+opening UMP and is reconciled afterwards. Privacy requests under the same page
+retains access to the cached installation ID for access/deletion requests.
+There is no separate Gameplay analytics button or public device-pause control.
+Earlier device-pause preferences are still honored; they are never silently
+cleared. The old separate `ls_analytics_consent_v1` choice is ignored. Historical
+request IDs are retained; stopping collection does not delete uploaded records.
 
 Native Firebase only; browser previews and default tester builds do not collect.
 To test analytics with test ads: `ANALYTICS_TEST=true npm run build`, then sync.
@@ -414,3 +416,31 @@ Evidence: workspace artifacts/production-prep-2026-11-17/status.json and
 artifacts/android-emulator-analytics/us-final-result.json, native GPP snapshots
 and screenshots 69, 72 and 74. App Store Connect app ID is 6828032990;
 Google Play app ID is 4973120307842578235. The app PR remains unmerged.
+
+
+### Unified Privacy menu and store builds — November 17, 2026
+
+Owner requested one understated Privacy entry in Settings, with no separate
+Gameplay analytics button. Its inner page links to the policy, conditionally
+opens UMP choices, and retains the installation ID under Privacy requests.
+Targeted menu checks passed for required/not-required cases, form return,
+back navigation and request ID; production web preview matched the new menu.
+All 10 Analytics tests and Android/iOS native consent/payment boundaries passed.
+
+Android 196 (44121799554) built successfully. The downloaded signed AAB passed
+signature verification and native-boundary checks against the extracted assets;
+Analytics is enabled, developer/UMP QA controls are excluded, and restore feedback
+is present. Play upload was not completed: both accessibility and DOM reads of
+the console timed out; no release was submitted or published. Artifact:
+artifacts/production-privacy-menu-2026-11-17/android-196/app-release.aab.
+
+Website PR 30 updates only the Landscraper policy paths and removes obsolete
+pause instructions. Cloudflare Workers check and targeted TSX syntax/path checks
+passed. Local full ESLint was stopped during stalled dependency loading.
+PR merge/publication awaits the owner's explicit approval under site AGENTS.md.
+
+iOS CI 200 (44121807400) passed web/native tests but archive signing failed:
+the hosted runner lacks the private key for its existing Apple Development
+certificate. No certificate was revoked. A second signing attempt uses an
+isolated local worktree and the owner's existing valid development identity.
+No public app release or app-main merge has been performed.
