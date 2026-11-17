@@ -16,7 +16,8 @@ on:
 
 jobs:
   testflight:
-    runs-on: macos-latest
+    # The hosted ARM pool failed to allocate a runner; use standard Intel capacity.
+    runs-on: macos-26-intel
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
