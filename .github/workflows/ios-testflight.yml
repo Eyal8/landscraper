@@ -1,10 +1,28 @@
-name: iOS signing inventory only
+name: iOS signing preparation only
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Read-only by default; creation requires explicit owner approval
+        type: choice
+        options: [inventory, create-approved-signing-assets]
+        default: inventory
+      owner_approved_signing:
+        description: Select only after explicit owner approval for one new certificate and two profiles
+        type: boolean
+        default: false
+      public_csr_pem:
+        description: Public CSR only, never a private key
+        type: string
+        required: false
+      existing_new_certificate_id:
+        description: Explicit recovery only; prevents duplicate certificate creation
+        type: string
+        required: false
 permissions:
   contents: read
 jobs:
-  inventory:
+  signing:
     runs-on: macos-26-intel
     timeout-minutes: 5
     steps:
@@ -14,13 +32,28 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install 'PyJWT==2.10.1' 'cryptography==46.0.3'
       - name: Read existing Apple signing inventory
+        if: inputs.operation == 'inventory'
         env:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           INVENTORY_OUTPUT: ${{ runner.temp }}/signing-inventory.json
         run: python scripts/signing-inventory.py
+      - name: Create additive signing assets after owner approval
+        if: inputs.operation == 'create-approved-signing-assets' && inputs.owner_approved_signing
+        env:
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          OWNER_APPROVED_SIGNING: create-one-distribution-and-two-profiles
+          SIGNING_CSR_PEM: ${{ inputs.public_csr_pem }}
+          EXISTING_NEW_CERTIFICATE_ID: ${{ inputs.existing_new_certificate_id }}
+          SIGNING_OUTPUT: ${{ runner.temp }}/signing-assets
+        run: python scripts/create-app-store-signing-assets.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: apple-signing-inventory
-          path: ${{ runner.temp }}/signing-inventory.json
+          name: apple-signing-preparation
+          path: |
+            ${{ runner.temp }}/signing-inventory.json
+            ${{ runner.temp }}/signing-assets/
