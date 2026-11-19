@@ -6,22 +6,23 @@ const { test } = require('node:test');
 const html = fs.readFileSync(require('node:path').join(__dirname, '../src/game.html'), 'utf8');
 const source = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(x => x[1].includes('window.GameAnalytics ='))[1];
 
-function boot({ modes = '', paused = false, native = true, storeBuild = true, storageFails = false, nativeFails = false, oldConsent } = {}) {
+function boot({ modes = '', paused = false, native = true, storeBuild = true, storageFails = false, nativeFails = false, oldConsent, onEnable } = {}) {
   const calls = [], values = new Map([['ls_analytics_paused', paused ? '1' : '0'], ['ls_analytics_consent_v1', oldConsent]]);
   const state = { modes };
   const plugin = Object.fromEntries(['setEnabled', 'setConsent', 'logEvent', 'getAppInstanceId'].map(method =>
     [method, async options => {
       calls.push({ method, options });
       if (nativeFails) throw Error('native unavailable');
+      if (method === 'setEnabled' && options.enabled === true && onEnable) await onEnable();
       return { appInstanceId: 'installation-123' };
     }]));
   const consentPlugin = { async getConsentModes() { if (nativeFails) throw Error('bridge'); return { values: state.modes }; } };
-  const context = { Promise, Event, document: { dispatchEvent() {} },
+  const context = { AgeAssurance: { analyticsAllowed: () => true }, Promise, Event, document: { dispatchEvent() {} },
     localStorage: { getItem: key => values.get(key) || null, setItem(key, value) { if (storageFails) throw Error('storage'); values.set(key, value); } },
     Capacitor: { isNativePlatform: () => native }, capacitorExports: { registerPlugin: name => name === 'AnalyticsConsent' ? consentPlugin : plugin } };
   context.window = context;
   vm.runInNewContext(storeBuild ? source.replace('const ANALYTICS_ALLOWED = false;', 'const ANALYTICS_ALLOWED = true;') : source, context);
-  return { analytics: context.GameAnalytics, calls, values, state };
+  return { analytics: context.GameAnalytics, calls, values, state, context };
 }
 const settle = () => new Promise(setImmediate);
 const events = s => s.calls.filter(x => x.method === 'logEvent');
@@ -97,6 +98,51 @@ test('an obsolete in-flight consent read cannot enable collection after suspensi
   await Promise.all([grant, suspend]);
   assert.equal(s.analytics.enabled(), false);
   assert.ok(!s.calls.some(x => x.options?.enabled === true));
+});
+
+test('pause during native enable never reopens collection or emits stale events', async () => {
+  let release, started;
+  const enabling = new Promise(resolve => { started = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  const s = boot({ modes: '2221', onEnable: () => { started(); return held; } });
+  const grant = s.analytics.reconcile('OBTAINED');
+  await enabling;
+  const pause = s.analytics.setPaused(true);
+  release();
+  await Promise.all([grant, pause]);
+  s.analytics.track('level_start', { mode: 'campaign', level_name: 'meadow-01' });
+  await settle();
+  assert.equal(s.analytics.enabled(), false);
+  assert.equal(events(s).length, 0);
+  assert.equal(s.calls.filter(c => c.method === 'getAppInstanceId').length, 0);
+  assert.equal(s.calls.filter(c => c.method === 'setEnabled').at(-1).options.enabled, false);
+});
+
+test('Settings directly exposes policy and required UMP choices; denial stops analytics', async () => {
+  const s = boot({ modes: '1111' });
+  await s.analytics.reconcile('OBTAINED');
+  let rendered, required = true, forms = 0;
+  Object.assign(s.context, { BACK_X: '', dev: false, toMenu() {}, showHome() {}, settingsButtons: () => ({ html: '', acts: {} }),
+    $: () => ({ addEventListener() {}, classList: { add() {} } }),
+    panel(content, actions) { rendered = { content, actions }; },
+    Ads: { privacyRequired: () => required, async showPrivacyOptions() {
+      forms++; await s.analytics.reconcile(false); s.state.modes = '1112';
+      await s.analytics.reconcile('OBTAINED');
+    } } });
+  const privacy = html.slice(html.indexOf('  function showSettings()'), html.indexOf('  async function showUMPTestSettings('));
+  vm.runInNewContext(privacy + '; window.openPrivacyForTest = showSettings;', s.context);
+  await s.context.openPrivacyForTest();
+  assert.match(rendered.content, /Privacy policy/);
+  assert.match(rendered.content, /Privacy choices/);
+  assert.doesNotMatch(rendered.content, /Analytics:|Pause|Resume|mailto:|privacy request/i);
+  await rendered.actions.privacyChoices();
+  assert.equal(forms, 1); assert.equal(s.analytics.enabled(), false);
+  s.analytics.track('level_start', { mode: 'campaign', level_name: 'meadow-01' });
+  await settle(); assert.equal(events(s).length, 0);
+  assert.equal(s.calls.filter(c => c.method === 'setEnabled').at(-1).options.enabled, false);
+  required = false; await s.context.openPrivacyForTest();
+  assert.match(rendered.content, /data-act="privacyChoices" hidden/);
+  assert.doesNotMatch(html, /async function showPrivacy\(/);
 });
 
 test('not-applicable analytics works after a resolved UMP update with either completed status', async () => {

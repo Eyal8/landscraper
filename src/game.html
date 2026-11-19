@@ -432,6 +432,16 @@ h2.shop { color: #ffd166; }
 .linkbtn { all: unset; cursor: pointer; font: 500 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 4px; padding: 6px; }
 .linkbtn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .privacy-entry { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; }
+.privacy-entry[hidden] { display:none; }
+.card.settings-card { gap:24px; padding:24px; }
+.settings-card h2 { box-sizing:border-box; width:100%; padding:4px 36px; line-height:32px; }
+.settings-card .home-x { top:24px; left:20px; }
+.settings-card .settings-content { gap:24px; }
+.settings-card .togs { gap:32px; margin:0; }
+.settings-privacy { display:flex; flex-direction:column; align-items:center; gap:0; }
+.settings-privacy .privacy-entry { min-width:200px; padding:10px 12px; }
+@media (max-width:360px) { .settings-card h2 { font-size:22px; } }
+
 .rstats.d3 { grid-template-columns: repeat(3, 1fr); } .tbody.daily .rstats > div { background: rgba(127,245,226,0.08); box-shadow: inset 0 0 0 1px rgba(127,245,226,0.25); }
 .tbody.daily .sect { margin-top: 4px; }
 .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(300px, 100%); box-sizing: border-box; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); }
@@ -715,6 +725,53 @@ h2.shop { color: #ffd166; }
 </main>
 
 <script>
+// Regional age assurance. Native applicability gates alone authorize required sharing.
+window.AgeAssurance = (() => {
+  const platform = window.Capacitor?.getPlatform?.() || 'web';
+  const plugin = ['ios', 'android'].includes(platform) && window.capacitorExports
+    ? window.capacitorExports.registerPlugin('RegionalAge') : null;
+  let state = { status: ['ios', 'android'].includes(platform) ? 'pending' : 'web' };
+  let checkPromise, requestPromise;
+  const valid = new Set(['notRequired', 'required', 'resolved', 'unsupported', 'unavailable', 'unresolved', 'declined', 'verificationRequired', 'error']);
+  function accept(result) {
+    if (!result || !valid.has(result.status)) return { status: 'error' };
+    // A resolved range must identify either a minor or an adult explicitly.
+    if (result.status === 'resolved' && typeof result.minor !== 'boolean') return { status: 'unresolved' };
+    return { status: result.status, minor: result.minor === true, childDirected: result.childDirected === true };
+  }
+  function refresh() {
+    if (!['ios', 'android'].includes(platform)) return Promise.resolve(state);
+    return checkPromise || (checkPromise = (async () => {
+      try { state = accept(await plugin.getRequirements()); }
+      catch (_) { state = { status: 'error' }; }
+      return state;
+    })());
+  }
+  function ensure() {
+    return requestPromise || (requestPromise = (async () => {
+      await refresh();
+      if (state.status === 'required') {
+        // Native re-checks applicability before any prompt-capable request.
+        try { state = accept(await plugin.requestRequiredAgeRange()); }
+        catch (_) { state = { status: 'error' }; }
+      }
+      return state;
+    })());
+  }
+  const regularFlow = () => (state.status === 'notRequired' || state.status === 'web' || (platform === 'ios' && state.status === 'unsupported'));
+  const adsAllowed = () => regularFlow() || state.status === 'resolved';
+  // Conservative per-user choice: no optional analytics for a known minor until
+  // a separately verified minor analytics-permission path exists. Never log the signal.
+  const analyticsAllowed = () => regularFlow() || (state.status === 'resolved' && !state.minor);
+  const adOptions = () => state.status === 'resolved' && state.minor
+    ? (state.childDirected ? { maxAdContentRating: 'General' } : {}) : {};
+  const consentOptions = () => state.status === 'resolved' && state.minor ? { tagForUnderAgeOfConsent: true } : {};
+  const trackingAllowed = () => adsAllowed() && !(state.status === 'resolved' && state.minor);
+  return { refresh, ensure, adsAllowed, analyticsAllowed, adOptions, consentOptions, trackingAllowed,
+    requiresSharing: () => state.status === 'required', status: () => state.status };
+})();
+</script>
+<script>
 // ---------- Optional gameplay analytics (native Firebase only) ----------
 window.GameAnalytics = (() => {
   const ANALYTICS_ALLOWED = false; // Store builds, or an explicit analytics test build.
@@ -759,7 +816,7 @@ window.GameAnalytics = (() => {
       // A current analytics grant or purpose-specific not-applicable signal permits measurement.
       // Missing, denied and unconfigured values never substitute for permission.
       const analyticsPermitted = modes[3] === '1' || modes[3] === '3';
-      const allow = available && !paused && /^[0-4]{4}$/.test(modes) && analyticsPermitted;
+      const allow = available && !paused && window.AgeAssurance.analyticsAllowed() && /^[0-4]{4}$/.test(modes) && analyticsPermitted;
       // Gameplay measurement never grants advertising consent.
       for (const type of ['AD_STORAGE', 'AD_USER_DATA', 'AD_PERSONALIZATION']) {
         await plugin.setConsent({ type, status: 'DENIED' });
@@ -767,6 +824,8 @@ window.GameAnalytics = (() => {
       await plugin.setConsent({ type: 'ANALYTICS_STORAGE', status: allow ? 'GRANTED' : 'DENIED' });
       if (version !== revision || !allow) return;
       await plugin.setEnabled({ enabled: true });
+      // Pause/withdrawal may happen while the native enable call is in flight.
+      if (version !== revision) { await plugin.setEnabled({ enabled: false }); return; }
       enabled = true;
       document.dispatchEvent(new Event('analytics:enabled'));
       refreshRequestId();
@@ -957,7 +1016,9 @@ window.Ads = (function () {
   let privacyRequired = false; // UMP says players must be able to reopen ad privacy choices
 
   let lastConsentError = '';
-  const consentOptions = () => window.UMPTest ? window.UMPTest.options() : {};
+  let canRequestAds = false, initialized = false, consentGeneration = 0;
+  const loading = { rewarded: null, interstitial: null };
+  const consentOptions = () => ({ ...(window.UMPTest ? window.UMPTest.options() : {}), ...window.AgeAssurance.consentOptions() });
   async function updateConsent() {
     await window.GameAnalytics.reconcile(false);
     lastConsentError = '';
@@ -965,8 +1026,10 @@ window.Ads = (function () {
       let info = await AdMob.requestConsentInfo(consentOptions());
       if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
       privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      canRequestAds = info?.canRequestAds === true && window.AgeAssurance.adsAllowed();
       await window.GameAnalytics.reconcile(info && info.status);
     } catch (e) {
+      canRequestAds = false;
       lastConsentError = String(e.message || e).slice(0, 300);
       await window.GameAnalytics.reconcile(false);
     }
@@ -977,30 +1040,47 @@ window.Ads = (function () {
     try {
       // Initialize Firebase and block collection before UMP may change consent.
       await window.GameAnalytics.reconcile(false);
-      await AdMob.initialize({ initializeForTesting: CONFIG.testing });
+      await window.AgeAssurance.ensure();
+      if (!window.AgeAssurance.adsAllowed()) return;
       await updateConsent();
-      if (platform === 'ios') {
+      await activateAds();
+    } catch (e) { console.warn('AdMob init failed', e); }
+  }
+
+  async function activateAds() {
+    if (!canRequestAds || !window.AgeAssurance.adsAllowed()) return;
+    if (!initialized) {
+      await AdMob.initialize({ initializeForTesting: CONFIG.testing, maxAdContentRating: 'Teen', ...window.AgeAssurance.adOptions() });
+      initialized = true;
+      if (platform === 'ios' && window.AgeAssurance.trackingAllowed()) {
         try {
           const t = await AdMob.trackingAuthorizationStatus();
           if (t.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
         } catch (e) {}
       }
-      preload('rewarded');
-      if (!adFree()) preload('interstitial');
-    } catch (e) { console.warn('AdMob init failed', e); }
+    }
+    preload('rewarded');
+    if (!adFree()) preload('interstitial');
   }
 
-  async function preload(kind) {
-    if (!AdMob || ready[kind]) return;
-    try {
-      const opts = { adId: ids[kind === 'rewarded' ? rewardedUnit : kind], isTesting: CONFIG.testing };
-      if (kind === 'rewarded') await AdMob.prepareRewardVideoAd(opts);
-      else await AdMob.prepareInterstitial(opts);
-      ready[kind] = true;
-    } catch (e) {
-      ready[kind] = false;
-      setTimeout(() => preload(kind), 30000);
-    }
+  function preload(kind) {
+    if (!AdMob || !initialized || !canRequestAds || !window.AgeAssurance.adsAllowed() || ready[kind]) return Promise.resolve();
+    if (loading[kind]) return loading[kind];
+    const generation = consentGeneration;
+    loading[kind] = (async () => {
+      try {
+        const opts = { adId: ids[kind === 'rewarded' ? rewardedUnit : kind], isTesting: CONFIG.testing };
+        if (kind === 'rewarded') await AdMob.prepareRewardVideoAd(opts);
+        else await AdMob.prepareInterstitial(opts);
+        if (generation === consentGeneration && canRequestAds && window.AgeAssurance.adsAllowed()) ready[kind] = true;
+      } catch (e) {
+        if (generation === consentGeneration) {
+          ready[kind] = false;
+          setTimeout(() => preload(kind), 30000);
+        }
+      } finally { loading[kind] = null; }
+    })();
+    return loading[kind];
   }
 
   // Waits for one of the given plugin events (or a timeout), then cleans up listeners.
@@ -1052,7 +1132,8 @@ window.Ads = (function () {
       if (native) return false;
       const ok = await simulate(5); if (ok) lastRewarded = Date.now(); return ok;
     }
-    if (!ready.rewarded) { await preload('rewarded'); if (!ready.rewarded) return false; }
+    if (!canRequestAds || !initialized || !window.AgeAssurance.adsAllowed()) return false;
+    if (!ready.rewarded) { await preload('rewarded'); if (!ready.rewarded || !canRequestAds) return false; }
     ready.rewarded = false;
     let earned = false;
     const done = waitFor(
@@ -1071,7 +1152,7 @@ window.Ads = (function () {
   }
 
   async function maybeInterstitial(ends) {
-    if (adFree()) return;
+    if (adFree() || (AdMob && (!canRequestAds || !initialized || !window.AgeAssurance.adsAllowed()))) return;
     const due = ends > 0 && ends % CONFIG.interstitialEveryEnds === 0;
     const gap = CONFIG.minSecondsBetweenInterstitials * 1000;
     const spaced = Date.now() - lastInterstitial > gap && Date.now() - lastRewarded > gap;
@@ -1090,21 +1171,30 @@ window.Ads = (function () {
   init();
   async function showPrivacyOptions() {
     if (!AdMob) return;
+    canRequestAds = false; consentGeneration++;
+    ready.rewarded = ready.interstitial = false;
     await window.GameAnalytics.reconcile(false);
     try {
       await AdMob.showPrivacyOptionsForm();
+      await Promise.all([loading.rewarded, loading.interstitial]);
       const info = await AdMob.requestConsentInfo(consentOptions());
       privacyRequired = info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      canRequestAds = info?.canRequestAds === true && window.AgeAssurance.adsAllowed();
       await window.GameAnalytics.reconcile(info && info.status);
-    } catch (e) { await window.GameAnalytics.reconcile(false); }
+      await activateAds();
+    } catch (e) { canRequestAds = false; await window.GameAnalytics.reconcile(false); }
     document.dispatchEvent(new Event('ads:privacy'));
   }
 
   async function resetConsentForTest() {
     if (!window.UMPTest || !AdMob) throw Error('UMP testing is unavailable in this build.');
     await window.GameAnalytics.reconcile(false);
+    canRequestAds = false; consentGeneration++;
+    ready.rewarded = ready.interstitial = false;
     await AdMob.resetConsentInfo();
+    await Promise.all([loading.rewarded, loading.interstitial]);
     await updateConsent();
+    await activateAds();
   }
   return {
     resetConsentForTest, consentError: () => lastConsentError,
@@ -3479,11 +3569,13 @@ window.Board = (function () {
   }
   function showSettings() {
     toMenu(); const sb = settingsButtons();
-    panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns">' + sb.html +
+    panel(BACK_X + '<h2 id="setTitle">Settings</h2>' + (dev ? '<p>Developer mode: everything is open<br>Leaderboards: ' + window.Board.status() + '</p>' : '') + '<div class="btns settings-content">' + sb.html +
       (window.UMPTest ? '<button class="btn alt" type="button" data-act="umpTest">UMP test controls</button>' : '') +
-      '<button class="linkbtn privacy-entry" type="button" data-act="privacy">Privacy</button>' +
+      '<div class="settings-privacy"><a class="linkbtn privacy-entry" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
+      '<button class="linkbtn privacy-entry" type="button" data-act="privacyChoices"' + (window.Ads.privacyRequired() ? '' : ' hidden') + '>Privacy choices</button></div>' +
       (dev ? '<button class="btn alt" type="button" data-act="devoff">Developer mode: off</button>' : '') + '</div>',
-      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), devoff: () => { setDev(false); showSettings(); }, privacy: showPrivacy }, sb.acts));
+      Object.assign({ back: showHome, umpTest: () => showUMPTestSettings(), devoff: () => { setDev(false); showSettings(); }, privacyChoices: async () => { await window.Ads.showPrivacyOptions(); showSettings(); } }, sb.acts));
+    $('card').classList.add('settings-card');
     let taps = 0, tapT = 0;
     $('setTitle').addEventListener('click', () => { const now = performance.now(); taps = now - tapT < 1500 ? taps + 1 : 1; tapT = now; if (taps >= 7 && !dev && DEV_ALLOWED) { setDev(true); buzz('clear'); showSettings(); } });
   }
@@ -3507,17 +3599,10 @@ window.Board = (function () {
         } catch (error) { await showUMPTestSettings(String(error.message || error)); }
       } });
   }
-  async function showPrivacy() {
-    toMenu();
-    const analytics = window.GameAnalytics;
-    await analytics.refreshRequestId();
-    const id = analytics.requestId().replace(/[^a-zA-Z0-9_-]/g, '');
-    panel(BACK_X + '<h2>Privacy</h2><div class="btns">' +
-      '<a class="linkbtn privacy-entry" href="https://beno74.com/privacy/landscraper" target="_blank" rel="noopener">Privacy policy</a>' +
-      (window.Ads.privacyRequired() ? '<button class="linkbtn privacy-entry" type="button" data-act="choices">Privacy choices</button>' : '') + '</div>' +
-      (id ? '<details><summary>Privacy requests</summary><p>For access or deletion requests, email <a href="mailto:privacy@beno74.com">privacy@beno74.com</a> with this Analytics ID:</p><p style="overflow-wrap:anywhere;user-select:text">' + id + '</p></details>' : ''),
-      { back: showSettings, choices: async () => { await window.Ads.showPrivacyOptions(); showPrivacy(); } });
-  }
+  document.addEventListener('ads:privacy', () => {
+    const choices = document.querySelector('[data-act="privacyChoices"]');
+    if (choices) choices.hidden = !window.Ads.privacyRequired();
+  });
   function showShop(packsOpen = false) {
     toMenu(); const st = window.Store, noAds = st.noAds(), skinsOwned = st.allSkins(), th = skinThumbs();
     const nSk = SKINS.filter((k) => k.pack).length;

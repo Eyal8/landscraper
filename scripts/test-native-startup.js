@@ -58,7 +58,7 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
       async requestConsentInfo(options) {
         record('AdMob', 'requestConsentInfo', options);
         if (state.consentFailure) throw Error('UMP unavailable');
-        return { status: state.consentStatus, privacyOptionsRequirementStatus: 'REQUIRED' };
+        return { status: state.consentStatus, canRequestAds: state.consentStatus !== 'REQUIRED', privacyOptionsRequirementStatus: 'REQUIRED' };
       },
       async showPrivacyOptionsForm() {
         assert.equal(context.GameAnalytics.enabled(), false, 'collection stops before opening privacy choices');
@@ -83,6 +83,7 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
         return Promise.resolve({ remove() { listeners.get(name).delete(callback); } });
       }
     },
+    RegionalAge: { async getRequirements() { return { status: 'notRequired' }; } },
     AnalyticsConsent: { async getConsentModes() { return { values: state.modes }; } },
     FirebaseAnalytics: {
       async setEnabled(options) { record('FirebaseAnalytics', 'setEnabled', options); },
@@ -115,7 +116,7 @@ async function boot(platform, missingRuntime = false, consentOptions = {}) {
           return plugins[name];
         };
       }
-    } else if (code.includes('window.UMPTest =') || code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
+    } else if (code.includes('window.AgeAssurance =') || code.includes('window.UMPTest =') || code.includes('window.GameAnalytics =') || code.includes('window.Store =') || code.includes('window.Ads =')) {
       vm.runInContext(code, context);
     }
   }

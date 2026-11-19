@@ -10,7 +10,8 @@
     "test:analytics": "node --test scripts/test-analytics.js",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",
-    "ios": "npm run sync && npx cap open ios"
+    "ios": "npm run sync && npx cap open ios",
+    "postinstall": "node scripts/patch-admob-age-treatment.cjs"
   },
   "keywords": [],
   "author": "",

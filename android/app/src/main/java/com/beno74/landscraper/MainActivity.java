@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GamesPlugin.class);
         registerPlugin(AnalyticsConsentPlugin.class);
+        registerPlugin(RegionalAgePlugin.class);
         super.onCreate(savedInstanceState);
         PlayGamesSdk.initialize(this);
         // Gesture navigation: a swipe in from the left or right edge means Back. Keep the lower part of both edges for
