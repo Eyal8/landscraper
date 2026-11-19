@@ -1,5 +1,7 @@
 import UIKit
 import Capacitor
+import FirebaseCore
+import FirebaseAnalytics
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +9,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Firebase's collection-enabled setting persists across launches and
+        // overrides Info.plist defaults. Suspend it before the bridge/UMP starts.
+        if FirebaseApp.app() == nil, FirebaseOptions.defaultOptions() != nil {
+            FirebaseApp.configure()
+        }
+        if FirebaseApp.app() != nil {
+            Analytics.setAnalyticsCollectionEnabled(false)
+            Analytics.setConsent([.analyticsStorage: .denied, .adStorage: .denied,
+                                  .adUserData: .denied, .adPersonalization: .denied])
+        }
         return true
     }
 
